@@ -6,8 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
-    "start:dev": "nodemon --exec ts-node src/main.ts",
-    "start:debug": "nodemon --inspect --exec ts-node src/main.ts"
+    "start:dev": "node ./node_modules/nodemon/bin/nodemon.js --exec ./node_modules/ts-node/dist/bin.js src/main.ts",
+    "start:debug": "node ./node_modules/nodemon/bin/nodemon.js --inspect --exec ./node_modules/ts-node/dist/bin.js src/main.ts"
   },
   "keywords": [],
   "author": "",
