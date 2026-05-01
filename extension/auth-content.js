@@ -1,5 +1,8 @@
 // Content script for authentication token sync
-// Only runs on the Apply Tracker website (http://localhost:3001/*)
+// Only runs on the Apply Tracker website
+// DEVELOPMENT: http://localhost:3001/*
+// PRODUCTION: Change to your production domain (e.g., https://your-domain.com/*)
+const FRONTEND_URL = 'http://localhost:3001';
 
 console.log('Apply Tracker auth content script loaded on:', window.location.href);
 

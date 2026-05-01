@@ -1,3 +1,6 @@
+// Extension Configuration
+// DEVELOPMENT: http://localhost:3000 (API), http://localhost:3001 (Frontend)
+// PRODUCTION: Change to your production domains
 const API_BASE = 'http://localhost:3000';
 const FRONTEND_URL = 'http://localhost:3001';
 

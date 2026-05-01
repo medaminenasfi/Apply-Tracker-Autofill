@@ -2,18 +2,20 @@
   "manifest_version": 3,
   "name": "Apply Tracker Autofill",
   "version": "1.0.0",
-  "description": "Autofill job application forms and save applications to Apply Tracker",
+  "description": "Autofill job application forms and save applications to your Apply Tracker dashboard",
   "permissions": [
     "storage",
     "activeTab",
     "scripting"
   ],
   "host_permissions": [
-    "http://localhost:3000/*",
     "http://localhost:3001/*"
   ],
   "action": {
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -26,8 +28,5 @@
       "js": ["auth-content.js"],
       "run_at": "document_idle"
     }
-  ],
-  "background": {
-    "service_worker": "background.js"
-  }
+  ]
 }
