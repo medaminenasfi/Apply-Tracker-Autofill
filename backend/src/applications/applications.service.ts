@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Application, ApplicationDocument } from './schemas/application.schema';
+import { CreateApplicationDto } from './dto/create-application.dto';
 
 @Injectable()
 export class ApplicationsService {
@@ -23,9 +24,12 @@ export class ApplicationsService {
     return this.applicationModel.findOne({ _id: id, userId }).exec();
   }
 
-  async create(applicationData: any): Promise<Application> {
-    const createdApplication = new this.applicationModel(applicationData);
-    return createdApplication.save();
+  async create(applicationData: CreateApplicationDto, userId: string): Promise<Application> {
+    const application = new this.applicationModel({
+      ...applicationData,
+      userId,
+    });
+    return application.save();
   }
 
   async update(id: string, userId: string, updateData: any): Promise<Application | null> {
@@ -36,6 +40,17 @@ export class ApplicationsService {
 
     return this.applicationModel
       .findOneAndUpdate({ _id: id, userId }, { $set: updateData }, { returnDocument: 'after' })
+      .exec();
+  }
+
+  async updateStatus(id: string, userId: string, status: string): Promise<Application | null> {
+    const application = await this.findByIdAndUserId(id, userId);
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    return this.applicationModel
+      .findOneAndUpdate({ _id: id, userId }, { $set: { status } }, { returnDocument: 'after' })
       .exec();
   }
 

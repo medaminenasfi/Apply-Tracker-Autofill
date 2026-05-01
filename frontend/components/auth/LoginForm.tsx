@@ -28,8 +28,8 @@ export function LoginForm() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      email: 'demo@applyflow.com',
-      password: '123456',
+      email: '',
+      password: '',
     },
   });
 
@@ -37,7 +37,7 @@ export function LoginForm() {
     setError(null);
     try {
       await login(data.email, data.password);
-      router.push('/dashboard');
+      router.push('/accueil');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     }
@@ -99,10 +99,7 @@ export function LoginForm() {
           </form>
         </Form>
 
-        <div className="mt-4 space-y-2 text-center text-sm">
-          <p className="text-muted-foreground">
-            Demo credentials: demo@applyflow.com / 123456
-          </p>
+        <div className="mt-4 text-center text-sm">
           <p>
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="font-semibold text-primary hover:underline">

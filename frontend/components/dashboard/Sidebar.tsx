@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,15 +15,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, LogOut, LayoutGrid, Briefcase, User, Settings, Shield } from 'lucide-react';
+import { useSidebarStore } from '@/store/sidebarStore';
 
 export function Sidebar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const { isCollapsed, collapseSidebar } = useSidebarStore();
 
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  const handleNavClick = () => {
+    // Auto-collapse on navigation
+    if (!isCollapsed) {
+      collapseSidebar();
+    }
   };
 
   const navItems = [
@@ -44,53 +54,72 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r bg-card text-card-foreground">
+    <aside className={`flex h-screen flex-col border-r bg-card text-card-foreground transition-all duration-300 ${
+      isCollapsed ? 'w-20' : 'w-64'
+    }`}>
       {/* Logo */}
       <div className="border-b px-6 py-4">
         <Link href="/accueil" className="flex items-center gap-2 font-bold text-lg">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold flex-shrink-0">
             AF
           </div>
-          <span>ApplyFlow</span>
+          {!isCollapsed && <span>ApplyFlow</span>}
         </Link>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {allNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          return (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant={isActive ? 'secondary' : 'ghost'}
-                className="w-full justify-start gap-3"
-              >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </Button>
-            </Link>
-          );
-        })}
+        <TooltipProvider delayDuration={0}>
+          {allNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>
+                  <Link href={item.href} onClick={handleNavClick}>
+                    <Button
+                      variant={isActive ? 'secondary' : 'ghost'}
+                      className={`w-full justify-start gap-3 transition-all duration-300 ${
+                        isCollapsed ? 'px-2' : ''
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span className={`transition-all duration-300 ${isCollapsed ? 'hidden' : 'block'}`}>
+                        {item.label}
+                      </span>
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                {isCollapsed && (
+                  <TooltipContent side="right">
+                    {item.label}
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+        </TooltipProvider>
       </nav>
 
       {/* User Menu */}
       <div className="border-t px-3 py-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-between">
+            <Button variant="ghost" className={`w-full justify-between transition-all duration-300 ${
+              isCollapsed ? 'px-2' : ''
+            }`}>
               <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className="text-xs font-semibold">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="text-left">
+                <div className={`text-left transition-all duration-300 ${isCollapsed ? 'hidden' : 'block'}`}>
                   <p className="text-sm font-medium">{user?.firstName}</p>
                   <p className="text-xs text-muted-foreground">{user?.role}</p>
                 </div>
               </div>
-              <ChevronDown className="h-4 w-4 opacity-50" />
+              {!isCollapsed && <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

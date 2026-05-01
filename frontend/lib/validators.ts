@@ -28,8 +28,7 @@ export const ApplicationSchema = z.object({
   url: z.string().url('Invalid URL').optional().or(z.literal('')),
   dateApplied: z.string().min(1, 'Date applied is required'),
   note: z.string().optional(),
-  status: z.enum(['Applied', 'Pending', 'Interview', 'Accepted', 'Rejected']).default('Applied'),
-  priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
+  status: z.enum(['applied', 'interview', 'accepted', 'rejected']).default('applied'),
 });
 
 export type ApplicationFormData = z.infer<typeof ApplicationSchema>;

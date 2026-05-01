@@ -51,8 +51,7 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
       url: '',
       dateApplied: new Date().toISOString().split('T')[0],
       note: '',
-      status: 'Applied',
-      priority: 'medium',
+      status: 'applied',
     },
   });
 
@@ -61,22 +60,28 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
 
     setIsSubmitting(true);
     try {
-      addApplication({
-        userId: user.id,
-        company: data.company,
+      const applicationData: any = {
+        companyName: data.company,
         position: data.position,
-        url: data.url || undefined,
-        dateApplied: new Date(data.dateApplied).toISOString(),
-        note: data.note || undefined,
+        dateApplied: data.dateApplied,
         status: data.status,
-        priority: data.priority,
-      });
+      };
+
+      if (data.url) {
+        applicationData.jobUrl = data.url;
+      }
+
+      if (data.note) {
+        applicationData.note = data.note;
+      }
+
+      await addApplication(applicationData);
 
       toast.success('Application added successfully!');
       form.reset();
       onOpenChange(false);
-    } catch (error) {
-      toast.error('Failed to add application');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message || 'Failed to add application');
     } finally {
       setIsSubmitting(false);
     }
@@ -167,34 +172,10 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Applied">Applied</SelectItem>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="Interview">Interview</SelectItem>
-                      <SelectItem value="Accepted">Accepted</SelectItem>
-                      <SelectItem value="Rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="applied">Applied</SelectItem>
+                      <SelectItem value="interview">Interview</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

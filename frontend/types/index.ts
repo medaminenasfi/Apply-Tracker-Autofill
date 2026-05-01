@@ -1,7 +1,28 @@
-export type ApplicationStatus = 'Applied' | 'Pending' | 'Interview' | 'Accepted' | 'Rejected';
+export type ApplicationStatus = 'applied' | 'interview' | 'accepted' | 'rejected';
+
+export interface Application {
+  _id: string;
+  userId: string;
+  companyName: string;
+  position: string;
+  jobUrl?: string;
+  status: ApplicationStatus;
+  dateApplied?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Note {
+  _id: string;
+  text: string;
+  applicationId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface User {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -11,18 +32,4 @@ export interface User {
   portfolio?: string;
   role: 'user' | 'admin';
   createdAt: string;
-}
-
-export interface Application {
-  id: string;
-  userId: string;
-  company: string;
-  position: string;
-  url?: string;
-  dateApplied: string;
-  note?: string;
-  status: ApplicationStatus;
-  priority?: 'low' | 'medium' | 'high';
-  createdAt: string;
-  updatedAt: string;
 }

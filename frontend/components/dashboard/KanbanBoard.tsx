@@ -20,11 +20,10 @@ import { ApplicationCard } from './ApplicationCard';
 import { motion } from 'framer-motion';
 
 const STATUSES: { status: ApplicationStatus; title: string }[] = [
-  { status: 'Applied', title: 'Applied' },
-  { status: 'Pending', title: 'Pending Review' },
-  { status: 'Interview', title: 'Interview' },
-  { status: 'Accepted', title: 'Accepted' },
-  { status: 'Rejected', title: 'Rejected' },
+  { status: 'applied', title: 'Applied' },
+  { status: 'interview', title: 'Interview' },
+  { status: 'accepted', title: 'Accepted' },
+  { status: 'rejected', title: 'Rejected' },
 ];
 
 export function KanbanBoard() {
@@ -38,17 +37,19 @@ export function KanbanBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Filter applications for current user
-  const userApplications = applications.filter((app) => app.userId === user?.id);
+  const userApplications = applications.filter((app) => app.userId === user?._id);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      distance: 8,
+      activationConstraint: {
+        distance: 8,
+      },
     })
   );
 
   const getActiveApplication = () => {
     if (!activeId) return null;
-    return userApplications.find((app) => app.id === activeId);
+    return userApplications.find((app) => app._id === activeId);
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -56,20 +57,25 @@ export function KanbanBoard() {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
+    // Only used for collision detection, no action needed
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      setActiveId(null);
+      return;
+    }
 
     const overStatus = String(over.id).replace('column-', '');
     const activeStatus = STATUSES.find((s) => s.status === overStatus);
 
     if (activeStatus && active.id !== over.id) {
-      // Move card to new column
-      moveApplication(String(active.id), activeStatus.status);
+      // Move card to new column via API
+      await moveApplication(String(active.id), activeStatus.status);
     }
-  };
 
-  const handleDragEnd = () => {
     setActiveId(null);
   };
 

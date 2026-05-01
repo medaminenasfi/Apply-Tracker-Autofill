@@ -1,4 +1,4 @@
-import { IsString, IsUrl, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import { IsString, IsUrl, IsOptional, IsEnum, IsDateString, IsArray } from 'class-validator';
 
 export class CreateApplicationDto {
   @IsString()
@@ -8,9 +8,10 @@ export class CreateApplicationDto {
   position: string;
 
   @IsUrl()
-  jobUrl: string;
+  @IsOptional()
+  jobUrl?: string;
 
-  @IsEnum(['applied', 'pending', 'interview', 'accepted', 'rejected'])
+  @IsEnum(['applied', 'interview', 'accepted', 'rejected'])
   @IsOptional()
   status?: string;
 

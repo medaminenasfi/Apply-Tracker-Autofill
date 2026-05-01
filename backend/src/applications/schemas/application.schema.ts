@@ -14,17 +14,14 @@ export class Application {
   @Prop({ required: true })
   position: string;
 
-  @Prop({ required: true })
-  jobUrl: string;
+  @Prop({ required: false })
+  jobUrl?: string;
 
-  @Prop({ required: true, enum: ['applied', 'pending', 'interview', 'accepted', 'rejected'], default: 'applied' })
+  @Prop({ required: true, enum: ['applied', 'interview', 'accepted', 'rejected'], default: 'applied' })
   status: string;
 
   @Prop({ required: false })
   dateApplied?: Date;
-
-  @Prop({ required: false })
-  note?: string;
 }
 
 export const ApplicationSchema = SchemaFactory.createForClass(Application);

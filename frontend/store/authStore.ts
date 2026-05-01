@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { User } from '@/types';
-import { DEMO_USER, ADMIN_USER } from '@/lib/mock-data';
+import api from '@/services/api';
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (userData: {
     firstName: string;
@@ -17,85 +18,121 @@ interface AuthState {
   logout: () => void;
   updateProfile: (userData: Partial<User>) => Promise<void>;
   setUser: (user: User | null) => void;
+  initialize: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  isInitialized: false,
+  token: null,
 
-      login: async (email: string, password: string) => {
-        set({ isLoading: true });
-        try {
-          // Simulate API call delay
-          await new Promise((resolve) => setTimeout(resolve, 500));
-
-          // Mock authentication with demo credentials
-          if (email === 'demo@applyflow.com' && password === '123456') {
-            set({ user: DEMO_USER, isAuthenticated: true });
-          } else if (email === 'admin@applyflow.com' && password === '123456') {
-            set({ user: ADMIN_USER, isAuthenticated: true });
-          } else {
-            throw new Error('Invalid credentials');
-          }
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      signup: async (userData) => {
-        set({ isLoading: true });
-        try {
-          // Simulate API call delay
-          await new Promise((resolve) => setTimeout(resolve, 500));
-
-          // Create new user
-          const newUser: User = {
-            id: Date.now().toString(),
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            email: userData.email,
-            role: 'user',
-            createdAt: new Date().toISOString(),
-          };
-
-          // TODO: Send to NestJS API: POST /auth/signup
-          set({ user: newUser, isAuthenticated: true });
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      logout: () => {
-        set({ user: null, isAuthenticated: false });
-      },
-
-      updateProfile: async (userData) => {
-        const currentUser = get().user;
-        if (!currentUser) throw new Error('No user logged in');
-
-        set({ isLoading: true });
-        try {
-          // Simulate API call delay
-          await new Promise((resolve) => setTimeout(resolve, 500));
-
-          // TODO: Send to NestJS API: PUT /users/:id
-          const updatedUser = { ...currentUser, ...userData };
-          set({ user: updatedUser });
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      setUser: (user) => {
-        set({ user, isAuthenticated: user !== null });
-      },
-    }),
-    {
-      name: 'auth-store',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+  initialize: () => {
+    if (typeof window === 'undefined') return;
+    
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    
+    let user = null;
+    if (userStr) {
+      try {
+        user = JSON.parse(userStr);
+      } catch (e) {
+        console.error('Failed to parse user from localStorage:', e);
+      }
     }
-  )
-);
+
+    set({ user, isAuthenticated, token, isInitialized: true });
+  },
+
+  login: async (email: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      
+      const user = response.data.user;
+      const token = response.data.access_token;
+      
+      // Store in localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('isAuthenticated', 'true');
+      
+      // Set state
+      set({ 
+        user, 
+        isAuthenticated: true,
+        token
+      });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Login failed');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  signup: async (userData) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.post('/auth/register', userData);
+      
+      const user = response.data.user;
+      const token = response.data.access_token;
+      
+      // Store in localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('isAuthenticated', 'true');
+      
+      // Set state
+      set({ 
+        user, 
+        isAuthenticated: true,
+        token
+      });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Signup failed');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
+    set({ user: null, isAuthenticated: false, token: null });
+  },
+
+  updateProfile: async (userData) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.put('/profile', userData);
+      
+      const user = response.data;
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Update state
+      set({ user });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Profile update failed');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  setUser: (user) => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('isAuthenticated', 'true');
+    } else {
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+    }
+    set({ user, isAuthenticated: user !== null });
+  },
+}));

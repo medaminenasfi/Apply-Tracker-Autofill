@@ -1,9 +1,9 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -13,15 +13,20 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isInitialized } = useAuthStore();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Only redirect if initialized and not authenticated
+    if (isInitialized && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isInitialized, router]);
+
+  // Show loading state while initializing
+  if (!isInitialized) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return null;
@@ -34,16 +39,9 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
         <Sidebar />
       </div>
 
-      {/* Mobile Sidebar - TODO: Implement slide-out mobile menu */}
-      {/* {sidebarOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <Sidebar />
-        </div>
-      )} */}
-
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Navbar title={title} onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        <Navbar title={title} />
         <main className="flex-1 overflow-auto bg-background">
           <div className="p-6">{children}</div>
         </main>

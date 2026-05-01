@@ -31,9 +31,8 @@ export class ExtensionService {
 
     return this.applicationsService.create({
       ...applicationData,
-      userId,
       status: 'applied',
       dateApplied,
-    });
+    }, userId);
   }
 }

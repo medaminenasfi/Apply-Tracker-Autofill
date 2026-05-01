@@ -5,7 +5,7 @@ import { ApplicationCard } from './ApplicationCard';
 import { useDroppable } from '@dnd-kit/core';
 import { Badge } from '@/components/ui/badge';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Empty } from '@/components/ui/empty';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from '@/components/ui/empty';
 
 interface ApplicationColumnProps {
   status: ApplicationStatus;
@@ -14,11 +14,10 @@ interface ApplicationColumnProps {
 }
 
 const statusIcons: Record<ApplicationStatus, string> = {
-  Applied: '📨',
-  Pending: '⏳',
-  Interview: '🎤',
-  Accepted: '✅',
-  Rejected: '❌',
+  applied: '📨',
+  interview: '🎤',
+  accepted: '✅',
+  rejected: '❌',
 };
 
 export function ApplicationColumn({
@@ -56,7 +55,7 @@ export function ApplicationColumn({
           {applications.length > 0 ? (
             applications.map((application) => (
               <ApplicationCard
-                key={application.id}
+                key={application._id}
                 application={application}
               />
             ))
@@ -66,11 +65,17 @@ export function ApplicationColumn({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <Empty
-                title={`No ${title.toLowerCase()}`}
-                description="Drag applications here or add a new one"
-                size="sm"
-              />
+              <Empty>
+                <EmptyContent>
+                  <EmptyMedia variant="icon">
+                    <span className="text-2xl">📭</span>
+                  </EmptyMedia>
+                  <EmptyHeader>
+                    <EmptyTitle>No {title.toLowerCase()}</EmptyTitle>
+                    <EmptyDescription>Drag applications here or add a new one</EmptyDescription>
+                  </EmptyHeader>
+                </EmptyContent>
+              </Empty>
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useSidebarStore } from '@/store/sidebarStore';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -10,11 +11,11 @@ import { useState } from 'react';
 
 interface NavbarProps {
   title?: string;
-  onMenuClick?: () => void;
 }
 
-export function Navbar({ title = 'Dashboard', onMenuClick }: NavbarProps) {
+export function Navbar({ title = 'Dashboard' }: NavbarProps) {
   const { user } = useAuth();
+  const { toggleCollapse } = useSidebarStore();
   const [searchQuery, setSearchQuery] = useState('');
 
   const getInitials = () => {
@@ -29,9 +30,8 @@ export function Navbar({ title = 'Dashboard', onMenuClick }: NavbarProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={onMenuClick}
-            className="lg:hidden"
-            aria-label="Toggle menu"
+            onClick={toggleCollapse}
+            aria-label="Toggle sidebar"
           >
             <Menu className="h-5 w-5" />
           </Button>

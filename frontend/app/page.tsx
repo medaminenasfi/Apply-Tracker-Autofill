@@ -1,20 +1,97 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { Briefcase, TrendingUp, Shield } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/accueil');
-    } else {
-      router.push('/login');
-    }
-  }, [isAuthenticated, router]);
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Navbar */}
+      <nav className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-8 w-8 text-primary" />
+              <span className="text-2xl font-bold">Apply Tracker</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/login')}
+              >
+                Login
+              </Button>
+              <Button
+                onClick={() => router.push('/signup')}
+              >
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-  return null;
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-20">
+        <div className="max-w-3xl mx-auto text-center">
+          <h1 className="text-5xl font-bold tracking-tight mb-6">
+            Track Your Job Applications with Ease
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8">
+            Stay organized, manage your applications, and land your dream job. 
+            Apply Tracker helps you keep track of every step in your job search journey.
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button
+              size="lg"
+              onClick={() => router.push('/signup')}
+            >
+              Get Started
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => router.push('/login')}
+            >
+              Sign In
+            </Button>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 max-w-5xl mx-auto">
+          <div className="text-center">
+            <div className="inline-flex p-4 rounded-full bg-blue-100 dark:bg-blue-900 mb-4">
+              <Briefcase className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Track Applications</h3>
+            <p className="text-muted-foreground">
+              Keep track of all your job applications in one place with status updates
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="inline-flex p-4 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+              <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Monitor Progress</h3>
+            <p className="text-muted-foreground">
+              Visualize your application statistics and track your success rate
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="inline-flex p-4 rounded-full bg-purple-100 dark:bg-purple-900 mb-4">
+              <Shield className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Stay Organized</h3>
+            <p className="text-muted-foreground">
+              Manage your profile and keep all your information up to date
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

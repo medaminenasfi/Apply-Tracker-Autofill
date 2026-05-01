@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ApplicationsService } from './applications.service';
@@ -12,10 +12,7 @@ export class ApplicationsController {
 
   @Post()
   async createApplication(@GetUser() user: any, @Body() createApplicationDto: CreateApplicationDto) {
-    return this.applicationsService.create({
-      ...createApplicationDto,
-      userId: user._id,
-    });
+    return this.applicationsService.create(createApplicationDto, user._id);
   }
 
   @Get()
@@ -39,6 +36,15 @@ export class ApplicationsController {
     @Body() updateApplicationDto: UpdateApplicationDto,
   ) {
     return this.applicationsService.update(id, user._id, updateApplicationDto);
+  }
+
+  @Patch(':id/status')
+  async updateStatus(
+    @GetUser() user: any,
+    @Param('id') id: string,
+    @Body() body: { status: string },
+  ) {
+    return this.applicationsService.updateStatus(id, user._id, body.status);
   }
 
   @Delete(':id')

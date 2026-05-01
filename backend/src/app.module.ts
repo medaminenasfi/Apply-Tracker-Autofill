@@ -7,6 +7,7 @@ import { ProfileModule } from './profile/profile.module';
 import { AdminModule } from './admin/admin.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { ExtensionModule } from './extension/extension.module';
+import { NotesModule } from './notes/notes.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ExtensionModule } from './extension/extension.module';
     ApplicationsModule,
     AdminModule,
     ExtensionModule,
+    NotesModule,
   ],
   controllers: [],
   providers: [],
