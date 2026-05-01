@@ -37,7 +37,15 @@ const fieldKeywords = {
   ],
   phone: [
     'phone', 'phone number', 'mobile', 'telephone',
-    'téléphone', 'tel', 'tél', 'numéro de téléphone', 'numero de telephone'
+    'téléphone', 'tel', 'tél', 'numéro de téléphone', 'numero de telephone',
+    'phoneNumber', 'contact'
+  ],
+  countryCode: [
+    'country code', 'code pays', 'indicatif', 'indicatif pays',
+    'prefix', 'préfixe', 'dial code'
+  ],
+  cv: [
+    'cv', 'resume', 'résumé', 'curriculum vitae', 'document', 'fichier'
   ],
   linkedin: [
     'linkedin', 'linked in', 'profil linkedin'
@@ -50,6 +58,37 @@ const fieldKeywords = {
 function autofillForm(profile) {
   // Track which fields have been filled to avoid conflicts
   const filledFields = new Set();
+  
+  // Extract country code and local phone
+  const defaultCountryCode = profile.countryCode || '+216';
+  let countryCode = defaultCountryCode;
+  let localPhone = profile.phone || '';
+  
+  // If phone starts with country code, split it
+  if (profile.phone && profile.phone.startsWith('+')) {
+    const phoneParts = profile.phone.split(' ');
+    if (phoneParts.length > 1) {
+      countryCode = phoneParts[0];
+      localPhone = phoneParts.slice(1).join(' ');
+    } else {
+      // Try to find the country code pattern
+      const countryCodeMatch = profile.phone.match(/^\+(\d{1,3})/);
+      if (countryCodeMatch) {
+        countryCode = countryCodeMatch[0];
+        localPhone = profile.phone.substring(countryCode.length).trim();
+      }
+    }
+  }
+  
+  const fullPhoneNumber = profile.phone || `${countryCode}${localPhone}`;
+  console.log('Phone autofill:', { countryCode, localPhone, fullPhoneNumber, original: profile.phone });
+  
+  // First, try to handle country code fields
+  const countryCodeFilled = fillCountryCode(countryCode, filledFields);
+  
+  // If country code was filled successfully, use local phone only
+  // Otherwise, use full phone number as fallback
+  const phoneToFill = countryCodeFilled ? localPhone : fullPhoneNumber;
   
   // Field mappings with multiple selectors to try
   const fieldMappings = {
@@ -131,6 +170,7 @@ function autofillForm(profile) {
       { selector: 'input[aria-label*="Courriel" i]', type: 'email' },
     ],
     phone: [
+      { selector: 'input[type="tel"]', type: 'tel' },
       { selector: 'input[name="phone"]', type: 'tel' },
       { selector: 'input[name="phoneNumber"]', type: 'tel' },
       { selector: 'input[name="phone_number"]', type: 'tel' },
@@ -139,18 +179,23 @@ function autofillForm(profile) {
       { selector: 'input[name="téléphone"]', type: 'tel' },
       { selector: 'input[name="tel"]', type: 'tel' },
       { selector: 'input[name="tél"]', type: 'tel' },
+      { selector: 'input[name="contact"]', type: 'tel' },
       { selector: 'input[id="phone"]', type: 'tel' },
+      { selector: 'input[id="phoneNumber"]', type: 'tel' },
       { selector: 'input[id="telephone"]', type: 'tel' },
       { selector: 'input[id="téléphone"]', type: 'tel' },
-      { selector: 'input[type="tel"]', type: 'tel' },
-      { selector: 'input[type="phone"]', type: 'tel' },
       { selector: 'input[placeholder*="phone" i]', type: 'tel' },
       { selector: 'input[placeholder*="Phone" i]', type: 'tel' },
       { selector: 'input[placeholder*="mobile" i]', type: 'tel' },
+      { selector: 'input[placeholder*="Mobile" i]', type: 'tel' },
       { selector: 'input[placeholder*="telephone" i]', type: 'tel' },
       { selector: 'input[placeholder*="Telephone" i]', type: 'tel' },
       { selector: 'input[placeholder*="téléphone" i]', type: 'tel' },
       { selector: 'input[placeholder*="Téléphone" i]', type: 'tel' },
+      { selector: 'input[placeholder*="numéro" i]', type: 'tel' },
+      { selector: 'input[placeholder*="Numéro" i]', type: 'tel' },
+      { selector: 'input[placeholder*="tel" i]', type: 'tel' },
+      { selector: 'input[placeholder*="Tel" i]', type: 'tel' },
       { selector: 'input[aria-label*="phone" i]', type: 'tel' },
       { selector: 'input[aria-label*="Phone" i]', type: 'tel' },
       { selector: 'input[aria-label*="telephone" i]', type: 'tel' },
@@ -200,7 +245,7 @@ function autofillForm(profile) {
     lastName: profile.lastName,
     fullName: `${profile.firstName} ${profile.lastName}`,
     email: profile.email,
-    phone: profile.phone,
+    phone: phoneToFill,
     linkedin: profile.linkedin,
     portfolio: profile.portfolio,
   };
@@ -212,7 +257,7 @@ function autofillForm(profile) {
 
     for (const mapping of mappings) {
       const element = document.querySelector(mapping.selector);
-      if (element && element.tagName === 'INPUT' && !filledFields.has(element)) {
+      if (element && element.tagName === 'INPUT' && !filledFields.has(element) && element.type !== 'file') {
         fillInput(element, value);
         filledFields.add(element);
         break; // Stop trying once we find and fill a field
@@ -231,9 +276,9 @@ function autofillForm(profile) {
     { label: 'Adresse e-mail', value: profile.email },
     { label: 'Courriel', value: profile.email },
     { label: 'Email', value: profile.email },
-    { label: 'Téléphone', value: profile.phone },
-    { label: 'Tél', value: profile.phone },
-    { label: 'Phone', value: profile.phone },
+    { label: 'Téléphone', value: phoneToFill },
+    { label: 'Tél', value: phoneToFill },
+    { label: 'Phone', value: phoneToFill },
     { label: 'LinkedIn', value: profile.linkedin },
     { label: 'Portfolio', value: profile.portfolio },
   ];
@@ -243,6 +288,197 @@ function autofillForm(profile) {
       fillByLabel(mapping.label, mapping.value, filledFields);
     }
   }
+  
+  // Detect CV upload fields and show message
+  detectAndNotifyCvFields();
+}
+
+function detectAndNotifyCvFields() {
+  // Check for file inputs
+  const fileInputs = document.querySelectorAll('input[type="file"]');
+  
+  for (const fileInput of fileInputs) {
+    // Check if this is a CV field by checking its label or attributes
+    const isCvField = isCvFieldDetected(fileInput);
+    
+    if (isCvField) {
+      showCvUploadMessage(fileInput);
+      return; // Only show message once
+    }
+  }
+  
+  // Also check labels for CV-related keywords
+  const labels = document.querySelectorAll('label');
+  for (const label of labels) {
+    const labelText = normalizeText(label.textContent);
+    const isCvLabel = fieldKeywords.cv.some(keyword => labelText.includes(normalizeText(keyword)));
+    
+    if (isCvLabel) {
+      // Find the associated input
+      const forId = label.getAttribute('for');
+      let input = null;
+      
+      if (forId) {
+        input = document.getElementById(forId);
+      } else {
+        input = label.parentElement.querySelector('input');
+      }
+      
+      if (input && input.type === 'file') {
+        showCvUploadMessage(input);
+        return; // Only show message once
+      }
+    }
+  }
+}
+
+function isCvFieldDetected(fileInput) {
+  const attributesToCheck = [
+    fileInput.name,
+    fileInput.id,
+    fileInput.placeholder,
+    fileInput.getAttribute('aria-label')
+  ];
+  
+  for (const attr of attributesToCheck) {
+    if (attr) {
+      const normalizedAttr = normalizeText(attr);
+      const isCvField = fieldKeywords.cv.some(keyword => normalizedAttr.includes(normalizeText(keyword)));
+      if (isCvField) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+function showCvUploadMessage(fileInput) {
+  // Create or update message element
+  let messageEl = document.getElementById('cv-autofill-message');
+  
+  if (!messageEl) {
+    messageEl = document.createElement('div');
+    messageEl.id = 'cv-autofill-message';
+    messageEl.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #2563eb;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      z-index: 10000;
+      max-width: 300px;
+    `;
+    document.body.appendChild(messageEl);
+  }
+  
+  messageEl.textContent = 'CV upload detected. Please upload your CV manually.';
+  
+  // Highlight the file input area
+  fileInput.style.border = '2px solid #2563eb';
+  fileInput.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.2)';
+  
+  // Remove highlight after 5 seconds
+  setTimeout(() => {
+    fileInput.style.border = '';
+    fileInput.style.boxShadow = '';
+  }, 5000);
+  
+  // Remove message after 10 seconds
+  setTimeout(() => {
+    if (messageEl && messageEl.parentNode) {
+      messageEl.parentNode.removeChild(messageEl);
+    }
+  }, 10000);
+}
+
+function fillCountryCode(countryCode, filledFields) {
+  // First, try to find select elements for country code
+  const selects = document.querySelectorAll('select');
+  for (const select of selects) {
+    if (filledFields.has(select)) continue;
+    
+    const normalizedAttributes = [
+      select.name,
+      select.id,
+      select.placeholder,
+      select.getAttribute('aria-label')
+    ].map(attr => attr ? normalizeText(attr) : '');
+    
+    // Check if this select is for country code
+    const isCountryCodeField = fieldKeywords.countryCode.some(keyword =>
+      normalizedAttributes.some(attr => attr.includes(normalizeText(keyword)))
+    );
+    
+    if (isCountryCodeField) {
+      // Check if the select is disabled (cannot be changed)
+      if (select.disabled) {
+        console.log('Country code select is disabled, cannot change');
+        return false;
+      }
+      
+      // Try to find an option matching the country code
+      const options = select.querySelectorAll('option');
+      for (const option of options) {
+        const optionText = normalizeText(option.textContent);
+        const optionValue = normalizeText(option.value);
+        
+        // Match by country code, Tunisia, or Tunisie
+        if (optionText.includes(countryCode.toLowerCase()) ||
+            optionText.includes('tunisia') ||
+            optionText.includes('tunisie') ||
+            optionValue.includes(countryCode.toLowerCase())) {
+          select.value = option.value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          filledFields.add(select);
+          console.log('Country code filled successfully:', countryCode);
+          return true;
+        }
+      }
+      
+      console.log('Could not find matching country code option');
+      return false;
+    }
+  }
+  
+  // Second, try to find input elements for country code
+  const inputs = document.querySelectorAll('input');
+  for (const input of inputs) {
+    if (filledFields.has(input) || input.type === 'file') continue;
+    
+    const normalizedAttributes = [
+      input.name,
+      input.id,
+      input.placeholder,
+      input.getAttribute('aria-label')
+    ].map(attr => attr ? normalizeText(attr) : '');
+    
+    // Check if this input is for country code
+    const isCountryCodeField = fieldKeywords.countryCode.some(keyword =>
+      normalizedAttributes.some(attr => attr.includes(normalizeText(keyword)))
+    );
+    
+    if (isCountryCodeField) {
+      // Check if the input is disabled
+      if (input.disabled) {
+        console.log('Country code input is disabled, cannot change');
+        return false;
+      }
+      
+      fillInput(input, countryCode);
+      filledFields.add(input);
+      console.log('Country code filled successfully:', countryCode);
+      return true;
+    }
+  }
+  
+  console.log('No country code field found');
+  return false;
 }
 
 function fillInput(element, value) {
@@ -255,6 +491,9 @@ function fillInput(element, value) {
   // Set new value
   element.value = value;
   
+  // Also try setAttribute for masked inputs (React/Styled components)
+  element.setAttribute('value', value);
+  
   // Trigger input events to ensure the form recognizes the change
   element.dispatchEvent(new Event('input', { bubbles: true }));
   element.dispatchEvent(new Event('change', { bubbles: true }));
@@ -264,7 +503,7 @@ function fillInput(element, value) {
 }
 
 function fillByLabel(labelText, value, filledFields = new Set()) {
-  if (!value) return;
+  if (!value) return false;
 
   const normalizedLabelText = normalizeText(labelText);
 
@@ -281,7 +520,7 @@ function fillByLabel(labelText, value, filledFields = new Set()) {
       const forId = label.getAttribute('for');
       if (forId) {
         const input = document.getElementById(forId);
-        if (input && input.tagName === 'INPUT' && !filledFields.has(input)) {
+        if (input && input.tagName === 'INPUT' && !filledFields.has(input) && input.type !== 'file') {
           fillInput(input, value);
           filledFields.add(input);
           return true; // Return success
@@ -292,7 +531,7 @@ function fillByLabel(labelText, value, filledFields = new Set()) {
       const parent = label.parentElement;
       if (parent) {
         const input = parent.querySelector('input');
-        if (input && !filledFields.has(input)) {
+        if (input && !filledFields.has(input) && input.type !== 'file') {
           fillInput(input, value);
           filledFields.add(input);
           return true; // Return success
@@ -304,7 +543,7 @@ function fillByLabel(labelText, value, filledFields = new Set()) {
   // Second, try to find inputs by checking their attributes (less specific)
   const inputs = document.querySelectorAll('input');
   for (const input of inputs) {
-    if (filledFields.has(input)) continue; // Skip already filled fields
+    if (filledFields.has(input) || input.type === 'file') continue; // Skip already filled fields and file inputs
     
     const attributesToCheck = [
       input.name,

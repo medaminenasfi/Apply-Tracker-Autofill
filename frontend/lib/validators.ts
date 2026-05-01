@@ -38,6 +38,7 @@ export const ProfileSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
+  countryCode: z.string().optional(),
   university: z.string().optional(),
   linkedin: z.string().url('Invalid LinkedIn URL').optional().or(z.literal('')),
   portfolio: z.string().url('Invalid portfolio URL').optional().or(z.literal('')),

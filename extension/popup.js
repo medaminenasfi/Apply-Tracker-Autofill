@@ -14,9 +14,13 @@ const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const loginError = document.getElementById('loginError');
 const autofillBtn = document.getElementById('autofillBtn');
-const cvStatus = document.getElementById('cvStatus');
+const cvInfo = document.getElementById('cvInfo');
 const cvText = document.getElementById('cvText');
-const previewCvBtn = document.getElementById('previewCvBtn');
+const cvFileName = document.getElementById('cvFileName');
+const cvActions = document.getElementById('cvActions');
+const openCvBtn = document.getElementById('openCvBtn');
+const copyCvLinkBtn = document.getElementById('copyCvLinkBtn');
+const copyFileNameBtn = document.getElementById('copyFileNameBtn');
 const saveApplicationForm = document.getElementById('saveApplicationForm');
 const companyNameInput = document.getElementById('companyName');
 const positionInput = document.getElementById('position');
@@ -41,7 +45,9 @@ function setupEventListeners() {
   syncFromWebsiteBtn.addEventListener('click', handleSyncFromWebsite);
   loginOnWebsiteBtn.addEventListener('click', handleLoginOnWebsite);
   autofillBtn.addEventListener('click', handleAutofill);
-  previewCvBtn.addEventListener('click', handlePreviewCv);
+  openCvBtn.addEventListener('click', handleOpenCv);
+  copyCvLinkBtn.addEventListener('click', handleCopyCvLink);
+  copyFileNameBtn.addEventListener('click', handleCopyFileName);
   saveApplicationForm.addEventListener('submit', handleSaveApplication);
   logoutBtn.addEventListener('click', handleLogout);
 }
@@ -185,10 +191,13 @@ async function fetchProfile() {
     userProfile = data;
     userEmail.textContent = data.email;
     
+    console.log('Extension profile:', data);
+    console.log('Extension cvUrl:', data?.cvUrl);
+    
     // Update chrome.storage.local with latest user data
     await chrome.storage.local.set({ user: data });
     
-    // Update CV status
+    // Update CV status from profile
     updateCvStatus(data.cvUrl);
     
     // Set default date
@@ -207,18 +216,66 @@ async function fetchProfile() {
   }
 }
 
+function getFullUrl(path) {
+  if (!path) return "";
+  return path.startsWith("http") ? path : `${API_BASE}${path}`;
+}
+
+function extractFilename(url) {
+  if (!url) return "";
+  const parts = url.split('/');
+  const filename = parts[parts.length - 1];
+  return filename || "CV file";
+}
+
 function updateCvStatus(cvUrl) {
-  const indicator = cvStatus.querySelector('.status-indicator');
+  const indicator = cvInfo.querySelector('.status-indicator');
   
   if (cvUrl) {
     indicator.classList.add('uploaded');
     cvText.textContent = 'CV uploaded';
-    previewCvBtn.classList.remove('hidden');
-    previewCvBtn.dataset.cvUrl = cvUrl;
+    const filename = extractFilename(cvUrl);
+    cvFileName.textContent = filename;
+    cvActions.classList.remove('hidden');
+    openCvBtn.dataset.cvUrl = cvUrl;
+    copyCvLinkBtn.dataset.cvUrl = getFullUrl(cvUrl);
+    copyFileNameBtn.dataset.fileName = filename;
+    console.log('CV status updated:', { cvUrl, filename, fullUrl: getFullUrl(cvUrl) });
   } else {
     indicator.classList.remove('uploaded');
     cvText.textContent = 'No CV uploaded';
-    previewCvBtn.classList.add('hidden');
+    cvFileName.textContent = '';
+    cvActions.classList.add('hidden');
+    console.log('No CV uploaded');
+  }
+}
+
+function handleOpenCv() {
+  const cvUrl = openCvBtn.dataset.cvUrl;
+  if (cvUrl) {
+    chrome.tabs.create({ url: `${API_BASE}${cvUrl}` });
+  }
+}
+
+function handleCopyCvLink() {
+  const cvUrl = copyCvLinkBtn.dataset.cvUrl;
+  if (cvUrl) {
+    navigator.clipboard.writeText(cvUrl).then(() => {
+      showMessage('CV link copied to clipboard!', 'success');
+    }).catch(() => {
+      showMessage('Failed to copy CV link', 'error');
+    });
+  }
+}
+
+function handleCopyFileName() {
+  const fileName = copyFileNameBtn.dataset.fileName;
+  if (fileName) {
+    navigator.clipboard.writeText(fileName).then(() => {
+      showMessage('File name copied to clipboard!', 'success');
+    }).catch(() => {
+      showMessage('Failed to copy file name', 'error');
+    });
   }
 }
 

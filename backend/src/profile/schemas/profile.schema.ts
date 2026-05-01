@@ -20,6 +20,9 @@ export class Profile {
   @Prop({ required: false })
   phone?: string;
 
+  @Prop({ required: false, default: '+216' })
+  countryCode?: string;
+
   @Prop({ required: false })
   university?: string;
 

@@ -7,7 +7,7 @@ export class CreateApplicationDto {
   @IsString()
   position: string;
 
-  @IsUrl()
+  @IsUrl({}, { message: 'Invalid URL format' })
   @IsOptional()
   jobUrl?: string;
 

@@ -64,6 +64,7 @@ export function ProfileForm() {
       lastName: user?.lastName || '',
       email: user?.email || '',
       phone: user?.phone || '',
+      countryCode: user?.countryCode || '+216',
       university: user?.university || '',
       linkedin: user?.linkedin || '',
       portfolio: user?.portfolio || '',
@@ -78,6 +79,7 @@ export function ProfileForm() {
         lastName: user.lastName || '',
         email: user.email || '',
         phone: user.phone || '',
+        countryCode: user.countryCode || '+216',
         university: user.university || '',
         linkedin: user.linkedin || '',
         portfolio: user.portfolio || '',
@@ -514,12 +516,26 @@ export function ProfileForm() {
 
               <FormField
                 control={form.control}
+                name="countryCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country Code</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+216" type="text" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number (Optional)</FormLabel>
+                    <FormLabel>Phone Number (Local - Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1-555-0000" type="tel" {...field} />
+                      <Input placeholder="12345678" type="tel" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

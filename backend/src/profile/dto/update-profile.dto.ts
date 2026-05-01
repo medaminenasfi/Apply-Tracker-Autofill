@@ -16,6 +16,10 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
+  countryCode?: string;
+
+  @IsString()
+  @IsOptional()
   university?: string;
 
   @IsString()

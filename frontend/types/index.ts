@@ -27,6 +27,7 @@ export interface User {
   lastName: string;
   email: string;
   phone?: string;
+  countryCode?: string;
   university?: string;
   linkedin?: string;
   portfolio?: string;

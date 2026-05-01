@@ -19,6 +19,7 @@ export class ExtensionService {
       lastName: profile.lastName,
       email: profile.email,
       phone: profile.phone,
+      countryCode: profile.countryCode || '+216',
       university: profile.university,
       linkedin: profile.linkedin,
       portfolio: profile.portfolio,
@@ -28,6 +29,21 @@ export class ExtensionService {
 
   async saveApplication(userId: string, applicationData: any) {
     console.log('Extension saveApplication called with:', applicationData);
+    
+    // Filter out empty values for optional fields
+    const filteredData: any = {
+      companyName: applicationData.companyName,
+      position: applicationData.position,
+    };
+    
+    if (applicationData.jobUrl && applicationData.jobUrl.trim()) {
+      filteredData.jobUrl = applicationData.jobUrl.trim();
+    }
+    
+    if (applicationData.note && applicationData.note.trim()) {
+      filteredData.note = applicationData.note.trim();
+    }
+    
     let dateApplied = applicationData.dateApplied;
     
     if (dateApplied) {
@@ -40,15 +56,15 @@ export class ExtensionService {
         dateApplied = localDate.toISOString();
         console.log('ISO date:', dateApplied);
       }
+      filteredData.dateApplied = dateApplied;
     } else {
-      dateApplied = new Date().toISOString();
-      console.log('No date provided, using current time:', dateApplied);
+      filteredData.dateApplied = new Date().toISOString();
+      console.log('No date provided, using current time:', filteredData.dateApplied);
     }
 
     const result = await this.applicationsService.create({
-      ...applicationData,
+      ...filteredData,
       status: 'applied',
-      dateApplied,
     }, userId);
     console.log('Application created with dateApplied:', result.dateApplied);
     return result;
