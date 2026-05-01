@@ -27,12 +27,30 @@ export class ExtensionService {
   }
 
   async saveApplication(userId: string, applicationData: any) {
-    const dateApplied = applicationData.dateApplied || new Date().toISOString();
+    console.log('Extension saveApplication called with:', applicationData);
+    let dateApplied = applicationData.dateApplied;
+    
+    if (dateApplied) {
+      console.log('Original dateApplied:', dateApplied);
+      // If date is in YYYY-MM-DD format, create a Date object with local timezone
+      if (dateApplied.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = dateApplied.split('-').map(Number);
+        const localDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid timezone issues
+        console.log('Local date created:', localDate);
+        dateApplied = localDate.toISOString();
+        console.log('ISO date:', dateApplied);
+      }
+    } else {
+      dateApplied = new Date().toISOString();
+      console.log('No date provided, using current time:', dateApplied);
+    }
 
-    return this.applicationsService.create({
+    const result = await this.applicationsService.create({
       ...applicationData,
       status: 'applied',
       dateApplied,
     }, userId);
+    console.log('Application created with dateApplied:', result.dateApplied);
+    return result;
   }
 }

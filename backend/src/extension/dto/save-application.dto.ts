@@ -1,4 +1,4 @@
-import { IsString, IsUrl, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class SaveApplicationDto {
   @IsString()
@@ -7,8 +7,9 @@ export class SaveApplicationDto {
   @IsString()
   position: string;
 
-  @IsUrl()
-  jobUrl: string;
+  @IsString()
+  @IsOptional()
+  jobUrl?: string;
 
   @IsString()
   @IsOptional()

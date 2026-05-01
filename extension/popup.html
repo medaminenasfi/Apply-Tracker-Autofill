@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apply Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Login View -->
+    <div id="loginView" class="view">
+      <div class="header">
+        <h1>Apply Tracker</h1>
+        <p class="subtitle">Autofill job applications</p>
+      </div>
+      
+      <div class="login-options">
+        <button id="syncFromWebsiteBtn" class="btn btn-primary">
+          <span class="icon">🔄</span>
+          Sync from Website
+        </button>
+        <p class="or-divider">or</p>
+        <button id="loginOnWebsiteBtn" class="btn btn-secondary">
+          <span class="icon">🌐</span>
+          Login on Website
+        </button>
+        <p class="or-divider">or</p>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required placeholder="Enter your email">
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" required placeholder="Enter your password">
+          </div>
+          <button type="submit" class="btn btn-secondary">Login with Email</button>
+        </form>
+      </div>
+      <div id="loginError" class="error"></div>
+    </div>
+
+    <!-- Profile View -->
+    <div id="profileView" class="view hidden">
+      <div class="header">
+        <h1>Apply Tracker</h1>
+        <p class="subtitle" id="userEmail"></p>
+      </div>
+      
+      <div class="section">
+        <h2>Autofill Profile</h2>
+        <button id="autofillBtn" class="btn btn-secondary">
+          <span class="icon">⚡</span>
+          Autofill Form
+        </button>
+      </div>
+
+      <div class="section">
+        <h2>CV Status</h2>
+        <div id="cvStatus" class="cv-status">
+          <span class="status-indicator"></span>
+          <span id="cvText">Loading...</span>
+        </div>
+        <button id="previewCvBtn" class="btn btn-outline hidden">
+          <span class="icon">📄</span>
+          Preview CV
+        </button>
+      </div>
+
+      <div class="section">
+        <h2>Save Application</h2>
+        <form id="saveApplicationForm">
+          <div class="form-group">
+            <label for="companyName">Company Name</label>
+            <input type="text" id="companyName" placeholder="e.g., Google">
+          </div>
+          <div class="form-group">
+            <label for="position">Position</label>
+            <input type="text" id="position" placeholder="e.g., Software Engineer">
+          </div>
+          <div class="form-group">
+            <label for="jobUrl">Job URL</label>
+            <input type="url" id="jobUrl" readonly>
+          </div>
+          <div class="form-group">
+            <label for="dateApplied">Date Applied</label>
+            <input type="date" id="dateApplied">
+          </div>
+          <div class="form-group">
+            <label for="note">Note (optional)</label>
+            <textarea id="note" rows="3" placeholder="Add any notes..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <span class="icon">💾</span>
+            Save Application
+          </button>
+        </form>
+      </div>
+
+      <button id="logoutBtn" class="btn btn-text">Logout Extension</button>
+      <div id="message" class="message"></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

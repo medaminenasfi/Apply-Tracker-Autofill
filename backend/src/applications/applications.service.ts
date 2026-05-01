@@ -25,11 +25,29 @@ export class ApplicationsService {
   }
 
   async create(applicationData: CreateApplicationDto, userId: string): Promise<Application> {
+    console.log('Applications create called with:', applicationData);
+    let dateApplied = applicationData.dateApplied;
+    
+    if (dateApplied) {
+      console.log('Original dateApplied:', dateApplied);
+      // If date is in YYYY-MM-DD format, create a Date object with local timezone
+      if (dateApplied.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = dateApplied.split('-').map(Number);
+        const localDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid timezone issues
+        console.log('Local date created:', localDate);
+        dateApplied = localDate.toISOString();
+        console.log('ISO date:', dateApplied);
+      }
+    }
+    
     const application = new this.applicationModel({
       ...applicationData,
+      dateApplied,
       userId,
     });
-    return application.save();
+    const result = await application.save();
+    console.log('Application created with dateApplied:', result.dateApplied);
+    return result;
   }
 
   async update(id: string, userId: string, updateData: any): Promise<Application | null> {
