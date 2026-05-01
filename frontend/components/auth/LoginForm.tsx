@@ -19,11 +19,13 @@ import {
 } from '@/components/ui/form';
 import Link from 'next/link';
 import { Spinner } from '@/components/ui/spinner';
+import { Eye, EyeOff } from 'lucide-react';
 
 export function LoginForm() {
   const router = useRouter();
   const { login, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -79,7 +81,20 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="123456" type="password" {...field} />
+                    <div className="relative">
+                      <Input 
+                        placeholder="123456" 
+                        type={showPassword ? "text" : "password"} 
+                        {...field} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
