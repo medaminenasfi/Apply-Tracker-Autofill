@@ -30,7 +30,7 @@ import { Upload, FileText, Eye, Trash2, AlertCircle } from 'lucide-react';
 import api from '@/services/api';
 
 export function ProfileForm() {
-  const { user, updateProfile, uploadCV, deleteCV, getCV, isLoading, token } = useAuthStore();
+  const { user, updateProfile, uploadCV, deleteCV, getCV, uploadProfilePicture, deleteProfilePicture, isLoading, token } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [isUploadingCV, setIsUploadingCV] = useState(false);
@@ -39,21 +39,23 @@ export function ProfileForm() {
   const [cvInfo, setCvInfo] = useState<{ hasCV: boolean; cvUrl: string | null; filename: string | null } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [isUploadingProfilePicture, setIsUploadingProfilePicture] = useState(false);
+  const [isDeletingProfilePicture, setIsDeletingProfilePicture] = useState(false);
+  const [showProfilePictureDeleteDialog, setShowProfilePictureDeleteDialog] = useState(false);
 
   // Fetch CV info on component mount and when user changes
   useEffect(() => {
     const fetchCVInfo = async () => {
       try {
-        console.log('Fetching CV info on mount...');
         const info = await getCV();
-        console.log('CV info on mount:', info);
         setCvInfo(info);
       } catch (error) {
         console.error('Failed to fetch CV info:', error);
       }
     };
     fetchCVInfo();
-  }, [user]);
+  }, [getCV, user]);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(ProfileSchema),
@@ -68,13 +70,30 @@ export function ProfileForm() {
     },
   });
 
+  // Update form when user data changes
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        university: user.university || '',
+        linkedin: user.linkedin || '',
+        portfolio: user.portfolio || '',
+      });
+    }
+  }, [user, form]);
+
   const onSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
     try {
       await updateProfile(data);
       toast.success('Profile updated successfully!');
-    } catch (error) {
-      toast.error('Failed to update profile');
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      const errorMessage = error.message || 'Failed to update profile';
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -88,19 +107,17 @@ export function ProfileForm() {
 
     setIsUploadingCV(true);
     try {
-      console.log('Uploading CV file:', cvFile.name);
       await uploadCV(cvFile);
       toast.success('CV uploaded successfully!');
       setCvFile(null);
       
       // Refresh CV info
-      console.log('Fetching CV info after upload...');
       const info = await getCV();
-      console.log('CV info after upload:', info);
       setCvInfo(info);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to upload CV:', error);
-      toast.error('Failed to upload CV');
+      const errorMessage = error.message || 'Failed to upload CV';
+      toast.error(errorMessage);
     } finally {
       setIsUploadingCV(false);
     }
@@ -116,8 +133,10 @@ export function ProfileForm() {
       // Refresh CV info
       const info = await getCV();
       setCvInfo(info);
-    } catch (error) {
-      toast.error('Failed to delete CV');
+    } catch (error: any) {
+      console.error('Failed to delete CV:', error);
+      const errorMessage = error.message || 'Failed to delete CV';
+      toast.error(errorMessage);
     } finally {
       setIsDeletingCV(false);
     }
@@ -130,19 +149,14 @@ export function ProfileForm() {
     }
 
     try {
-      console.log('[CV Preview] Opening CV in new tab...');
-      
       // Open the CV URL directly in a new tab (bypasses CORS)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
       const filename = cvInfo.filename;
       const previewUrl = `${apiUrl}/profile/cv/public-preview/${filename}`;
       
-      console.log('[CV Preview] Preview URL:', previewUrl);
       window.open(previewUrl, '_blank');
-      
-      console.log('[CV Preview] CV opened in new tab');
     } catch (error) {
-      console.error('[CV Preview] Error:', error);
+      console.error('Failed to preview CV:', error);
       toast.error(`Failed to preview CV: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
@@ -160,6 +174,44 @@ export function ProfileForm() {
     return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
   };
 
+  const handleProfilePictureUpload = async (file: File) => {
+    console.log('handleProfilePictureUpload called with file:', file);
+    if (!file) {
+      console.log('No profile picture file selected');
+      toast.error('Please select a profile picture');
+      return;
+    }
+
+    console.log('Uploading file:', file.name);
+    setIsUploadingProfilePicture(true);
+    try {
+      await uploadProfilePicture(file);
+      toast.success('Profile picture uploaded successfully!');
+      setProfilePictureFile(null);
+    } catch (error: any) {
+      console.error('Failed to upload profile picture:', error);
+      const errorMessage = error.message || 'Failed to upload profile picture';
+      toast.error(errorMessage);
+    } finally {
+      setIsUploadingProfilePicture(false);
+    }
+  };
+
+  const handleDeleteProfilePicture = async () => {
+    setIsDeletingProfilePicture(true);
+    try {
+      await deleteProfilePicture();
+      toast.success('Profile picture deleted successfully!');
+      setShowProfilePictureDeleteDialog(false);
+    } catch (error: any) {
+      console.error('Failed to delete profile picture:', error);
+      const errorMessage = error.message || 'Failed to delete profile picture';
+      toast.error(errorMessage);
+    } finally {
+      setIsDeletingProfilePicture(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -170,12 +222,59 @@ export function ProfileForm() {
         <CardContent>
           <div className="flex items-center gap-6">
             <Avatar className="h-24 w-24">
-              <AvatarFallback className="text-xl font-semibold bg-primary text-primary-foreground">
-                {getInitials()}
-              </AvatarFallback>
+              {user?.profilePictureUrl ? (
+                <img 
+                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${user.profilePictureUrl}`} 
+                  alt="Profile" 
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <AvatarFallback className="text-xl font-semibold bg-primary text-primary-foreground">
+                  {getInitials()}
+                </AvatarFallback>
+              )}
             </Avatar>
-            <Button variant="outline">Upload Picture</Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => document.getElementById('profile-picture-input')?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Picture
+              </Button>
+              {user?.profilePictureUrl && (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setShowProfilePictureDeleteDialog(true)}
+                  disabled={isDeletingProfilePicture}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
+            </div>
           </div>
+          <input
+            id="profile-picture-input"
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              console.log('Profile picture input changed');
+              const file = e.target.files?.[0];
+              console.log('Selected file:', file);
+              if (file) {
+                console.log('File size:', file.size);
+                if (file.size > 5 * 1024 * 1024) {
+                  toast.error('File size must be less than 5MB');
+                  return;
+                }
+                setProfilePictureFile(file);
+                console.log('Calling handleProfilePictureUpload with file');
+                handleProfilePictureUpload(file);
+              }
+            }}
+          />
         </CardContent>
       </Card>
 
@@ -282,10 +381,6 @@ export function ProfileForm() {
             </Button>
           )}
           
-          {/* Debug: Show CV info state */}
-          <div className="text-xs text-muted-foreground mt-2">
-            CV Info: {JSON.stringify(cvInfo)}
-          </div>
         </CardContent>
       </Card>
 
@@ -302,16 +397,39 @@ export function ProfileForm() {
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
-              disabled={isDeletingCV}
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
+            <Button 
+              variant="destructive" 
               onClick={handleDeleteCV}
               disabled={isDeletingCV}
             >
-              {isDeletingCV ? 'Deleting...' : 'Delete CV'}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Picture Delete Confirmation Dialog */}
+      <Dialog open={showProfilePictureDeleteDialog} onOpenChange={setShowProfilePictureDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Profile Picture</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete your profile picture? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowProfilePictureDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteProfilePicture}
+              disabled={isDeletingProfilePicture}
+            >
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

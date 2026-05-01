@@ -30,7 +30,7 @@ export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
       if (response.data.role === 'admin') {
         setIsAuthorized(true);
       } else {
-        router.push('/accueil');
+        router.push('/dashboard');
       }
     } catch (error) {
       router.push('/admin/login');

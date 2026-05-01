@@ -37,7 +37,7 @@ export function LoginForm() {
     setError(null);
     try {
       await login(data.email, data.password);
-      router.push('/accueil');
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     }
@@ -106,6 +106,11 @@ export function LoginForm() {
               Sign up
             </Link>
           </p>
+          <div className="mt-2">
+            <Link href="/" className="text-muted-foreground hover:text-primary text-xs">
+              ← Return to Home
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>

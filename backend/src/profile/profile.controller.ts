@@ -21,24 +21,48 @@ export class ProfileController {
 
   @Get()
   async getProfile(@GetUser() user: any) {
-    const profile = await this.profileService.findByUserId(user._id);
+    console.log('GET /profile called for user:', user._id);
+    const profile = await this.profileService.findByUserId(user._id) as any;
+    console.log('Profile found:', profile);
     if (!profile) {
       return { message: 'Profile not found. Please create a profile first.' };
     }
-    return profile;
+    
+    // Return profile with new field names, fallback to old ones if needed
+    const response = {
+      _id: profile._id,
+      userId: profile.userId,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      email: profile.email,
+      phone: profile.phone || profile.phoneNumber,
+      university: profile.university,
+      linkedin: profile.linkedin || profile.linkedinUrl,
+      portfolio: profile.portfolio || profile.portfolioUrl,
+      cvUrl: profile.cvUrl,
+      profilePictureUrl: profile.profilePictureUrl,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+    };
+    console.log('Returning profile:', response);
+    return response;
   }
 
   @Put()
   async updateProfile(@GetUser() user: any, @Body() updateProfileDto: UpdateProfileDto) {
-    return this.profileService.update(user._id, {
-      ...updateProfileDto,
-      userId: user._id,
-    });
+    try {
+      return this.profileService.update(user._id, {
+        ...updateProfileDto,
+        userId: user._id,
+      });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      throw error;
+    }
   }
 
   @Get('cv')
   async getCv(@GetUser() user: any) {
-    this.logger.log('GET /profile/cv called');
     const profile = await this.profileService.findByUserId(user._id);
     
     if (!profile || !profile.cvUrl) {
@@ -85,9 +109,7 @@ export class ProfileController {
 
   @Get('cv/public-preview/:filename')
   async previewCVPublic(@Param('filename') filename: string, @Res() res: Response) {
-    console.log('Preview CV filename:', filename);
     const filePath = join(process.cwd(), 'uploads', 'cv', filename);
-    console.log('Preview CV path:', filePath);
 
     if (!existsSync(filePath)) {
       throw new NotFoundException('CV file not found');
@@ -128,7 +150,6 @@ export class ProfileController {
     }),
   )
   async uploadCv(@GetUser() user: any, @UploadedFile() file: Express.Multer.File) {
-    this.logger.log('POST /profile/cv called');
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -149,7 +170,6 @@ export class ProfileController {
 
   @Delete('cv')
   async deleteCv(@GetUser() user: any) {
-    this.logger.log('DELETE /profile/cv called');
     const profile = await this.profileService.findByUserId(user._id);
     if (!profile) {
       throw new BadRequestException('Profile not found');
@@ -167,6 +187,92 @@ export class ProfileController {
 
     // Remove cvUrl from profile
     const updatedProfile = await this.profileService.updateCvUrl(user._id, null);
+    return updatedProfile;
+  }
+
+  @Post('migrate')
+  async migrateProfiles() {
+    await this.profileService.migrateOldFieldNames();
+    return { message: 'Migration completed successfully' };
+  }
+
+  @Post('profile-picture')
+  @UseInterceptors(
+    FileInterceptor('profilePicture', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const uploadDir = './uploads/profile-pictures';
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          cb(null, uploadDir);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `profile-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const fileExt = extname(file.originalname).toLowerCase();
+        const extnameValid = allowedTypes.test(fileExt);
+        const mimetype = allowedTypes.test(file.mimetype);
+        
+        if (mimetype && extnameValid) {
+          return cb(null, true);
+        } else {
+          return cb(new BadRequestException('Only image files (jpeg, jpg, png, gif, webp) are allowed'), false);
+        }
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+      },
+    }),
+  )
+  async uploadProfilePicture(@GetUser() user: any, @UploadedFile() file: Express.Multer.File) {
+    console.log('Profile picture upload called');
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    console.log('File received:', file.filename);
+
+    // Delete old profile picture if exists
+    const profile = await this.profileService.findByUserId(user._id);
+    if (profile && (profile as any).profilePictureUrl) {
+      const oldPicturePath = path.join(process.cwd(), (profile as any).profilePictureUrl);
+      if (fs.existsSync(oldPicturePath)) {
+        fs.unlinkSync(oldPicturePath);
+      }
+    }
+
+    const profilePictureUrl = `/uploads/profile-pictures/${file.filename}`;
+    console.log('Profile picture URL:', profilePictureUrl);
+    const updatedProfile = await this.profileService.updateProfilePictureUrl(user._id, profilePictureUrl);
+    console.log('Updated profile:', updatedProfile);
+    return updatedProfile;
+  }
+
+  @Delete('profile-picture')
+  async deleteProfilePicture(@GetUser() user: any) {
+    const profile = await this.profileService.findByUserId(user._id);
+    if (!profile) {
+      throw new BadRequestException('Profile not found');
+    }
+
+    if (!(profile as any).profilePictureUrl) {
+      throw new BadRequestException('No profile picture to delete');
+    }
+
+    // Delete profile picture file
+    const picturePath = path.join(process.cwd(), (profile as any).profilePictureUrl);
+    if (fs.existsSync(picturePath)) {
+      fs.unlinkSync(picturePath);
+    }
+
+    // Remove profilePictureUrl from profile
+    const updatedProfile = await this.profileService.updateProfilePictureUrl(user._id, null);
     return updatedProfile;
   }
 }

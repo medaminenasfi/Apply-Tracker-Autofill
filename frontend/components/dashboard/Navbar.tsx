@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -51,6 +51,12 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Avatar className="h-8 w-8 cursor-pointer">
+            {user?.profilePictureUrl ? (
+              <AvatarImage 
+                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${user.profilePictureUrl}`} 
+                alt="Profile" 
+              />
+            ) : null}
             <AvatarFallback className="text-xs font-semibold bg-primary text-primary-foreground">
               {getInitials()}
             </AvatarFallback>

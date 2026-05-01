@@ -30,6 +30,7 @@ export interface User {
   university?: string;
   linkedin?: string;
   portfolio?: string;
+  profilePictureUrl?: string;
   role: 'user' | 'admin';
   createdAt: string;
 }

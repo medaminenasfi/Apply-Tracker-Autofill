@@ -32,9 +32,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear tokens and redirect to login
+      // Clear all auth data from localStorage
       localStorage.removeItem('admin_token');
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      // Redirect to login
       window.location.href = '/login';
     }
     return Promise.reject(error);

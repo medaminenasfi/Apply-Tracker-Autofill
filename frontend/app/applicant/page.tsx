@@ -15,10 +15,8 @@ export default function ApplicantPage() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      fetchApplications().catch(console.error);
-    }
-  }, [fetchApplications, user]);
+    fetchApplications().catch(console.error);
+  }, [fetchApplications]);
 
   const userApplications = user ? applications.filter((app) => app.userId === user._id) : [];
 

@@ -18,10 +18,10 @@ export class ExtensionService {
       firstName: profile.firstName,
       lastName: profile.lastName,
       email: profile.email,
-      phoneNumber: profile.phoneNumber,
+      phone: profile.phone,
       university: profile.university,
-      linkedinUrl: profile.linkedinUrl,
-      portfolioUrl: profile.portfolioUrl,
+      linkedin: profile.linkedin,
+      portfolio: profile.portfolio,
       cvUrl: profile.cvUrl,
     };
   }

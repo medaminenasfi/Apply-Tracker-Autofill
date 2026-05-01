@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
@@ -36,7 +36,7 @@ export function Sidebar() {
   };
 
   const navItems = [
-    { href: '/accueil', label: 'Dashboard', icon: LayoutGrid },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
     { href: '/applicant', label: 'Applications', icon: Briefcase },
     { href: '/profile', label: 'Profile', icon: User },
     { href: '/settings', label: 'Settings', icon: Settings },
@@ -59,7 +59,7 @@ export function Sidebar() {
     }`}>
       {/* Logo */}
       <div className="border-b px-6 py-4">
-        <Link href="/accueil" className="flex items-center gap-2 font-bold text-lg">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold flex-shrink-0">
             AF
           </div>
@@ -110,6 +110,12 @@ export function Sidebar() {
             }`}>
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8 flex-shrink-0">
+                  {user?.profilePictureUrl ? (
+                    <AvatarImage 
+                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${user.profilePictureUrl}`} 
+                      alt="Profile" 
+                    />
+                  ) : null}
                   <AvatarFallback className="text-xs font-semibold">
                     {getInitials()}
                   </AvatarFallback>

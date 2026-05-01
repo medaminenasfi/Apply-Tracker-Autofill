@@ -14,6 +14,15 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (errors) => {
+        const messages = errors.map(error => ({
+          field: error.property,
+          constraints: error.constraints,
+          value: error.value,
+        }));
+        console.log('Validation errors:', messages);
+        return new Error(JSON.stringify(messages));
+      },
     }),
   );
 

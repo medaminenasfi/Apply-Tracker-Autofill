@@ -18,16 +18,19 @@ export class Profile {
   email: string;
 
   @Prop({ required: false })
-  phoneNumber?: string;
+  phone?: string;
 
   @Prop({ required: false })
   university?: string;
 
   @Prop({ required: false })
-  linkedinUrl?: string;
+  linkedin?: string;
 
   @Prop({ required: false })
-  portfolioUrl?: string;
+  portfolio?: string;
+
+  @Prop({ required: false })
+  profilePictureUrl?: string;
 
   @Prop({ required: false })
   cvUrl?: string;

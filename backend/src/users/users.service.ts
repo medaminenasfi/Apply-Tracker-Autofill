@@ -93,4 +93,15 @@ export class UsersService {
       resetTokenExpires: null,
     });
   }
+
+  async updateUser(userId: string, updateData: any): Promise<User> {
+    console.log('UsersService.updateUser called with userId:', userId, 'and data:', updateData);
+    const user = await this.userModel.findById(userId).exec();
+    console.log('Current user before update:', user);
+    
+    const updatedUser = await this.userModel.findByIdAndUpdate(userId, { $set: updateData }, { returnDocument: 'after' }).exec();
+    console.log('Updated user:', updatedUser);
+    
+    return updatedUser;
+  }
 }

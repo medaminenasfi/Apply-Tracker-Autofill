@@ -12,7 +12,7 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
-  phoneNumber?: string;
+  phone?: string;
 
   @IsString()
   @IsOptional()
@@ -20,9 +20,9 @@ export class UpdateProfileDto {
 
   @IsString()
   @IsOptional()
-  linkedinUrl?: string;
+  linkedin?: string;
 
   @IsString()
   @IsOptional()
-  portfolioUrl?: string;
+  portfolio?: string;
 }

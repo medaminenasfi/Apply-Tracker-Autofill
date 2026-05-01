@@ -26,14 +26,59 @@ interface AuthState {
   createAdmin: (email: string, password: string) => Promise<any>;
   getCV: () => Promise<{ hasCV: boolean; cvUrl: string | null; filename: string | null }>;
   deleteCV: () => Promise<void>;
+  uploadProfilePicture: (file: File) => Promise<string>;
+  deleteProfilePicture: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
   isInitialized: false,
   token: null,
+
+  uploadProfilePicture: async (file: File) => {
+    set({ isLoading: true });
+    try {
+      console.log('Uploading profile picture:', file.name);
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+      
+      const response = await api.post('/profile/profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('Profile picture upload response:', response.data);
+      
+      // Refresh profile to get updated profile picture URL
+      await useAuthStore.getState().fetchProfile();
+      
+      return response.data.profilePictureUrl;
+    } catch (error: any) {
+      console.error('Failed to upload profile picture:', error);
+      console.error('Error response:', error.response?.data);
+      throw new Error(error.response?.data?.message || 'Failed to upload profile picture');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  deleteProfilePicture: async () => {
+    set({ isLoading: true });
+    try {
+      await api.delete('/profile/profile-picture');
+      
+      // Refresh profile to remove profile picture URL
+      await useAuthStore.getState().fetchProfile();
+    } catch (error: any) {
+      console.error('Failed to delete profile picture:', error);
+      throw new Error(error.response?.data?.message || 'Failed to delete profile picture');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
   initialize: () => {
     if (typeof window === 'undefined') return;
@@ -125,15 +170,32 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await api.put('/profile', userData);
       
-      const user = response.data;
+      const profile = response.data;
+      const currentUser = get().user;
+      
+      // Update user object with profile data, preserving required fields
+      const updatedUser: User = {
+        _id: currentUser?._id || '',
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        phone: profile.phone,
+        university: profile.university,
+        linkedin: profile.linkedin,
+        portfolio: profile.portfolio,
+        role: currentUser?.role || 'user',
+        createdAt: currentUser?.createdAt || '',
+      };
       
       // Update localStorage
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       
       // Update state
-      set({ user });
+      set({ user: updatedUser });
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Profile update failed');
+      console.error('Profile update error:', error);
+      console.error('Error response:', error.response?.data);
+      throw new Error(error.response?.data?.message || error.response?.data?.error || 'Profile update failed');
     } finally {
       set({ isLoading: false });
     }
@@ -176,15 +238,35 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const response = await api.get('/profile');
-      const user = response.data;
+      const profile = response.data;
+      console.log('Fetched profile data:', profile);
+      const currentUser = get().user;
+      
+      // Merge profile data with user data, preserving required fields
+      const updatedUser: User = {
+        _id: currentUser?._id || '',
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        email: profile.email,
+        phone: profile.phone,
+        university: profile.university,
+        linkedin: profile.linkedin,
+        portfolio: profile.portfolio,
+        profilePictureUrl: profile.profilePictureUrl,
+        role: currentUser?.role || 'user',
+        createdAt: currentUser?.createdAt || '',
+      };
+      
+      console.log('Updated user object:', updatedUser);
       
       // Update localStorage
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       
       // Update state
-      set({ user });
-      return user;
+      set({ user: updatedUser });
+      return updatedUser;
     } catch (error: any) {
+      console.error('Fetch profile error:', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch profile');
     } finally {
       set({ isLoading: false });
@@ -197,18 +279,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       const formData = new FormData();
       formData.append('cv', file);
       
-      console.log('Uploading CV to backend...');
       const response = await api.post('/profile/cv', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      console.log('CV upload response:', response.data);
       
       // Refresh profile to get updated CV URL
-      console.log('Refreshing profile after upload...');
       await useAuthStore.getState().fetchProfile();
-      console.log('Profile refreshed');
       
       return response.data.cvUrl;
     } catch (error: any) {

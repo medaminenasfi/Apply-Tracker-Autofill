@@ -157,6 +157,11 @@ export function SignupForm() {
             Sign in
           </Link>
         </p>
+        <div className="mt-2 text-center">
+          <Link href="/" className="text-muted-foreground hover:text-primary text-xs">
+            ← Return to Home
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );
