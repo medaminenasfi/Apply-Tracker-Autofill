@@ -20,7 +20,10 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
 
   const getInitials = () => {
     if (!user) return '?';
-    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    const first = user.firstName?.[0] || '';
+    const last = user.lastName?.[0] || '';
+    if (!first && !last) return '?';
+    return `${first}${last}`.toUpperCase();
   };
 
   return (

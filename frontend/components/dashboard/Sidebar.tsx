@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, LogOut, LayoutGrid, Briefcase, User, Settings, Shield } from 'lucide-react';
+import { ChevronDown, LogOut, LayoutGrid, Briefcase, User, Settings, Shield, Chrome } from 'lucide-react';
 import { useSidebarStore } from '@/store/sidebarStore';
 
 export function Sidebar() {
@@ -39,6 +39,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
     { href: '/applicant', label: 'Applications', icon: Briefcase },
     { href: '/profile', label: 'Profile', icon: User },
+    { href: '/extension', label: 'Extension', icon: Chrome },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -50,7 +51,10 @@ export function Sidebar() {
 
   const getInitials = () => {
     if (!user) return '?';
-    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    const first = user.firstName?.[0] || '';
+    const last = user.lastName?.[0] || '';
+    if (!first && !last) return '?';
+    return `${first}${last}`.toUpperCase();
   };
 
   return (

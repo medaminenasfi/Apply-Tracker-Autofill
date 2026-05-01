@@ -25,7 +25,23 @@ export class ProfileController {
     const profile = await this.profileService.findByUserId(user._id) as any;
     console.log('Profile found:', profile);
     if (!profile) {
-      return { message: 'Profile not found. Please create a profile first.' };
+      // Return user data if profile doesn't exist
+      console.log('No profile found, returning user data');
+      return {
+        _id: null,
+        userId: user._id,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        university: user.university || '',
+        linkedin: user.linkedin || '',
+        portfolio: user.portfolio || '',
+        cvUrl: null,
+        profilePictureUrl: null,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
     }
     
     // Return profile with new field names, fallback to old ones if needed
