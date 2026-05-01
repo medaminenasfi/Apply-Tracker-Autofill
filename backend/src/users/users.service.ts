@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -30,6 +31,10 @@ export class UsersService {
     return this.userModel.findOne({ googleId }).exec();
   }
 
+  async findByResetToken(token: string): Promise<User | null> {
+    return this.userModel.findOne({ resetToken: token, resetTokenExpires: { $gt: new Date() } }).exec();
+  }
+
   async createGoogleUser(googleUser: any): Promise<User> {
     const createdUser = new this.userModel({
       firstName: googleUser.firstName,
@@ -55,5 +60,37 @@ export class UsersService {
 
   async delete(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
+  }
+
+  async generateResetToken(email: string): Promise<string> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    await this.userModel.findByIdAndUpdate((user as any)._id, {
+      resetToken,
+      resetTokenExpires,
+    });
+
+    return resetToken;
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const user = await this.findByResetToken(token);
+    if (!user) {
+      throw new NotFoundException('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.userModel.findByIdAndUpdate((user as any)._id, {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpires: null,
+    });
   }
 }

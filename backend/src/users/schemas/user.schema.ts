@@ -25,6 +25,12 @@ export class User {
 
   @Prop({ required: true, enum: ['user', 'admin'], default: 'user' })
   role: string;
+
+  @Prop({ required: false })
+  resetToken?: string;
+
+  @Prop({ required: false })
+  resetTokenExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
@@ -33,6 +39,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 UserSchema.set('toJSON', {
   transform: (doc, ret) => {
     delete ret.password;
+    delete ret.resetToken;
     return ret;
   },
 });

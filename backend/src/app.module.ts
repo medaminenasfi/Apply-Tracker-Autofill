@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { ProfileModule } from './profile/profile.module';
 import { AdminModule } from './admin/admin.module';
 import { ApplicationsModule } from './applications/applications.module';
+import { ExtensionModule } from './extension/extension.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ApplicationsModule } from './applications/applications.module';
     ProfileModule,
     ApplicationsModule,
     AdminModule,
+    ExtensionModule,
   ],
   controllers: [],
   providers: [],

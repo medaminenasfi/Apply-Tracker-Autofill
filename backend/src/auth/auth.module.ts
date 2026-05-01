@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { EmailService } from '../common/services/email.service';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
     AuthService,
     LocalStrategy,
     JwtStrategy,
+    EmailService,
     // GoogleStrategy, // Uncomment when Google OAuth credentials are configured
   ],
   controllers: [AuthController],
