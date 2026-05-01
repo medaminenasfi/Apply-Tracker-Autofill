@@ -15,10 +15,17 @@ interface AuthState {
     email: string;
     password: string;
   }) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<void>;
   setUser: (user: User | null) => void;
   initialize: () => void;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  fetchProfile: () => Promise<User>;
+  uploadCV: (file: File) => Promise<string>;
+  createAdmin: (email: string, password: string) => Promise<any>;
+  getCV: () => Promise<{ hasCV: boolean; cvUrl: string | null; filename: string | null }>;
+  deleteCV: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -99,11 +106,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
-    set({ user: null, isAuthenticated: false, token: null });
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      set({ user: null, isAuthenticated: false, token: null });
+    }
   },
 
   updateProfile: async (userData) => {
@@ -134,5 +148,109 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.removeItem('isAuthenticated');
     }
     set({ user, isAuthenticated: user !== null });
+  },
+
+  forgotPassword: async (email: string) => {
+    set({ isLoading: true });
+    try {
+      await api.post('/auth/forgot-password', { email });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to send password reset email');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  resetPassword: async (token: string, newPassword: string) => {
+    set({ isLoading: true });
+    try {
+      await api.post('/auth/reset-password', { token, newPassword });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to reset password');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchProfile: async () => {
+    set({ isLoading: true });
+    try {
+      const response = await api.get('/profile');
+      const user = response.data;
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Update state
+      set({ user });
+      return user;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch profile');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  uploadCV: async (file: File) => {
+    set({ isLoading: true });
+    try {
+      const formData = new FormData();
+      formData.append('cv', file);
+      
+      console.log('Uploading CV to backend...');
+      const response = await api.post('/profile/cv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log('CV upload response:', response.data);
+      
+      // Refresh profile to get updated CV URL
+      console.log('Refreshing profile after upload...');
+      await useAuthStore.getState().fetchProfile();
+      console.log('Profile refreshed');
+      
+      return response.data.cvUrl;
+    } catch (error: any) {
+      console.error('Failed to upload CV:', error);
+      throw new Error(error.response?.data?.message || 'Failed to upload CV');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  createAdmin: async (email: string, password: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await api.post('/admin/create-admin', { email, password });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to create admin');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  getCV: async () => {
+    try {
+      const response = await api.get('/profile/cv');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch CV info');
+    }
+  },
+
+  deleteCV: async () => {
+    set({ isLoading: true });
+    try {
+      const response = await api.delete('/profile/cv');
+      
+      // Refresh profile to get updated data
+      await useAuthStore.getState().fetchProfile();
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to delete CV');
+    } finally {
+      set({ isLoading: false });
+    }
   },
 }));

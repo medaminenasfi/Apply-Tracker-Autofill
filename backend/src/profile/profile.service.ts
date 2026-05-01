@@ -32,11 +32,23 @@ export class ProfileService {
     return updatedProfile;
   }
 
-  async updateCvUrl(userId: string, cvUrl: string): Promise<Profile> {
+  async updateCvUrl(userId: string, cvUrl: string, userInfo?: any): Promise<Profile> {
     const profile = await this.findByUserId(userId);
 
     if (!profile) {
-      throw new NotFoundException('Profile not found. Please create a profile first.');
+      // Create profile if it doesn't exist
+      return this.create({ 
+        userId, 
+        cvUrl,
+        firstName: userInfo?.firstName || '',
+        lastName: userInfo?.lastName || '',
+        email: userInfo?.email || '',
+        phone: userInfo?.phone || '',
+        university: userInfo?.university || '',
+        linkedin: userInfo?.linkedin || '',
+        github: userInfo?.github || '',
+        portfolio: userInfo?.portfolio || '',
+      });
     }
 
     return this.profileModel

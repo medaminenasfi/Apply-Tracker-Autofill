@@ -12,12 +12,11 @@ interface ApplicationState {
   deleteApplication: (_id: string) => Promise<void>;
   moveApplication: (_id: string, status: string) => Promise<void>;
   reorderApplications: (status: string, items: Application[]) => void;
-  updateNote: (_id: string, noteIndex: number, text: string) => Promise<Application>;
-  deleteNote: (_id: string, noteIndex: number) => Promise<Application>;
   getApplicationsByStatus: (status: ApplicationStatus) => Application[];
   getAllApplications: () => Application[];
   setApplications: (apps: Application[]) => void;
   getApplicationsByUserId: (userId: string) => Application[];
+  getApplicationById: (_id: string) => Promise<Application | null>;
   // Notes-specific methods
   fetchNotes: (applicationId: string) => Promise<Note[]>;
   addNote: (applicationId: string, text: string) => Promise<Note>;
@@ -117,40 +116,6 @@ export const useApplicationStore = create<ApplicationState>()((set, get) => ({
     }));
   },
 
-  updateNote: async (_id, noteIndex, text) => {
-    set({ isLoading: true });
-    try {
-      const response = await api.patch(`/applications/${_id}/notes/${noteIndex}`, { text });
-      set((state) => ({
-        applications: state.applications.map((app) =>
-          app._id === _id ? response.data : app
-        ),
-      }));
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to update note');
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  deleteNote: async (_id, noteIndex) => {
-    set({ isLoading: true });
-    try {
-      const response = await api.delete(`/applications/${_id}/notes/${noteIndex}`);
-      set((state) => ({
-        applications: state.applications.map((app) =>
-          app._id === _id ? response.data : app
-        ),
-      }));
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete note');
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
   getApplicationsByStatus: (status) => {
     return get().applications.filter((app) => app.status === status);
   },
@@ -165,6 +130,15 @@ export const useApplicationStore = create<ApplicationState>()((set, get) => ({
 
   getApplicationsByUserId: (userId) => {
     return get().applications.filter((app) => app.userId === userId);
+  },
+
+  getApplicationById: async (_id) => {
+    try {
+      const response = await api.get(`/applications/${_id}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch application');
+    }
   },
 
   fetchNotes: async (applicationId) => {
@@ -234,5 +208,31 @@ export const useApplicationStore = create<ApplicationState>()((set, get) => ({
 
   getNotesByApplication: (applicationId) => {
     return get().notes[applicationId] || [];
+  },
+}));
+
+// Extension store for extension-specific API calls
+interface ExtensionState {
+  getExtensionProfile: () => Promise<any>;
+  saveApplicationViaExtension: (applicationData: any) => Promise<any>;
+}
+
+export const useExtensionStore = create<ExtensionState>()((set) => ({
+  getExtensionProfile: async () => {
+    try {
+      const response = await api.get('/extension/profile');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch extension profile');
+    }
+  },
+
+  saveApplicationViaExtension: async (applicationData) => {
+    try {
+      const response = await api.post('/extension/save-application', applicationData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to save application via extension');
+    }
   },
 }));
