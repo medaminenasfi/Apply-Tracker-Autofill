@@ -3,7 +3,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'autofill') {
     const profile = request.profile;
     autofillForm(profile);
-    sendResponse({ success: true });
+    
+    // Detect job info from the page
+    const jobInfo = detectJobInfo();
+    
+    sendResponse({ success: true, jobInfo });
   }
   return true;
 });
@@ -395,6 +399,115 @@ function showCvUploadMessage(fileInput) {
       messageEl.parentNode.removeChild(messageEl);
     }
   }, 10000);
+}
+
+function detectJobInfo() {
+  const jobTitle = detectJobTitle();
+  const companyName = detectCompanyName();
+  const jobUrl = window.location.href;
+  
+  console.log('Detected job info:', { jobTitle, companyName, jobUrl });
+  
+  return {
+    jobTitle: jobTitle || '',
+    companyName: companyName || '',
+    jobUrl: jobUrl
+  };
+}
+
+function detectJobTitle() {
+  // Try h1 first
+  const h1 = document.querySelector('h1');
+  if (h1 && h1.textContent.trim()) {
+    return h1.textContent.trim();
+  }
+  
+  // Try document.title
+  if (document.title && document.title.trim()) {
+    return document.title.trim();
+  }
+  
+  // Try meta og:title
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  if (ogTitle && ogTitle.content) {
+    return ogTitle.content.trim();
+  }
+  
+  // Try elements with job title related classes/attributes
+  const jobTitleSelectors = [
+    '[class*="job-title"]',
+    '[class*="jobTitle"]',
+    '[class*="position"]',
+    '[class*="poste"]',
+    '[class*="title"]',
+    '[data-test*="job-title"]',
+    '[data-testid*="job-title"]'
+  ];
+  
+  for (const selector of jobTitleSelectors) {
+    const elements = document.querySelectorAll(selector);
+    for (const element of elements) {
+      if (element.textContent && element.textContent.trim() && element.textContent.trim().length > 5) {
+        return element.textContent.trim();
+      }
+    }
+  }
+  
+  return null;
+}
+
+function detectCompanyName() {
+  // Try meta og:site_name first
+  const ogSiteName = document.querySelector('meta[property="og:site_name"]');
+  if (ogSiteName && ogSiteName.content) {
+    return ogSiteName.content.trim();
+  }
+  
+  // Try document.title (might contain company name)
+  if (document.title) {
+    const title = document.title.trim();
+    // Try to extract company from title (common patterns: "Job at Company", "Company - Job")
+    const patterns = [
+      /at\s+([A-Za-z\s&]+)$/i,
+      /([A-Za-z\s&]+)\s*[-–]\s*/,
+      /([A-Za-z\s&]+)\s*\|\s*/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = title.match(pattern);
+      if (match && match[1] && match[1].trim().length > 2) {
+        return match[1].trim();
+      }
+    }
+  }
+  
+  // Try elements with company related classes/attributes
+  const companySelectors = [
+    '[class*="company"]',
+    '[class*="company-name"]',
+    '[class*="employer"]',
+    '[class*="organisation"]',
+    '[class*="entreprise"]',
+    '[class*="société"]',
+    '[class*="recruteur"]',
+    '[data-test*="company"]',
+    '[data-testid*="company"]'
+  ];
+  
+  for (const selector of companySelectors) {
+    const elements = document.querySelectorAll(selector);
+    for (const element of elements) {
+      if (element.textContent && element.textContent.trim() && element.textContent.trim().length > 2) {
+        const text = element.textContent.trim();
+        // Filter out common non-company words
+        if (!/apply|submit|save|cancel|close/i.test(text)) {
+          return text;
+        }
+      }
+    }
+  }
+  
+  return null;
 }
 
 function fillCountryCode(countryCode, filledFields) {

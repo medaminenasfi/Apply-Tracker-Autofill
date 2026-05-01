@@ -288,6 +288,9 @@ async function handleAutofill() {
   // Send message to content script to autofill
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   
+  // Get current tab URL for job URL field
+  jobUrlInput.value = tab.url;
+  
   chrome.tabs.sendMessage(tab.id, {
     action: 'autofill',
     profile: userProfile
@@ -295,7 +298,27 @@ async function handleAutofill() {
     if (chrome.runtime.lastError) {
       showMessage('Content script not loaded. Refresh the page.', 'error');
     } else if (response && response.success) {
-      showMessage('Form autofilled successfully!', 'success');
+      // Fill job info from detection
+      if (response.jobInfo) {
+        const { jobTitle, companyName } = response.jobInfo;
+        
+        if (jobTitle) {
+          positionInput.value = jobTitle;
+        }
+        
+        if (companyName) {
+          companyNameInput.value = companyName;
+        }
+        
+        // Check if detection was successful
+        if (!jobTitle || !companyName) {
+          showMessage('Form autofilled. Please verify company and position before saving.', 'warning');
+        } else {
+          showMessage('Form autofilled successfully with job details!', 'success');
+        }
+      } else {
+        showMessage('Form autofilled successfully!', 'success');
+      }
     } else {
       showMessage('Failed to autofill form', 'error');
     }
