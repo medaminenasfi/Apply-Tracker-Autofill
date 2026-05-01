@@ -41,12 +41,11 @@ const fieldKeywords = {
   ],
   phone: [
     'phone', 'phone number', 'mobile', 'telephone',
-    'téléphone', 'tel', 'tél', 'numéro de téléphone', 'numero de telephone',
-    'phoneNumber', 'contact'
+    'téléphone', 'tel', 'tél', 'numéro', 'numero', 'contact'
   ],
   countryCode: [
     'country code', 'code pays', 'indicatif', 'indicatif pays',
-    'prefix', 'préfixe', 'dial code'
+    'prefix', 'préfixe', 'dial code', 'calling code'
   ],
   cv: [
     'cv', 'resume', 'résumé', 'curriculum vitae', 'document', 'fichier'
@@ -58,6 +57,16 @@ const fieldKeywords = {
     'portfolio', 'website', 'site web', 'personal website'
   ]
 };
+
+// Job title keywords for confidence scoring
+const jobTitleKeywords = [
+  'developer', 'engineer', 'designer', 'manager', 'intern', 'internship', 'stage',
+  'fullstack', 'frontend', 'backend', 'software', 'data', 'analyst', 'marketing', 'sales',
+  'product', 'qa', 'devops', 'architect', 'consultant', 'specialist', 'lead', 'senior', 'junior',
+  // French
+  'développeur', 'developpeur', 'ingénieur', 'ingenieur', 'designer', 'stagiaire', 'stage',
+  'commercial', 'marketing', 'analyste', 'chef de projet', 'directeur', 'gérant'
+];
 
 function autofillForm(profile) {
   // Track which fields have been filled to avoid conflicts
@@ -87,14 +96,14 @@ function autofillForm(profile) {
   const fullPhoneNumber = profile.phone || `${countryCode}${localPhone}`;
   console.log('Phone autofill:', { countryCode, localPhone, fullPhoneNumber, original: profile.phone });
   
-  // First, try to handle country code fields
-  const countryCodeFilled = fillCountryCode(countryCode, filledFields);
+  // First, try to handle country code fields separately
+  const countryCodeResult = fillCountryCode(countryCode, filledFields);
+  console.log('Country code fill result:', countryCodeResult);
   
-  // If country code was filled successfully, use local phone only
-  // Otherwise, use full phone number as fallback
-  const phoneToFill = countryCodeFilled ? localPhone : fullPhoneNumber;
+  // Then fill phone number fields
+  fillPhoneFields(localPhone, filledFields);
   
-  // Field mappings with multiple selectors to try
+  // Field mappings with multiple selectors to try (excluding phone)
   const fieldMappings = {
     firstName: [
       { selector: 'input[name="firstName"]', type: 'name' },
@@ -173,40 +182,6 @@ function autofillForm(profile) {
       { selector: 'input[aria-label*="courriel" i]', type: 'email' },
       { selector: 'input[aria-label*="Courriel" i]', type: 'email' },
     ],
-    phone: [
-      { selector: 'input[type="tel"]', type: 'tel' },
-      { selector: 'input[name="phone"]', type: 'tel' },
-      { selector: 'input[name="phoneNumber"]', type: 'tel' },
-      { selector: 'input[name="phone_number"]', type: 'tel' },
-      { selector: 'input[name="mobile"]', type: 'tel' },
-      { selector: 'input[name="telephone"]', type: 'tel' },
-      { selector: 'input[name="téléphone"]', type: 'tel' },
-      { selector: 'input[name="tel"]', type: 'tel' },
-      { selector: 'input[name="tél"]', type: 'tel' },
-      { selector: 'input[name="contact"]', type: 'tel' },
-      { selector: 'input[id="phone"]', type: 'tel' },
-      { selector: 'input[id="phoneNumber"]', type: 'tel' },
-      { selector: 'input[id="telephone"]', type: 'tel' },
-      { selector: 'input[id="téléphone"]', type: 'tel' },
-      { selector: 'input[placeholder*="phone" i]', type: 'tel' },
-      { selector: 'input[placeholder*="Phone" i]', type: 'tel' },
-      { selector: 'input[placeholder*="mobile" i]', type: 'tel' },
-      { selector: 'input[placeholder*="Mobile" i]', type: 'tel' },
-      { selector: 'input[placeholder*="telephone" i]', type: 'tel' },
-      { selector: 'input[placeholder*="Telephone" i]', type: 'tel' },
-      { selector: 'input[placeholder*="téléphone" i]', type: 'tel' },
-      { selector: 'input[placeholder*="Téléphone" i]', type: 'tel' },
-      { selector: 'input[placeholder*="numéro" i]', type: 'tel' },
-      { selector: 'input[placeholder*="Numéro" i]', type: 'tel' },
-      { selector: 'input[placeholder*="tel" i]', type: 'tel' },
-      { selector: 'input[placeholder*="Tel" i]', type: 'tel' },
-      { selector: 'input[aria-label*="phone" i]', type: 'tel' },
-      { selector: 'input[aria-label*="Phone" i]', type: 'tel' },
-      { selector: 'input[aria-label*="telephone" i]', type: 'tel' },
-      { selector: 'input[aria-label*="Telephone" i]', type: 'tel' },
-      { selector: 'input[aria-label*="téléphone" i]', type: 'tel' },
-      { selector: 'input[aria-label*="Téléphone" i]', type: 'tel' },
-    ],
     linkedin: [
       { selector: 'input[name="linkedin"]', type: 'url' },
       { selector: 'input[name="linkedinUrl"]', type: 'url' },
@@ -249,7 +224,6 @@ function autofillForm(profile) {
     lastName: profile.lastName,
     fullName: `${profile.firstName} ${profile.lastName}`,
     email: profile.email,
-    phone: phoneToFill,
     linkedin: profile.linkedin,
     portfolio: profile.portfolio,
   };
@@ -280,9 +254,6 @@ function autofillForm(profile) {
     { label: 'Adresse e-mail', value: profile.email },
     { label: 'Courriel', value: profile.email },
     { label: 'Email', value: profile.email },
-    { label: 'Téléphone', value: phoneToFill },
-    { label: 'Tél', value: phoneToFill },
-    { label: 'Phone', value: phoneToFill },
     { label: 'LinkedIn', value: profile.linkedin },
     { label: 'Portfolio', value: profile.portfolio },
   ];
@@ -411,35 +382,105 @@ function detectJobInfo() {
   return {
     jobTitle: jobTitle || '',
     companyName: companyName || '',
-    jobUrl: jobUrl
+    jobUrl: jobUrl,
+    confidence: calculateConfidence(jobTitle, companyName)
   };
 }
 
+function calculateConfidence(jobTitle, companyName) {
+  if (!jobTitle && !companyName) return 'none';
+  if (jobTitle && companyName) return 'high';
+  if (jobTitle || companyName) return 'medium';
+  return 'low';
+}
+
 function detectJobTitle() {
-  // Try h1 first
+  console.log('Detecting job title...');
+  
+  // Generic titles to ignore
+  const genericTitles = [
+    "let's connect", 'connect', 'contact', 'apply', 'application form', 'join us', 'careers', 'jobs', 'opportunities'
+  ];
+  
+  let detectedTitle = null;
+  let confidence = 0;
+  
+  // Try h1 first (most reliable)
   const h1 = document.querySelector('h1');
   if (h1 && h1.textContent.trim()) {
-    return h1.textContent.trim();
+    const h1Text = h1.textContent.trim().toLowerCase();
+    const isGeneric = genericTitles.some(title => h1Text.includes(title));
+    const hasJobKeywords = jobTitleKeywords.some(keyword => h1Text.includes(keyword));
+    
+    if (!isGeneric && h1Text.length > 5) {
+      detectedTitle = h1.textContent.trim();
+      confidence = hasJobKeywords ? 90 : 70;
+      console.log('Job title found in h1:', detectedTitle, 'confidence:', confidence);
+      return detectedTitle;
+    }
   }
   
-  // Try document.title
-  if (document.title && document.title.trim()) {
-    return document.title.trim();
+  // Try visible chips/badges near h1
+  if (h1) {
+    const chips = detectChipsNearElement(h1);
+    console.log('Detected chips near h1:', chips);
+    
+    for (const chip of chips) {
+      const chipText = chip.textContent.trim().toLowerCase();
+      const hasJobKeywords = jobTitleKeywords.some(keyword => chipText.includes(keyword));
+      const isGeneric = genericTitles.some(title => chipText.includes(title));
+      
+      if (hasJobKeywords && !isGeneric && chipText.length > 5) {
+        detectedTitle = chip.textContent.trim();
+        confidence = 85;
+        console.log('Job title found in chip:', detectedTitle, 'confidence:', confidence);
+        return detectedTitle;
+      }
+    }
+  }
+  
+  // Try h2
+  const h2s = document.querySelectorAll('h2');
+  for (const h2 of h2s) {
+    const h2Text = h2.textContent.trim().toLowerCase();
+    const isGeneric = genericTitles.some(title => h2Text.includes(title));
+    const hasJobKeywords = jobTitleKeywords.some(keyword => h2Text.includes(keyword));
+    
+    if (!isGeneric && hasJobKeywords && h2Text.length > 5) {
+      detectedTitle = h2.textContent.trim();
+      confidence = 80;
+      console.log('Job title found in h2:', detectedTitle, 'confidence:', confidence);
+      return detectedTitle;
+    }
   }
   
   // Try meta og:title
   const ogTitle = document.querySelector('meta[property="og:title"]');
   if (ogTitle && ogTitle.content) {
-    return ogTitle.content.trim();
+    const ogTitleText = ogTitle.content.trim().toLowerCase();
+    const isGeneric = genericTitles.some(title => ogTitleText.includes(title));
+    const hasJobKeywords = jobTitleKeywords.some(keyword => ogTitleText.includes(keyword));
+    
+    if (!isGeneric && ogTitleText.length > 5) {
+      detectedTitle = ogTitle.content.trim();
+      confidence = hasJobKeywords ? 75 : 50;
+      console.log('Job title found in og:title:', detectedTitle, 'confidence:', confidence);
+      return detectedTitle;
+    }
   }
   
   // Try elements with job title related classes/attributes
   const jobTitleSelectors = [
     '[class*="job-title"]',
     '[class*="jobTitle"]',
+    '[id*="job-title"]',
+    '[id*="jobTitle"]',
     '[class*="position"]',
     '[class*="poste"]',
-    '[class*="title"]',
+    '[class*="role"]',
+    '[class*="vacancy"]',
+    '[class*="emploi"]',
+    '[class*="offre"]',
     '[data-test*="job-title"]',
     '[data-testid*="job-title"]'
   ];
@@ -448,22 +489,138 @@ function detectJobTitle() {
     const elements = document.querySelectorAll(selector);
     for (const element of elements) {
       if (element.textContent && element.textContent.trim() && element.textContent.trim().length > 5) {
-        return element.textContent.trim();
+        const text = element.textContent.trim().toLowerCase();
+        const isGeneric = genericTitles.some(title => text.includes(title));
+        const hasJobKeywords = jobTitleKeywords.some(keyword => text.includes(keyword));
+        
+        if (!isGeneric && hasJobKeywords) {
+          detectedTitle = element.textContent.trim();
+          confidence = 85;
+          console.log('Job title found in element:', detectedTitle, 'confidence:', confidence);
+          return detectedTitle;
+        }
       }
     }
   }
   
+  // Try document.title as last resort
+  if (document.title) {
+    const titleText = document.title.trim().toLowerCase();
+    const isGeneric = genericTitles.some(title => titleText.includes(title));
+    const hasJobKeywords = jobTitleKeywords.some(keyword => titleText.includes(keyword));
+    
+    if (!isGeneric && titleText.length > 5) {
+      detectedTitle = document.title.trim();
+      confidence = hasJobKeywords ? 60 : 30;
+      console.log('Job title found in document.title:', detectedTitle, 'confidence:', confidence);
+      return detectedTitle;
+    }
+  }
+  
+  console.log('No valid job title detected');
   return null;
 }
 
-function detectCompanyName() {
-  // Try meta og:site_name first
-  const ogSiteName = document.querySelector('meta[property="og:site_name"]');
-  if (ogSiteName && ogSiteName.content) {
-    return ogSiteName.content.trim();
+function detectChipsNearElement(element) {
+  const chips = [];
+  const parent = element.parentElement;
+  if (!parent) return chips;
+  
+  // Get next siblings (chips often appear after the title)
+  let sibling = element.nextElementSibling;
+  let maxChips = 5;
+  
+  while (sibling && maxChips > 0) {
+    // Check if it's a chip-like element (button, span, div with specific classes)
+    const isChip = (
+      sibling.tagName === 'BUTTON' ||
+      sibling.tagName === 'SPAN' ||
+      (sibling.tagName === 'DIV' && (
+        sibling.classList.contains('chip') ||
+        sibling.classList.contains('badge') ||
+        sibling.classList.contains('tag') ||
+        /\bchip\b|\bbadge\b|\btag\b/i.test(sibling.className)
+      ))
+    );
+    
+    if (isChip && sibling.textContent && sibling.textContent.trim().length > 2) {
+      chips.push(sibling);
+      maxChips--;
+    }
+    
+    sibling = sibling.nextElementSibling;
   }
   
-  // Try document.title (might contain company name)
+  return chips;
+}
+
+function detectCompanyName() {
+  console.log('Detecting company name...');
+  
+  // First, try to detect from chips near h1
+  const h1 = document.querySelector('h1');
+  if (h1) {
+    const chips = detectChipsNearElement(h1);
+    console.log('Detected chips for company detection:', chips);
+    
+    for (const chip of chips) {
+      const chipText = chip.textContent.trim().toLowerCase();
+      const hasJobKeywords = jobTitleKeywords.some(keyword => chipText.includes(keyword));
+      
+      // If chip doesn't have job keywords, it's likely the company name
+      if (!hasJobKeywords && chipText.length > 2) {
+        const companyName = chip.textContent.trim();
+        // Filter out common non-company words
+        if (!/apply|submit|save|cancel|close|upload|delete/i.test(companyName)) {
+          console.log('Company name found in chip:', companyName);
+          return companyName;
+        }
+      }
+    }
+  }
+  
+  // Prefer elements with company-related classes/attributes first
+  const companySelectors = [
+    '[class*="company"]',
+    '[class*="company-name"]',
+    '[class*="employer"]',
+    '[class*="organization"]',
+    '[class*="organisation"]',
+    '[class*="entreprise"]',
+    '[class*="société"]',
+    '[class*="recruiter"]',
+    '[class*="recruteur"]',
+    '[id*="company"]',
+    '[id*="employer"]',
+    '[data-test*="company"]',
+    '[data-testid*="company"]'
+  ];
+  
+  for (const selector of companySelectors) {
+    const elements = document.querySelectorAll(selector);
+    for (const element of elements) {
+      if (element.textContent && element.textContent.trim() && element.textContent.trim().length > 2) {
+        const text = element.textContent.trim();
+        // Filter out common non-company words
+        if (!/apply|submit|save|cancel|close|upload|delete/i.test(text)) {
+          console.log('Company name found in element:', text);
+          return text;
+        }
+      }
+    }
+  }
+  
+  // Try meta og:site_name
+  const ogSiteName = document.querySelector('meta[property="og:site_name"]');
+  if (ogSiteName && ogSiteName.content) {
+    const siteName = ogSiteName.content.trim();
+    if (siteName.length > 2) {
+      console.log('Company name found in og:site_name:', siteName);
+      return siteName;
+    }
+  }
+  
+  // Try document.title as fallback
   if (document.title) {
     const title = document.title.trim();
     // Try to extract company from title (common patterns: "Job at Company", "Company - Job")
@@ -476,41 +633,154 @@ function detectCompanyName() {
     for (const pattern of patterns) {
       const match = title.match(pattern);
       if (match && match[1] && match[1].trim().length > 2) {
-        return match[1].trim();
-      }
-    }
-  }
-  
-  // Try elements with company related classes/attributes
-  const companySelectors = [
-    '[class*="company"]',
-    '[class*="company-name"]',
-    '[class*="employer"]',
-    '[class*="organisation"]',
-    '[class*="entreprise"]',
-    '[class*="société"]',
-    '[class*="recruteur"]',
-    '[data-test*="company"]',
-    '[data-testid*="company"]'
-  ];
-  
-  for (const selector of companySelectors) {
-    const elements = document.querySelectorAll(selector);
-    for (const element of elements) {
-      if (element.textContent && element.textContent.trim() && element.textContent.trim().length > 2) {
-        const text = element.textContent.trim();
-        // Filter out common non-company words
-        if (!/apply|submit|save|cancel|close/i.test(text)) {
-          return text;
+        const company = match[1].trim();
+        if (!/apply|submit|save|cancel|close/i.test(company)) {
+          console.log('Company name extracted from title:', company);
+          return company;
         }
       }
     }
   }
   
+  console.log('No company name detected');
   return null;
 }
 
+function fillPhoneFields(phoneNumber, filledFields) {
+  console.log('Filling phone fields with:', phoneNumber);
+  
+  // Phone field keywords
+  const phoneKeywords = [
+    'phone', 'téléphone', 'telephone', 'tel', 'tél', 'mobile', 'numéro', 'numero', 'contact'
+  ];
+  
+  // Find all phone-related containers and inputs
+  const phoneContainers = [];
+  
+  // Check labels with phone-related text
+  const labels = document.querySelectorAll('label');
+  labels.forEach(label => {
+    const labelText = normalizeText(label.textContent);
+    const isPhoneLabel = phoneKeywords.some(keyword => labelText.includes(normalizeText(keyword)));
+    
+    if (isPhoneLabel) {
+      // Find the parent container
+      const container = label.closest('div, section, form, fieldset');
+      if (container) {
+        const inputs = container.querySelectorAll('input[type="tel"], input[type="text"]');
+        if (inputs.length > 0) {
+          phoneContainers.push({
+            container,
+            inputs: Array.from(inputs).filter(i => !filledFields.has(i) && i.type !== 'file')
+          });
+        }
+      }
+    }
+  });
+  
+  // Also check input[type="tel"] directly
+  const telInputs = document.querySelectorAll('input[type="tel"]');
+  telInputs.forEach(input => {
+    if (!filledFields.has(input) && input.type !== 'file') {
+      const container = input.closest('div, section, form, fieldset');
+      if (container) {
+        phoneContainers.push({
+          container,
+          inputs: [input]
+        });
+      }
+    }
+  });
+  
+  // Check inputs with phone-related attributes
+  const allInputs = document.querySelectorAll('input');
+  allInputs.forEach(input => {
+    if (filledFields.has(input) || input.type === 'file') return;
+    
+    const attributesToCheck = [
+      input.name,
+      input.id,
+      input.placeholder,
+      input.getAttribute('aria-label')
+    ];
+    
+    for (const attr of attributesToCheck) {
+      if (attr) {
+        const normalizedAttr = normalizeText(attr);
+        const isPhoneField = phoneKeywords.some(keyword => normalizedAttr.includes(normalizeText(keyword)));
+        if (isPhoneField) {
+          const container = input.closest('div, section, form, fieldset');
+          if (container) {
+            phoneContainers.push({
+              container,
+              inputs: [input]
+            });
+          }
+          break;
+        }
+      }
+    }
+  });
+  
+  console.log('Detected phone containers:', phoneContainers.length);
+  
+  // Handle phone filling strategy
+  if (phoneContainers.length === 0) {
+    console.log('No phone fields detected');
+    return;
+  }
+  
+  // Check if we have split phone inputs (country code + phone)
+  let hasSplitPhone = false;
+  for (const { container, inputs } of phoneContainers) {
+    if (inputs.length >= 2) {
+      hasSplitPhone = true;
+      console.log('Detected split phone inputs:', inputs.length);
+      
+      // Sort by width - smaller first (likely country code)
+      inputs.sort((a, b) => {
+        const rectA = a.getBoundingClientRect();
+        const rectB = b.getBoundingClientRect();
+        return rectA.width - rectB.width;
+      });
+      
+      // First input = country code (already handled by fillCountryCode)
+      // Second input = phone number
+      if (inputs[1] && !filledFields.has(inputs[1])) {
+        fillInput(inputs[1], phoneNumber);
+        filledFields.add(inputs[1]);
+        console.log('Filled phone input (second in container):', inputs[1].name || inputs[1].id);
+      }
+      
+      break; // Only handle first container with split inputs
+    }
+  }
+  
+  // If no split inputs, fill all phone inputs with full number
+  if (!hasSplitPhone) {
+    const fullPhoneNumber = profile?.phone || phoneNumber;
+    console.log('Using full phone number for single inputs:', fullPhoneNumber);
+    
+    phoneContainers.forEach(({ inputs }) => {
+      inputs.forEach(input => {
+        if (!filledFields.has(input)) {
+          fillInput(input, fullPhoneNumber);
+          filledFields.add(input);
+          console.log('Filled phone input (single):', input.name || input.id);
+        }
+      });
+    });
+  }
+}
+
 function fillCountryCode(countryCode, filledFields) {
+  console.log('Filling country code with:', countryCode);
+  
+  // Country code keywords
+  const countryCodeKeywords = [
+    'country code', 'code pays', 'indicatif', 'indicatif pays', 'prefix', 'préfixe', 'dial code', 'calling code'
+  ];
+  
   // First, try to find select elements for country code
   const selects = document.querySelectorAll('select');
   for (const select of selects) {
@@ -524,15 +794,18 @@ function fillCountryCode(countryCode, filledFields) {
     ].map(attr => attr ? normalizeText(attr) : '');
     
     // Check if this select is for country code
-    const isCountryCodeField = fieldKeywords.countryCode.some(keyword =>
+    const isCountryCodeField = countryCodeKeywords.some(keyword =>
       normalizedAttributes.some(attr => attr.includes(normalizeText(keyword)))
     );
     
     if (isCountryCodeField) {
+      console.log('Found country code select:', select.name || select.id);
+      
       // Check if the select is disabled (cannot be changed)
       if (select.disabled) {
         console.log('Country code select is disabled, cannot change');
-        return false;
+        showCountryCodeMessage();
+        return { success: false, reason: 'disabled' };
       }
       
       // Try to find an option matching the country code
@@ -548,14 +821,16 @@ function fillCountryCode(countryCode, filledFields) {
             optionValue.includes(countryCode.toLowerCase())) {
           select.value = option.value;
           select.dispatchEvent(new Event('change', { bubbles: true }));
+          select.dispatchEvent(new Event('input', { bubbles: true }));
           filledFields.add(select);
           console.log('Country code filled successfully:', countryCode);
-          return true;
+          return { success: true };
         }
       }
       
       console.log('Could not find matching country code option');
-      return false;
+      showCountryCodeMessage();
+      return { success: false, reason: 'no_match' };
     }
   }
   
@@ -572,26 +847,68 @@ function fillCountryCode(countryCode, filledFields) {
     ].map(attr => attr ? normalizeText(attr) : '');
     
     // Check if this input is for country code
-    const isCountryCodeField = fieldKeywords.countryCode.some(keyword =>
+    const isCountryCodeField = countryCodeKeywords.some(keyword =>
       normalizedAttributes.some(attr => attr.includes(normalizeText(keyword)))
     );
     
     if (isCountryCodeField) {
+      console.log('Found country code input:', input.name || input.id);
+      
       // Check if the input is disabled
       if (input.disabled) {
         console.log('Country code input is disabled, cannot change');
-        return false;
+        showCountryCodeMessage();
+        return { success: false, reason: 'disabled' };
       }
       
-      fillInput(input, countryCode);
-      filledFields.add(input);
-      console.log('Country code filled successfully:', countryCode);
-      return true;
+      // Check if input is near a country flag or has small width (likely country code)
+      const rect = input.getBoundingClientRect();
+      const isSmallInput = rect.width < 100;
+      
+      if (isSmallInput) {
+        console.log('Detected small input (likely country code)');
+        fillInput(input, countryCode);
+        filledFields.add(input);
+        console.log('Country code filled successfully:', countryCode);
+        return { success: true };
+      }
     }
   }
   
   console.log('No country code field found');
-  return false;
+  return { success: false, reason: 'not_found' };
+}
+
+function showCountryCodeMessage() {
+  let messageEl = document.getElementById('country-code-message');
+  
+  if (!messageEl) {
+    messageEl = document.createElement('div');
+    messageEl.id = 'country-code-message';
+    messageEl.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #f59e0b;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      z-index: 10000;
+      max-width: 300px;
+    `;
+    document.body.appendChild(messageEl);
+  }
+  
+  messageEl.textContent = 'Please select country code manually.';
+  
+  setTimeout(() => {
+    if (messageEl && messageEl.parentNode) {
+      messageEl.parentNode.removeChild(messageEl);
+    }
+  }, 5000);
 }
 
 function fillInput(element, value) {

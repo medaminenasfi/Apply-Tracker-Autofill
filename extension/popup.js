@@ -300,21 +300,26 @@ async function handleAutofill() {
     } else if (response && response.success) {
       // Fill job info from detection
       if (response.jobInfo) {
-        const { jobTitle, companyName } = response.jobInfo;
+        const { jobTitle, companyName, confidence } = response.jobInfo;
+        console.log('Received job info:', { jobTitle, companyName, confidence });
         
-        if (jobTitle) {
-          positionInput.value = jobTitle;
-        }
-        
-        if (companyName) {
-          companyNameInput.value = companyName;
-        }
-        
-        // Check if detection was successful
-        if (!jobTitle || !companyName) {
-          showMessage('Form autofilled. Please verify company and position before saving.', 'warning');
+        // Only fill if fields are empty and confidence is medium or high
+        if (confidence === 'high' || confidence === 'medium') {
+          if (jobTitle && !positionInput.value) {
+            positionInput.value = jobTitle;
+          }
+          
+          if (companyName && !companyNameInput.value) {
+            companyNameInput.value = companyName;
+          }
+          
+          if (confidence === 'high') {
+            showMessage('Form autofilled successfully with job details!', 'success');
+          } else {
+            showMessage('Form autofilled. Please verify company and position before saving.', 'warning');
+          }
         } else {
-          showMessage('Form autofilled successfully with job details!', 'success');
+          showMessage('Form autofilled. Please verify company and position manually.', 'warning');
         }
       } else {
         showMessage('Form autofilled successfully!', 'success');
