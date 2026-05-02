@@ -4,7 +4,7 @@ import { ReactNode, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Users, FileText, LogOut, Menu, X, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, LogOut, Menu, X, Shield, MessageCircle } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -24,6 +24,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/applications', label: 'Applications', icon: FileText },
+    { href: '/admin/feedback', label: 'Feedback', icon: MessageCircle },
   ];
 
   return (

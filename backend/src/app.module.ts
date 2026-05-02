@@ -8,6 +8,7 @@ import { AdminModule } from './admin/admin.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { ExtensionModule } from './extension/extension.module';
 import { NotesModule } from './notes/notes.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { NotesModule } from './notes/notes.module';
     AdminModule,
     ExtensionModule,
     NotesModule,
+    FeedbackModule,
   ],
   controllers: [],
   providers: [],
