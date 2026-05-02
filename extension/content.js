@@ -553,11 +553,21 @@ function detectJobTitle() {
   console.log('Current hostname:', window.location.hostname);
   console.log('Current URL:', window.location.href);
   
-  // AshbyHQ-specific detection - remove hostname check since content script may be in iframe
-  const ashbyResult = detectAshbyHQJob();
-  if (ashbyResult.position || ashbyResult.company) {
-    console.log('AshbyHQ detection succeeded:', ashbyResult);
-    return ashbyResult;
+  // Platform-specific detection
+  if (window.location.hostname.includes('ashbyhq.com')) {
+    const ashbyResult = detectAshbyHQJob();
+    if (ashbyResult.position || ashbyResult.company) {
+      console.log('AshbyHQ detection succeeded:', ashbyResult);
+      return ashbyResult;
+    }
+  }
+  
+  if (window.location.hostname.includes('taleez.com')) {
+    const taleezResult = detectTaleezJob();
+    if (taleezResult.position || taleezResult.company) {
+      console.log('Taleez detection succeeded:', taleezResult);
+      return taleezResult;
+    }
   }
   
   // First, try to detect from visible chips/badges in the header section
@@ -659,13 +669,86 @@ function detectJobTitle() {
   const ogSiteName = document.querySelector('meta[property="og:site_name"]');
   if (ogSiteName && ogSiteName.content && !detectedCompany) {
     const siteName = ogSiteName.content.trim();
-    if (siteName.length > 2 && siteName.length <= 60) {
+    // Don't use platform names (Taleez, LinkedIn, etc.) as company
+    const platformNames = ['taleez', 'linkedin', 'indeed', 'glassdoor'];
+    const normalizedSiteName = normalizeText(siteName);
+    const isPlatform = platformNames.some(name => normalizedSiteName.includes(normalizeText(name)));
+    
+    if (!isPlatform && siteName.length > 2 && siteName.length <= 60) {
       detectedCompany = siteName;
       console.log('Detected company from og:site_name:', detectedCompany);
     }
   }
   
   return { position: detectedPosition, company: detectedCompany };
+}
+
+function detectTaleezJob() {
+  console.log('Detecting Taleez job...');
+  
+  let position = null;
+  let company = null;
+  
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  const ogSiteName = document.querySelector('meta[property="og:site_name"]');
+  
+  console.log('Taleez: og:title:', ogTitle?.content);
+  console.log('Taleez: og:site_name:', ogSiteName?.content);
+  
+  // Parse og:title: "be-softilys Tunisie recrute : Support IT CDI à undefined"
+  if (ogTitle && ogTitle.content) {
+    const titleText = ogTitle.content.trim();
+    
+    // Extract company from the beginning (before "recrute" or ":")
+    const recruteMatch = titleText.match(/^(.+?)\s+(?:recrute|recruit|hiring)/i);
+    if (recruteMatch) {
+      company = recruteMatch[1].trim();
+      console.log('Taleez: Found company from og:title (recrute pattern):', company);
+    } else {
+      // Try extracting before ":"
+      const colonMatch = titleText.match(/^(.+?)\s+:/i);
+      if (colonMatch) {
+        company = colonMatch[1].trim();
+        console.log('Taleez: Found company from og:title (colon pattern):', company);
+      }
+    }
+    
+    // Extract position (after "recrute :" or after ":")
+    const positionMatch = titleText.match(/(?:recrute\s*:?\s*|:\s*)(.+?)(?:\s+(?:CDI|CDD|Freelance|Stage|Alternance|Internship|Full-time|Part-time))/i);
+    if (positionMatch) {
+      position = positionMatch[1].trim();
+      console.log('Taleez: Found position from og:title:', position);
+    } else {
+      // Fallback: extract everything after the last colon
+      const lastColonIndex = titleText.lastIndexOf(':');
+      if (lastColonIndex > -1) {
+        position = titleText.substring(lastColonIndex + 1).trim();
+        // Remove job type suffixes
+        position = position.replace(/\s+(?:CDI|CDD|Freelance|Stage|Alternance|Internship|Full-time|Part-time|à\s+\S+).*$/i, '').trim();
+        console.log('Taleez: Found position from og:title (fallback):', position);
+      }
+    }
+  }
+  
+  // Extract company from URL: https://taleez.com/apply/support-it-halq-al-wadi-be-softilys-tunisie-cdi/applying
+  if (!company) {
+    const urlMatch = window.location.href.match(/taleez\.com\/apply\/[^\/]+-([^-]+)(?:-[^\/]+)?\/applying/);
+    if (urlMatch && urlMatch[1]) {
+      const companySlug = urlMatch[1];
+      // Convert slug to title case
+      const companyName = companySlug.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      
+      if (companyName.length > 2 && companyName.length <= 60) {
+        company = companyName;
+        console.log('Taleez: Found company from URL:', company);
+      }
+    }
+  }
+  
+  console.log('Taleez: Final result:', { position, company });
+  return { position, company };
 }
 
 function detectAshbyHQJob() {
