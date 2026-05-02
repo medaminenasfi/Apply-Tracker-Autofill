@@ -21,6 +21,7 @@ const cvActions = document.getElementById('cvActions');
 const openCvBtn = document.getElementById('openCvBtn');
 const copyCvLinkBtn = document.getElementById('copyCvLinkBtn');
 const copyFileNameBtn = document.getElementById('copyFileNameBtn');
+const uploadCvToPageBtn = document.getElementById('uploadCvToPageBtn');
 const saveApplicationForm = document.getElementById('saveApplicationForm');
 const companyNameInput = document.getElementById('companyName');
 const positionInput = document.getElementById('position');
@@ -48,6 +49,7 @@ function setupEventListeners() {
   openCvBtn.addEventListener('click', handleOpenCv);
   copyCvLinkBtn.addEventListener('click', handleCopyCvLink);
   copyFileNameBtn.addEventListener('click', handleCopyFileName);
+  uploadCvToPageBtn.addEventListener('click', handleUploadCvToPage);
   saveApplicationForm.addEventListener('submit', handleSaveApplication);
   logoutBtn.addEventListener('click', handleLogout);
 }
@@ -276,6 +278,109 @@ function handleCopyFileName() {
     }).catch(() => {
       showMessage('Failed to copy file name', 'error');
     });
+  }
+}
+
+async function handleUploadCvToPage() {
+  if (!userProfile || !userProfile.cvUrl) {
+    showMessage('No CV uploaded. Please upload your CV first.', 'error');
+    return;
+  }
+  
+  // Use direct file path to avoid IDM interception
+  const cvUrl = getFullUrl(userProfile.cvUrl);
+  console.log('CV URL:', cvUrl);
+  
+  // Get current active tab
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  
+  if (!tab) {
+    showMessage('No active tab found', 'error');
+    return;
+  }
+  
+  // Fetch CV as blob in popup (same-origin with backend)
+  try {
+    const response = await fetch(cvUrl);
+    console.log('Fetch response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CV file: ${response.status} ${response.statusText}`);
+    }
+    
+    const blob = await response.blob();
+    console.log('CV blob size:', blob.size);
+    
+    if (blob.size === 0) {
+      throw new Error('CV file is empty or not found');
+    }
+    
+    // Convert blob to base64 to send to content script
+    const reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = async () => {
+      const base64data = reader.result;
+      console.log('CV converted to base64, length:', base64data.length);
+      
+      // Function to check if content script is loaded
+      const checkContentScript = async () => {
+        return new Promise((resolve) => {
+          chrome.tabs.sendMessage(tab.id, { action: 'ping' }, (response) => {
+            if (chrome.runtime.lastError) {
+              resolve({ loaded: false });
+            } else {
+              resolve({ loaded: true });
+            }
+          });
+        });
+      };
+      
+      // Check if content script is loaded
+      const checkResult = await checkContentScript();
+      
+      // If content script not loaded, inject it
+      if (!checkResult.loaded) {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content.js']
+          });
+          
+          // Wait for the script to initialize
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error('Failed to inject content script:', error);
+          showMessage('This website blocks extension scripts.', 'error');
+          return;
+        }
+      }
+      
+      // Send message to content script with base64 data and user name
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'UPLOAD_CV',
+        cvData: base64data,
+        firstName: userProfile.firstName || 'user',
+        lastName: userProfile.lastName || 'cv'
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error sending CV upload message:', chrome.runtime.lastError);
+          showMessage('Failed to upload CV to page', 'error');
+        } else if (response && response.success) {
+          showMessage('CV uploaded successfully!', 'success');
+        } else if (response && response.error) {
+          showMessage(response.error, 'error');
+        } else {
+          showMessage('Failed to upload CV to page', 'error');
+        }
+      });
+    };
+    
+    reader.onerror = () => {
+      showMessage('Failed to read CV file', 'error');
+    };
+  } catch (error) {
+    console.error('Error fetching CV:', error);
+    showMessage('Failed to fetch CV from server', 'error');
   }
 }
 

@@ -151,9 +151,27 @@ export class ProfileController {
           }
           cb(null, uploadDir);
         },
-        filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `cv-${uniqueSuffix}${extname(file.originalname)}`);
+        filename: (req: any, file, cb) => {
+          // Get user from request (attached by JwtAuthGuard)
+          const user = req.user;
+          
+          // Get firstName and lastName from profile if available, otherwise from user
+          let firstName = '';
+          let lastName = '';
+          
+          if (user.firstName) firstName = user.firstName;
+          if (user.lastName) lastName = user.lastName;
+          
+          // Format: first_name_last_name_cv_timestamp.pdf (lowercase, underscores)
+          const timestamp = Date.now();
+          const baseName = `${firstName}_${lastName}_cv_${timestamp}`;
+          const sanitizedName = baseName
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          
+          cb(null, `${sanitizedName}${extname(file.originalname)}`);
         },
       }),
       fileFilter: (req, file, cb) => {

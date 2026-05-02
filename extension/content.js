@@ -36,6 +36,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // Ping to check if content script is loaded
       console.log('Ping received');
       sendResponse({ success: true });
+    } else if (request.action === 'UPLOAD_CV') {
+      // Handle CV upload to page
+      console.log('CV upload request received, data length:', request.cvData?.length);
+      uploadCvToPage(request.cvData, request.firstName, request.lastName).then(result => {
+        sendResponse(result);
+      }).catch(error => {
+        console.error('CV upload error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // Keep message channel open for async response
     }
   } catch (error) {
     console.error('Error in content script message handler:', error);
@@ -525,6 +535,131 @@ function showCvUploadMessage(fileInput) {
       messageEl.parentNode.removeChild(messageEl);
     }
   }, 10000);
+}
+
+async function uploadCvToPage(cvData, firstName, lastName) {
+  try {
+    console.log('Converting base64 data to blob');
+    console.log('Received firstName:', firstName, 'lastName:', lastName);
+    
+    if (!cvData) {
+      throw new Error('No CV data provided');
+    }
+    
+    // 1. Convert base64 to blob
+    const response = await fetch(cvData);
+    const blob = await response.blob();
+    console.log('CV blob size:', blob.size);
+    
+    // 2. Convert to File object with proper name using user's real name
+    const sanitizedName = `${firstName}_${lastName}_CV`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    const fileName = `${sanitizedName}.pdf`;
+    const file = new File([blob], fileName, {
+      type: 'application/pdf'
+    });
+    console.log('Created file with name:', fileName);
+    
+    // 3. Find correct file input
+    const fileInput = findCvFileInput();
+    
+    if (!fileInput) {
+      return {
+        success: false,
+        error: 'No CV upload field found on this page.'
+      };
+    }
+    
+    console.log('Found file input:', fileInput);
+    
+    // 4. Inject file into input
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      
+      fileInput.files = dt.files;
+      
+      // Trigger events
+      fileInput.dispatchEvent(new Event('input', { bubbles: true }));
+      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      console.log('CV injected successfully');
+      
+      // Highlight the input
+      fileInput.style.border = '2px solid #10b981';
+      fileInput.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.2)';
+      
+      // Remove highlight after 3 seconds
+      setTimeout(() => {
+        fileInput.style.border = '';
+        fileInput.style.boxShadow = '';
+      }, 3000);
+      
+      return {
+        success: true,
+        message: 'CV uploaded successfully'
+      };
+    } catch (error) {
+      console.error('Failed to inject CV:', error);
+      return {
+        success: false,
+        error: 'This website blocks automatic CV upload. Please upload manually.'
+      };
+    }
+  } catch (error) {
+    console.error('CV upload error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to upload CV'
+    };
+  }
+}
+
+function findCvFileInput() {
+  // CV-related keywords
+  const cvKeywords = ['cv', 'resume', 'résumé', 'curriculum vitae', 'document', 'fichier'];
+  
+  // Get all file inputs
+  const fileInputs = document.querySelectorAll('input[type="file"]');
+  
+  if (fileInputs.length === 0) {
+    return null;
+  }
+  
+  // First, try to find CV-related file input
+  for (const input of fileInputs) {
+    const attributesToCheck = [
+      input.name,
+      input.id,
+      input.placeholder,
+      input.getAttribute('aria-label')
+    ];
+    
+    for (const attr of attributesToCheck) {
+      if (attr) {
+        const normalizedAttr = normalizeText(attr);
+        const isCvField = cvKeywords.some(keyword => normalizedAttr.includes(normalizeText(keyword)));
+        if (isCvField) {
+          console.log('Found CV-related input:', attr);
+          return input;
+        }
+      }
+    }
+    
+    // Also check label text
+    const label = document.querySelector(`label[for="${input.id}"]`);
+    if (label) {
+      const labelText = normalizeText(label.textContent);
+      const isCvLabel = cvKeywords.some(keyword => labelText.includes(normalizeText(keyword)));
+      if (isCvLabel) {
+        console.log('Found CV-related label:', label.textContent);
+        return input;
+      }
+    }
+  }
+  
+  // Fallback to first file input if no CV-related input found
+  console.log('No CV-related input found, using first file input');
+  return fileInputs[0];
 }
 
 function detectJobInfo() {
