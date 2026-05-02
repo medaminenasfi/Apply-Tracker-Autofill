@@ -2,10 +2,10 @@ import { IsString, IsUrl, IsOptional, IsEnum, IsDateString, IsArray } from 'clas
 
 export class CreateApplicationDto {
   @IsString()
-  companyName: string;
+  companyName!: string;
 
   @IsString()
-  position: string;
+  position!: string;
 
   @IsUrl({}, { message: 'Invalid URL format' })
   @IsOptional()

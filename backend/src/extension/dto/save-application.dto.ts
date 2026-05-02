@@ -2,10 +2,10 @@ import { IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class SaveApplicationDto {
   @IsString()
-  companyName: string;
+  companyName!: string;
 
   @IsString()
-  position: string;
+  position!: string;
 
   @IsString()
   @IsOptional()

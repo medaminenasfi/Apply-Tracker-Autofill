@@ -6,6 +6,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UserId } from '../common/utils/userId.util';
 
 @Injectable()
 export class AuthService {
@@ -38,7 +39,7 @@ export class AuthService {
 
     const isPasswordValid = await this.usersService.validatePassword(
       loginDto.password,
-      user.password,
+      user.password || '',
     );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
@@ -52,7 +53,7 @@ export class AuthService {
     };
   }
 
-  async validateUser(userId: string) {
+  async validateUser(userId: UserId) {
     return this.usersService.findById(userId);
   }
 

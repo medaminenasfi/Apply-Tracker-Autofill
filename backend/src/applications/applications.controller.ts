@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Put, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Body, UseGuards, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
+import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('applications')
 @UseGuards(JwtAuthGuard)
@@ -12,17 +14,39 @@ export class ApplicationsController {
 
   @Post()
   async createApplication(@GetUser() user: any, @Body() createApplicationDto: CreateApplicationDto) {
-    return this.applicationsService.create(createApplicationDto, user._id);
+    const userIdString = normalizeUserId(user._id);
+    console.log('[CREATE_APPLICATION] userId:', userIdString, 'data:', createApplicationDto);
+    const result = await this.applicationsService.create(createApplicationDto, userIdString);
+    console.log('[CREATE_APPLICATION] created with id:', (result as any)._id, 'userId:', result.userId);
+    return result;
   }
 
   @Get()
-  async getApplications(@GetUser() user: any) {
-    return this.applicationsService.findByUserId(user._id);
+  async getApplications(@GetUser() user: any, @Res() res: Response) {
+    const userIdString = normalizeUserId(user._id);
+    console.log('[BACKEND_CONTROLLER] getApplications called for userId:', userIdString);
+    const result = await this.applicationsService.findByUserId(userIdString);
+    console.log('[BACKEND_CONTROLLER] getApplications returning count:', result.length);
+
+    // Disable caching to prevent 304 responses
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+
+    // Debug response
+    return res.json({
+      count: result.length,
+      data: result,
+      userId: userIdString,
+    });
   }
 
   @Get(':id')
   async getApplication(@GetUser() user: any, @Param('id') id: string) {
-    const application = await this.applicationsService.findByIdAndUserId(id, user._id);
+    const userIdString = normalizeUserId(user._id);
+    const application = await this.applicationsService.findByIdAndUserId(id, userIdString);
     if (!application) {
       return { message: 'Application not found' };
     }
@@ -35,7 +59,8 @@ export class ApplicationsController {
     @Param('id') id: string,
     @Body() updateApplicationDto: UpdateApplicationDto,
   ) {
-    return this.applicationsService.update(id, user._id, updateApplicationDto);
+    const userIdString = normalizeUserId(user._id);
+    return this.applicationsService.update(id, userIdString, updateApplicationDto);
   }
 
   @Patch(':id/status')
@@ -44,11 +69,13 @@ export class ApplicationsController {
     @Param('id') id: string,
     @Body() body: { status: string },
   ) {
-    return this.applicationsService.updateStatus(id, user._id, body.status);
+    const userIdString = normalizeUserId(user._id);
+    return this.applicationsService.updateStatus(id, userIdString, body.status);
   }
 
   @Delete(':id')
   async deleteApplication(@GetUser() user: any, @Param('id') id: string) {
-    return this.applicationsService.delete(id, user._id);
+    const userIdString = normalizeUserId(user._id);
+    return this.applicationsService.delete(id, userIdString);
   }
 }

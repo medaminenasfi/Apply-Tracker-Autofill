@@ -1,27 +1,44 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { UserId } from '../../common/utils/userId.util';
 
 export type ApplicationDocument = Application & Document;
 
 @Schema({ timestamps: true })
 export class Application {
-  @Prop({ required: true })
-  userId: string;
+  @Prop({
+    required: true,
+    type: String,
+    validate: {
+      validator: (v: unknown) => typeof v === 'string',
+      message: 'userId must be a string'
+    }
+  })
+  userId!: UserId;
 
   @Prop({ required: true })
-  companyName: string;
+  companyName!: string;
 
   @Prop({ required: true })
-  position: string;
+  position!: string;
 
   @Prop({ required: false })
   jobUrl?: string;
 
   @Prop({ required: true, enum: ['applied', 'interview', 'accepted', 'rejected'], default: 'applied' })
-  status: string;
+  status!: string;
 
   @Prop({ required: false })
   dateApplied?: Date;
 }
 
 export const ApplicationSchema = SchemaFactory.createForClass(Application);
+
+// Pre-save hook to auto-normalize userId to string
+ApplicationSchema.pre('save', function (this: any, next: any) {
+  if (this.userId && typeof this.userId !== 'string') {
+    console.log('[APPLICATION_SCHEMA] Auto-normalizing userId to string:', this.userId);
+    this.userId = String(this.userId);
+  }
+  next();
+});

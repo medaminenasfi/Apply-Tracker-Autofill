@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
+import { normalizeUserId } from '../../common/utils/userId.util';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -34,14 +35,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'),
+      secretOrKey: configService.get<string>('JWT_SECRET') || 'default-secret',
     });
   }
 
   async validate(payload: any) {
-    const user = await this.usersService.findById(payload.sub);
+    const userIdString = normalizeUserId(payload.sub);
+    const user = await this.usersService.findById(userIdString);
     if (!user) {
       throw new UnauthorizedException();
+    }
+    // Ensure _id is always a string in the returned user object
+    if (user._id && typeof user._id !== 'string') {
+      user._id = String(user._id) as any;
     }
     // Also include role from payload if not present in user
     return user;

@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Application, ApplicationStatus, Note } from '@/types';
-import api from '@/services/api';
+import api, { fetchWithRetry, checkHealth } from '@/services/api';
 
 interface ApplicationState {
   applications: Application[];
   notes: Record<string, Note[]>; // key = applicationId
   isLoading: boolean;
   hasFetched: boolean;
+  error: string | null;
   fetchApplications: () => Promise<void>;
   addApplication: (appData: any) => Promise<void>;
   updateApplication: (_id: string, updateData: any) => Promise<void>;
@@ -34,13 +35,28 @@ export const useApplicationStore = create<ApplicationState>()(
   notes: {},
   isLoading: false,
   hasFetched: false,
+  error: null,
 
   fetchApplications: async () => {
-    set({ isLoading: true });
+    console.log('[APPLICANT_FETCH_START] Fetching applications...');
+    set({ isLoading: true, error: null });
+    
     try {
-      const response = await api.get('/applications');
-      set({ applications: response.data });
+      // Health check before fetching
+      const isHealthy = await checkHealth();
+      if (!isHealthy) {
+        throw new Error('Backend is not healthy');
+      }
+
+      const response = await fetchWithRetry(() => api.get('/applications'));
+      // Handle new debug response format
+      const data = response.data.data || response.data;
+      console.log('[APPLICANT_FETCH_SUCCESS] count=', data.length, 'data=', data);
+      set({ applications: data, error: null });
+      console.log('[STATE_UPDATE] applications=', data.length);
     } catch (error: any) {
+      console.error('[APPLICANT_FETCH_ERROR]', error);
+      set({ error: error.message || 'Failed to fetch applications' });
       throw new Error(error.response?.data?.message || 'Failed to fetch applications');
     } finally {
       set({ isLoading: false, hasFetched: true });
@@ -48,13 +64,17 @@ export const useApplicationStore = create<ApplicationState>()(
   },
 
   addApplication: async (appData) => {
+    console.log('[APPLICANT_CREATE_START] data=', appData);
     set({ isLoading: true });
     try {
       const response = await api.post('/applications', appData);
+      console.log('[APPLICANT_CREATE_SUCCESS] id=', response.data._id, 'data=', response.data);
       set((state) => ({
         applications: [...state.applications, response.data],
       }));
+      console.log('[STATE_UPDATE] applications=', get().applications.length);
     } catch (error: any) {
+      console.error('[APPLICANT_CREATE_ERROR]', error);
       throw new Error(error.response?.data?.message || 'Failed to add application');
     } finally {
       set({ isLoading: false });
@@ -217,7 +237,7 @@ export const useApplicationStore = create<ApplicationState>()(
     }),
     {
       name: 'application-storage',
-      partialize: (state) => ({ applications: state.applications, notes: state.notes, hasFetched: state.hasFetched }),
+      partialize: (state) => ({ applications: state.applications, notes: state.notes, hasFetched: state.hasFetched, error: state.error }),
     }
   )
 );

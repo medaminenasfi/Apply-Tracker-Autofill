@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { Feedback, FeedbackDocument, FeedbackStatus } from './schemas/feedback.schema';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
+import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()
 export class FeedbackService {
@@ -11,31 +12,65 @@ export class FeedbackService {
     @InjectModel(Feedback.name) private feedbackModel: Model<FeedbackDocument>,
   ) {}
 
-  async create(userId: Types.ObjectId, createFeedbackDto: CreateFeedbackDto) {
+  async create(userId: UserId, createFeedbackDto: CreateFeedbackDto) {
+    validateUserId(userId);
+    const userIdString = normalizeUserId(userId);
+    console.log('[FEEDBACK_CREATE] userId:', userIdString, 'type:', typeof userIdString);
     const feedback = new this.feedbackModel({
-      userId,
+      userId: userIdString,
       ...createFeedbackDto,
       status: FeedbackStatus.NEW,
     });
-    return feedback.save();
+    const result = await feedback.save();
+    console.log('[FEEDBACK_CREATE_SUCCESS] id:', (result as any)._id, 'userId:', result.userId);
+    return result;
   }
 
-  async findUserFeedback(userId: Types.ObjectId) {
-    return this.feedbackModel
-      .find({ userId })
-      .sort({ createdAt: -1 })
-      .exec();
+  async findUserFeedback(userId: UserId) {
+    validateUserId(userId);
+    const userIdString = normalizeUserId(userId);
+    console.log('[FEEDBACK_FIND_BY_USER] userId:', userIdString, 'type:', typeof userIdString);
+
+    // Debug: Check ALL feedback to see what userIds exist
+    const allFeedback = await this.feedbackModel.find().exec();
+    console.log('[FEEDBACK] ALL feedback in DB:', allFeedback.map((fb: any) => ({
+      _id: fb._id,
+      userId: fb.userId,
+      userIdType: typeof fb.userId,
+      userIdLength: fb.userId ? fb.userId.length : 0,
+      message: fb.message
+    })));
+
+    // Try multiple query approaches
+    const query1 = { userId: userIdString };
+    console.log('[FEEDBACK] Query 1 (exact match):', query1);
+    const result1 = await this.feedbackModel.find(query1).exec();
+    console.log('[FEEDBACK] Query 1 result count:', result1.length);
+
+    // Try with regex (case-insensitive)
+    const query2 = { userId: { $regex: new RegExp(`^${userIdString}$`, 'i') } };
+    console.log('[FEEDBACK] Query 2 (regex):', query2);
+    const result2 = await this.feedbackModel.find(query2).exec();
+    console.log('[FEEDBACK] Query 2 result count:', result2.length);
+
+    const result = result1.length > 0 ? result1 : result2;
+    console.log('[FEEDBACK_FIND_BY_USER] returning count:', result.length);
+    return result;
   }
 
-  async findOne(id: string, userId?: Types.ObjectId) {
+  async findOne(id: string, userId?: UserId) {
     const feedback = await this.feedbackModel.findById(id).exec();
     if (!feedback) {
       throw new NotFoundException('Feedback not found');
     }
 
-    // If userId is provided, check ownership
-    if (userId && !feedback.userId.equals(userId)) {
-      throw new ForbiddenException('You do not have access to this feedback');
+    // If userId is provided, check ownership (userId is now string)
+    if (userId) {
+      validateUserId(userId);
+      const userIdString = normalizeUserId(userId);
+      if (feedback.userId !== userIdString) {
+        throw new ForbiddenException('You do not have access to this feedback');
+      }
     }
 
     // Manually populate user data

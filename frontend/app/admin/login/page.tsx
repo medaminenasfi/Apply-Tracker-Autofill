@@ -21,6 +21,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const setAdmin = useAuthStore((state) => state.setAdmin);
+  const logout = useAuthStore((state) => state.logout);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +30,11 @@ export default function AdminLoginPage() {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      
+
       if (response.data.user.role === 'admin') {
+        // Clear any existing user state to prevent role mixing
+        await logout();
+
         await setAuthCookie(response.data.access_token, 'admin');
         setAdmin(response.data.user);
         toast.success('Admin login successful');

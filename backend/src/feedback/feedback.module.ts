@@ -8,7 +8,6 @@ import { UsersModule } from '../users/users.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Feedback.name, schema: FeedbackSchema }]),
-    MongooseModule.forFeature([{ name: 'User', schema: require('../users/schemas/user.schema').UserSchema }]),
     UsersModule,
   ],
   controllers: [FeedbackController, AdminFeedbackController],

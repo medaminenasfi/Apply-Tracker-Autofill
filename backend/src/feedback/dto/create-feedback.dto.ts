@@ -3,11 +3,11 @@ import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateFeedbackDto {
   @IsEnum(FeedbackType)
-  type: FeedbackType;
+  type!: FeedbackType;
 
   @IsString()
   @IsNotEmpty()
-  message: string;
+  message!: string;
 
   @IsString()
   @IsOptional()

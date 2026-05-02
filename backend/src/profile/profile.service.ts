@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Profile, ProfileDocument } from './schemas/profile.schema';
 import { UsersService } from '../users/users.service';
+import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()
 export class ProfileService {
@@ -11,8 +12,10 @@ export class ProfileService {
     private usersService: UsersService,
   ) {}
 
-  async findByUserId(userId: string): Promise<Profile | null> {
-    return this.profileModel.findOne({ userId }).exec();
+  async findByUserId(userId: UserId): Promise<Profile | null> {
+    validateUserId(userId);
+    const userIdString = normalizeUserId(userId);
+    return this.profileModel.findOne({ userId: userIdString }).exec();
   }
 
   async migrateOldFieldNames() {
@@ -58,14 +61,16 @@ export class ProfileService {
     return createdProfile.save();
   }
 
-  async update(userId: string, updateData: any): Promise<Profile> {
+  async update(userId: UserId, updateData: any): Promise<Profile | null> {
+    validateUserId(userId);
+    const userIdString = normalizeUserId(userId);
+    console.log('[PROFILE_UPDATE] userId:', userIdString, 'type:', typeof userIdString);
     console.log('Profile update called with data:', updateData);
-    console.log('User ID:', userId);
-    const profile = await this.findByUserId(userId);
+    const profile = await this.findByUserId(userIdString);
 
     if (!profile) {
       console.log('Profile not found, creating new profile');
-      return this.create({ ...updateData, userId });
+      return this.create({ ...updateData, userId: userIdString });
     }
 
     console.log('Profile found, updating existing profile');
@@ -84,7 +89,7 @@ export class ProfileService {
     console.log('Final update data:', finalUpdateData);
     
     const updatedProfile = await this.profileModel
-      .findOneAndUpdate({ userId }, { $set: finalUpdateData }, { returnDocument: 'after' })
+      .findOneAndUpdate({ userId: userIdString }, { $set: finalUpdateData }, { returnDocument: 'after' })
       .exec();
     
     console.log('Updated profile:', updatedProfile);
@@ -96,20 +101,22 @@ export class ProfileService {
       if (updateData.email) userUpdateData.email = updateData.email;
 
       console.log('Updating User collection with:', userUpdateData);
-      const updatedUser = await this.usersService.updateUser(userId, userUpdateData);
+      const updatedUser = await this.usersService.updateUser(userIdString, userUpdateData);
       console.log('Updated user:', updatedUser);
     }
 
     return updatedProfile;
   }
 
-  async updateCvUrl(userId: string, cvUrl: string, userInfo?: any): Promise<Profile> {
-    const profile = await this.findByUserId(userId);
+  async updateCvUrl(userId: UserId, cvUrl: string | null, userInfo?: any): Promise<Profile | null> {
+    validateUserId(userId);
+    const userIdString = normalizeUserId(userId);
+    const profile = await this.findByUserId(userIdString);
 
     if (!profile) {
       // Create profile if it doesn't exist
       return this.create({ 
-        userId, 
+        userId: userIdString, 
         cvUrl,
         firstName: userInfo?.firstName || '',
         lastName: userInfo?.lastName || '',
@@ -122,17 +129,19 @@ export class ProfileService {
     }
 
     return this.profileModel
-      .findOneAndUpdate({ userId }, { cvUrl }, { returnDocument: 'after' })
+      .findOneAndUpdate({ userId: userIdString }, { cvUrl }, { returnDocument: 'after' })
       .exec();
   }
 
-  async updateProfilePictureUrl(userId: string, profilePictureUrl: string | null): Promise<Profile> {
-    const profile = await this.findByUserId(userId);
+  async updateProfilePictureUrl(userId: UserId, profilePictureUrl: string | null): Promise<Profile | null> {
+    validateUserId(userId);
+    const userIdString = normalizeUserId(userId);
+    const profile = await this.findByUserId(userIdString);
 
     if (!profile) {
       // Create profile if it doesn't exist
       return this.create({ 
-        userId, 
+        userId: userIdString, 
         profilePictureUrl,
         firstName: '',
         lastName: '',
@@ -141,7 +150,7 @@ export class ProfileService {
     }
 
     return this.profileModel
-      .findOneAndUpdate({ userId }, { profilePictureUrl }, { returnDocument: 'after' })
+      .findOneAndUpdate({ userId: userIdString }, { profilePictureUrl }, { returnDocument: 'after' })
       .exec();
   }
 }

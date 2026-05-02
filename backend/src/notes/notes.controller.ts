@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } f
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { NotesService } from './notes.service';
+import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('notes')
 @UseGuards(JwtAuthGuard)
@@ -13,7 +14,8 @@ export class NotesController {
     @GetUser() user: any,
     @Body() body: { applicationId: string; text: string },
   ) {
-    return this.notesService.create(body.applicationId, user._id, body.text);
+    const userIdString = normalizeUserId(user._id);
+    return this.notesService.create(body.applicationId, userIdString, body.text);
   }
 
   @Get()
@@ -24,7 +26,8 @@ export class NotesController {
     if (!applicationId) {
       return [];
     }
-    return this.notesService.findByApplication(applicationId, user._id);
+    const userIdString = normalizeUserId(user._id);
+    return this.notesService.findByApplication(applicationId, userIdString);
   }
 
   @Patch(':noteId')
@@ -33,8 +36,9 @@ export class NotesController {
     @Param('noteId') noteId: string,
     @Body() body: { text: string },
   ) {
-    console.log('Update note - noteId:', noteId, 'userId:', user._id);
-    return this.notesService.update(noteId, user._id, body.text);
+    const userIdString = normalizeUserId(user._id);
+    console.log('Update note - noteId:', noteId, 'userId:', userIdString);
+    return this.notesService.update(noteId, userIdString, body.text);
   }
 
   @Delete(':noteId')
@@ -42,7 +46,8 @@ export class NotesController {
     @GetUser() user: any,
     @Param('noteId') noteId: string,
   ) {
-    console.log('Delete note - noteId:', noteId, 'userId:', user._id);
-    return this.notesService.delete(noteId, user._id);
+    const userIdString = normalizeUserId(user._id);
+    console.log('Delete note - noteId:', noteId, 'userId:', userIdString);
+    return this.notesService.delete(noteId, userIdString);
   }
 }

@@ -3,31 +3,40 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Application, ApplicationDocument } from './schemas/application.schema';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()
 export class ApplicationsService {
   constructor(@InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>) {}
 
   async findAll(): Promise<Application[]> {
-    return this.applicationModel.find().exec();
+    return this.applicationModel.find().populate('userId').exec();
   }
 
-  async findByUserId(userId: string): Promise<Application[]> {
-    return this.applicationModel.find({ userId }).exec();
+  async findByUserId(userId: UserId): Promise<Application[]> {
+    const userIdString = normalizeUserId(userId);
+    console.log('[BACKEND] findByUserId called with userId:', userIdString, 'type:', typeof userIdString);
+
+    const applications = await this.applicationModel.find({ userId: userIdString }).exec();
+    console.log('[BACKEND] findByUserId returning count:', applications.length);
+    return applications;
   }
 
   async findById(id: string): Promise<Application | null> {
     return this.applicationModel.findById(id).exec();
   }
 
-  async findByIdAndUserId(id: string, userId: string): Promise<Application | null> {
-    return this.applicationModel.findOne({ _id: id, userId }).exec();
+  async findByIdAndUserId(id: string, userId: UserId): Promise<Application | null> {
+    const userIdString = normalizeUserId(userId);
+    return this.applicationModel.findOne({ _id: id, userId: userIdString }).exec();
   }
 
-  async create(applicationData: CreateApplicationDto, userId: string): Promise<Application> {
+  async create(applicationData: CreateApplicationDto, userId: UserId): Promise<Application> {
+    const userIdString = normalizeUserId(userId);
+    console.log('[APPLICATION_CREATE] userId:', userIdString, 'type:', typeof userIdString);
     console.log('Applications create called with:', applicationData);
     let dateApplied = applicationData.dateApplied;
-    
+
     if (dateApplied) {
       console.log('Original dateApplied:', dateApplied);
       // If date is in YYYY-MM-DD format, use current local time with that date
@@ -45,46 +54,50 @@ export class ApplicationsService {
       dateApplied = new Date().toISOString();
       console.log('No date provided, using current UTC time:', dateApplied);
     }
-    
+
     const application = new this.applicationModel({
       ...applicationData,
       dateApplied,
-      userId,
+      userId: userIdString,
     });
     const result = await application.save();
+    console.log('[APPLICATION_CREATE_SUCCESS] id:', (result as any)._id, 'userId:', result.userId);
     console.log('Application created with dateApplied:', result.dateApplied);
     return result;
   }
 
-  async update(id: string, userId: string, updateData: any): Promise<Application | null> {
-    const application = await this.findByIdAndUserId(id, userId);
+  async update(id: string, userId: UserId, updateData: any): Promise<Application | null> {
+    const userIdString = normalizeUserId(userId);
+    const application = await this.findByIdAndUserId(id, userIdString);
     if (!application) {
       throw new NotFoundException('Application not found');
     }
 
     return this.applicationModel
-      .findOneAndUpdate({ _id: id, userId }, { $set: updateData }, { returnDocument: 'after' })
+      .findOneAndUpdate({ _id: id, userId: userIdString }, { $set: updateData }, { returnDocument: 'after' })
       .exec();
   }
 
-  async updateStatus(id: string, userId: string, status: string): Promise<Application | null> {
-    const application = await this.findByIdAndUserId(id, userId);
+  async updateStatus(id: string, userId: UserId, status: string): Promise<Application | null> {
+    const userIdString = normalizeUserId(userId);
+    const application = await this.findByIdAndUserId(id, userIdString);
     if (!application) {
       throw new NotFoundException('Application not found');
     }
 
     return this.applicationModel
-      .findOneAndUpdate({ _id: id, userId }, { $set: { status } }, { returnDocument: 'after' })
+      .findOneAndUpdate({ _id: id, userId: userIdString }, { $set: { status } }, { returnDocument: 'after' })
       .exec();
   }
 
-  async delete(id: string, userId: string): Promise<Application | null> {
-    const application = await this.findByIdAndUserId(id, userId);
+  async delete(id: string, userId: UserId): Promise<Application | null> {
+    const userIdString = normalizeUserId(userId);
+    const application = await this.findByIdAndUserId(id, userIdString);
     if (!application) {
       throw new NotFoundException('Application not found');
     }
 
-    return this.applicationModel.findOneAndDelete({ _id: id, userId }).exec();
+    return this.applicationModel.findOneAndDelete({ _id: id, userId: userIdString }).exec();
   }
 
   async deleteByAdmin(id: string): Promise<Application | null> {

@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ExtensionService } from './extension.service';
 import { SaveApplicationDto } from './dto/save-application.dto';
+import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('extension')
 @UseGuards(JwtAuthGuard)
@@ -11,12 +12,14 @@ export class ExtensionController {
 
   @Get('profile')
   async getProfile(@GetUser() user: any) {
-    return this.extensionService.getUserProfile(user._id);
+    const userIdString = normalizeUserId(user._id);
+    return this.extensionService.getUserProfile(userIdString);
   }
 
   @Post('save-application')
   async saveApplication(@GetUser() user: any, @Body() saveApplicationDto: SaveApplicationDto) {
-    const application = await this.extensionService.saveApplication(user._id, saveApplicationDto);
+    const userIdString = normalizeUserId(user._id);
+    const application = await this.extensionService.saveApplication(userIdString, saveApplicationDto);
     return { message: 'Application saved successfully', application };
   }
 }

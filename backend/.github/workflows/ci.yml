@@ -1,0 +1,52 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Type check
+      working-directory: ./backend
+      run: npm run type-check
+
+    - name: Lint
+      working-directory: ./backend
+      run: npm run lint
+
+    - name: Build
+      working-directory: ./backend
+      run: npm run build
+
+    - name: Test
+      working-directory: ./backend
+      run: npm test
+
+    - name: Check userId type safety
+      working-directory: ./backend
+      run: |
+        echo "Checking for forbidden ObjectId usage in userId context..."
+        if grep -r "userId.*ObjectId" src/ --include="*.ts" || grep -r "new ObjectId.*userId" src/ --include="*.ts"; then
+          echo "ERROR: Found ObjectId usage with userId. This is forbidden."
+          exit 1
+        fi
+        echo "✅ No ObjectId usage found in userId context"

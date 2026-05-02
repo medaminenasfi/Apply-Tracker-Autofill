@@ -11,6 +11,7 @@ import * as path from 'path';
 import { Response } from 'express';
 import { join } from 'path';
 import { existsSync, createReadStream } from 'fs';
+import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('profile')
 @UseGuards(JwtAuthGuard)
@@ -21,15 +22,16 @@ export class ProfileController {
 
   @Get()
   async getProfile(@GetUser() user: any) {
-    console.log('GET /profile called for user:', user._id);
-    const profile = await this.profileService.findByUserId(user._id) as any;
+    const userIdString = normalizeUserId(user._id);
+    console.log('[PROFILE_CONTROLLER] GET /profile called for userId:', userIdString);
+    const profile = await this.profileService.findByUserId(userIdString) as any;
     console.log('Profile found:', profile);
     if (!profile) {
       // Return user data if profile doesn't exist
       console.log('No profile found, returning user data');
       return {
         _id: null,
-        userId: user._id,
+        userId: userIdString,
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
@@ -69,9 +71,10 @@ export class ProfileController {
   @Put()
   async updateProfile(@GetUser() user: any, @Body() updateProfileDto: UpdateProfileDto) {
     try {
-      return this.profileService.update(user._id, {
+      const userIdString = normalizeUserId(user._id);
+      return this.profileService.update(userIdString, {
         ...updateProfileDto,
-        userId: user._id,
+        userId: userIdString,
       });
     } catch (error) {
       console.error('Profile update error:', error);
@@ -81,7 +84,8 @@ export class ProfileController {
 
   @Get('cv')
   async getCv(@GetUser() user: any) {
-    const profile = await this.profileService.findByUserId(user._id);
+    const userIdString = normalizeUserId(user._id);
+    const profile = await this.profileService.findByUserId(userIdString);
     
     if (!profile || !profile.cvUrl) {
       return { hasCV: false, cvUrl: null, filename: null };
@@ -98,7 +102,8 @@ export class ProfileController {
 
   @Get('cv/preview')
   async previewCV(@GetUser() user: any, @Res() res: Response) {
-    const profile = await this.profileService.findByUserId(user._id);
+    const userIdString = normalizeUserId(user._id);
+    const profile = await this.profileService.findByUserId(userIdString);
     
     if (!profile || !profile.cvUrl) {
       throw new NotFoundException('CV not found');
@@ -190,8 +195,10 @@ export class ProfileController {
       throw new BadRequestException('No file uploaded');
     }
 
+    const userIdString = normalizeUserId(user._id);
+
     // Delete old CV if exists
-    const profile = await this.profileService.findByUserId(user._id);
+    const profile = await this.profileService.findByUserId(userIdString);
     if (profile && profile.cvUrl) {
       const oldCvPath = path.join(process.cwd(), profile.cvUrl);
       if (fs.existsSync(oldCvPath)) {
@@ -200,13 +207,14 @@ export class ProfileController {
     }
 
     const cvUrl = `/uploads/cv/${file.filename}`;
-    const updatedProfile = await this.profileService.updateCvUrl(user._id, cvUrl, user);
+    const updatedProfile = await this.profileService.updateCvUrl(userIdString, cvUrl, user);
     return updatedProfile;
   }
 
   @Delete('cv')
   async deleteCv(@GetUser() user: any) {
-    const profile = await this.profileService.findByUserId(user._id);
+    const userIdString = normalizeUserId(user._id);
+    const profile = await this.profileService.findByUserId(userIdString);
     if (!profile) {
       throw new BadRequestException('Profile not found');
     }
@@ -222,7 +230,7 @@ export class ProfileController {
     }
 
     // Remove cvUrl from profile
-    const updatedProfile = await this.profileService.updateCvUrl(user._id, null);
+    const updatedProfile = await this.profileService.updateCvUrl(userIdString, null);
     return updatedProfile;
   }
 
@@ -274,8 +282,10 @@ export class ProfileController {
 
     console.log('File received:', file.filename);
 
+    const userIdString = normalizeUserId(user._id);
+
     // Delete old profile picture if exists
-    const profile = await this.profileService.findByUserId(user._id);
+    const profile = await this.profileService.findByUserId(userIdString);
     if (profile && (profile as any).profilePictureUrl) {
       const oldPicturePath = path.join(process.cwd(), (profile as any).profilePictureUrl);
       if (fs.existsSync(oldPicturePath)) {
@@ -285,14 +295,15 @@ export class ProfileController {
 
     const profilePictureUrl = `/uploads/profile-pictures/${file.filename}`;
     console.log('Profile picture URL:', profilePictureUrl);
-    const updatedProfile = await this.profileService.updateProfilePictureUrl(user._id, profilePictureUrl);
+    const updatedProfile = await this.profileService.updateProfilePictureUrl(userIdString, profilePictureUrl);
     console.log('Updated profile:', updatedProfile);
     return updatedProfile;
   }
 
   @Delete('profile-picture')
   async deleteProfilePicture(@GetUser() user: any) {
-    const profile = await this.profileService.findByUserId(user._id);
+    const userIdString = normalizeUserId(user._id);
+    const profile = await this.profileService.findByUserId(userIdString);
     if (!profile) {
       throw new BadRequestException('Profile not found');
     }
@@ -308,7 +319,7 @@ export class ProfileController {
     }
 
     // Remove profilePictureUrl from profile
-    const updatedProfile = await this.profileService.updateProfilePictureUrl(user._id, null);
+    const updatedProfile = await this.profileService.updateProfilePictureUrl(userIdString, null);
     return updatedProfile;
   }
 }

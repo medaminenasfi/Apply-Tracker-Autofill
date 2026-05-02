@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { FeedbackService } from './feedback.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
@@ -15,27 +16,38 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('feedback')
 @UseGuards(JwtAuthGuard)
 export class FeedbackController {
+  private readonly logger = new Logger(FeedbackController.name);
+
   constructor(private readonly feedbackService: FeedbackService) {}
 
   @Post()
-  create(@GetUser() user, @Body() createFeedbackDto: CreateFeedbackDto) {
-    console.log('Creating feedback with user:', user);
-    console.log('User _id:', user._id);
-    return this.feedbackService.create(user._id, createFeedbackDto);
+  async create(@GetUser() user: any, @Body() createFeedbackDto: CreateFeedbackDto) {
+    try {
+      const userIdString = normalizeUserId(user._id);
+      this.logger.log(`Creating feedback with userId: ${userIdString}`);
+      this.logger.log(`DTO data: ${JSON.stringify(createFeedbackDto)}`);
+      return this.feedbackService.create(userIdString, createFeedbackDto);
+    } catch (error: any) {
+      this.logger.error(`Error creating feedback: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   @Get('my')
-  findMyFeedback(@GetUser() user) {
-    return this.feedbackService.findUserFeedback(user._id);
+  findMyFeedback(@GetUser() user: any) {
+    const userIdString = normalizeUserId(user._id);
+    return this.feedbackService.findUserFeedback(userIdString);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @GetUser() user) {
-    return this.feedbackService.findOne(id, user._id);
+  findOne(@Param('id') id: string, @GetUser() user: any) {
+    const userIdString = normalizeUserId(user._id);
+    return this.feedbackService.findOne(id, userIdString);
   }
 }
 

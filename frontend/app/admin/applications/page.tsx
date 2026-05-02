@@ -113,7 +113,7 @@ export default function AdminApplicationsPage() {
                       <TableRow>
                         <TableHead>Company</TableHead>
                         <TableHead>Position</TableHead>
-                        <TableHead>User Email</TableHead>
+                        <TableHead>Email</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Applied Date</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -122,15 +122,17 @@ export default function AdminApplicationsPage() {
                     <TableBody>
                       {applications.map((app) => (
                         <TableRow key={app._id} className="hover:bg-muted/50">
-                          <TableCell className="font-medium">{app.companyName}</TableCell>
-                          <TableCell>{app.position}</TableCell>
-                          <TableCell className="text-muted-foreground">{app.userEmail || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">{app.companyName || app.company || 'N/A'}</TableCell>
+                          <TableCell>{app.position || 'N/A'}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {app.userId?.email || app.userEmail || app.email || 'N/A'}
+                          </TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(app.status)}>
                               {app.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{app.dateApplied ? formatDate(app.dateApplied) : 'N/A'}</TableCell>
+                          <TableCell>{app.dateApplied ? formatDate(app.dateApplied) : app.createdAt ? formatDate(app.createdAt) : 'N/A'}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
                               {app.jobUrl && (
@@ -145,7 +147,7 @@ export default function AdminApplicationsPage() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => handleDelete(app._id, app.companyName)}
+                                onClick={() => handleDelete(app._id, app.companyName || app.company || 'Unknown')}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

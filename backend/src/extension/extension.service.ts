@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ProfileService } from '../profile/profile.service';
 import { ApplicationsService } from '../applications/applications.service';
+import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()
 export class ExtensionService {
@@ -9,8 +10,9 @@ export class ExtensionService {
     private applicationsService: ApplicationsService,
   ) {}
 
-  async getUserProfile(userId: string) {
-    const profile = await this.profileService.findByUserId(userId);
+  async getUserProfile(userId: UserId) {
+    const userIdString = normalizeUserId(userId);
+    const profile = await this.profileService.findByUserId(userIdString);
     if (!profile) {
       return { message: 'Profile not found' };
     }
@@ -27,7 +29,9 @@ export class ExtensionService {
     };
   }
 
-  async saveApplication(userId: string, applicationData: any) {
+  async saveApplication(userId: UserId, applicationData: any) {
+    const userIdString = normalizeUserId(userId);
+    console.log('[EXTENSION_SAVE_APP] userId:', userIdString, 'type:', typeof userIdString);
     console.log('Extension saveApplication called with:', applicationData);
     
     // Filter out empty values for optional fields
@@ -68,7 +72,7 @@ export class ExtensionService {
     const result = await this.applicationsService.create({
       ...filteredData,
       status: 'applied',
-    }, userId);
+    }, userIdString);
     console.log('Application created with dateApplied:', result.dateApplied);
     return result;
   }

@@ -1,0 +1,35 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "NewExpression[callee.name='ObjectId'][arguments.length=1]",
+        "message": "Do not use new ObjectId() for userId. Use normalizeUserId() instead. userId must always be a string."
+      },
+      {
+        "selector": "Identifier[name='Types'][parent.object.property.name='ObjectId']",
+        "message": "Do not use Types.ObjectId for userId. Use UserId type from userId.util.ts instead."
+      },
+      {
+        "selector": "TSParameterPattern > BindingIdentifier[name='userId'][typeAnnotation.typeAnnotation.typeName.name='ObjectId']",
+        "message": "userId parameter must be of type UserId (string), not ObjectId."
+      },
+      {
+        "selector": "TSParameterPattern > BindingIdentifier[name='userId'][typeAnnotation.typeAnnotation.typeName.name='Types'][parent.object.property.name='ObjectId']",
+        "message": "userId parameter must be of type UserId (string), not Types.ObjectId."
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": "error"
+  },
+  "env": {
+    "node": true,
+    "es6": true
+  }
+}

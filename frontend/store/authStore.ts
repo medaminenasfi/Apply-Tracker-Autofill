@@ -99,19 +99,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initialize: () => {
     if (typeof window === 'undefined') return;
-    
+
     const userStr = localStorage.getItem('user');
     const adminStr = localStorage.getItem('admin');
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
     const isAdminAuthenticated = localStorage.getItem('isAdminAuthenticated') === 'true';
-    
+
+    // Only load user state if user is authenticated
     let user = null;
-    let admin = null;
-    if (userStr) {
+    if (userStr && isAuthenticated) {
       try { user = JSON.parse(userStr); } catch (e) {}
     }
-    if (adminStr) {
+
+    // Only load admin state if admin is authenticated
+    let admin = null;
+    if (adminStr && isAdminAuthenticated) {
       try { admin = JSON.parse(adminStr); } catch (e) {}
+    }
+
+    // Clear conflicting states - if user is authenticated, ensure admin is not
+    if (isAuthenticated && isAdminAuthenticated) {
+      // Both authenticated - this is a conflict, clear both
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+      admin = null;
+      localStorage.removeItem('isAdminAuthenticated');
     }
 
     set({ user, admin, isAuthenticated, isAdminAuthenticated, isInitialized: true });
@@ -121,17 +133,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await api.post('/auth/login', { email, password });
-      
+
       const user = response.data.user;
       const token = response.data.access_token;
-      
+
       // Prevent admin from logging in as normal user
       if (user.role === 'admin') {
         throw new Error('Please use the admin login portal.');
       }
-      
+
+      // Clear any existing admin state to prevent role mixing
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+      set({ admin: null, isAdminAuthenticated: false });
+
       await setAuthCookie(token, 'user');
-      
+
       // Fetch full profile to get profile picture URL
       try {
         const profileResponse = await api.get('/profile');
@@ -143,14 +160,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           userId: fullProfile.userId || user.userId,
           profilePictureUpdatedAt: Date.now()
         };
-        
+
         // Store in localStorage
         localStorage.setItem('user', JSON.stringify(fullUser));
         localStorage.setItem('isAuthenticated', 'true');
-        
+
         // Set state
-        set({ 
-          user: fullUser, 
+        set({
+          user: fullUser,
           isAuthenticated: true
         });
       } catch (profileError) {
@@ -158,8 +175,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Fallback to basic user data
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.setItem('isAuthenticated', 'true');
-        set({ 
-          user, 
+        set({
+          user,
           isAuthenticated: true
         });
       }
@@ -174,19 +191,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await api.post('/auth/register', userData);
-      
+
       const user = response.data.user;
       const token = response.data.access_token;
-      
+
+      // Clear any existing admin state to prevent role mixing
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+      set({ admin: null, isAdminAuthenticated: false });
+
       await setAuthCookie(token, 'user');
-      
+
       // Store in localStorage
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isAuthenticated', 'true');
-      
+
       // Set state
-      set({ 
-        user, 
+      set({
+        user,
         isAuthenticated: true
       });
     } catch (error: any) {
@@ -205,7 +227,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await clearAuthCookie('user');
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
-      set({ user: null, isAuthenticated: false });
+      // Also clear admin state to prevent role mixing
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+      set({ user: null, isAuthenticated: false, admin: null, isAdminAuthenticated: false });
     }
   },
 
@@ -218,7 +243,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await clearAuthCookie('admin');
       localStorage.removeItem('admin');
       localStorage.removeItem('isAdminAuthenticated');
-      set({ admin: null, isAdminAuthenticated: false });
+      // Also clear user state to prevent role mixing
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      set({ admin: null, isAdminAuthenticated: false, user: null, isAuthenticated: false });
     }
   },
 

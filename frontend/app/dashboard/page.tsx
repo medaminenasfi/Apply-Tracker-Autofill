@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,10 @@ import { StatCardSkeleton, ListSkeleton } from '@/components/ui/skeleton';
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { applications, fetchApplications, hasFetched } = useApplicationStore();
+  const { applications, fetchApplications, hasFetched, isLoading, error } = useApplicationStore();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
+  const requestIdRef = useRef(0);
   const { setLoading } = useLoadingStore();
 
   // Redirect if not authenticated
@@ -28,12 +29,21 @@ export default function DashboardPage() {
     }
   }, [user, router]);
 
+  // Auth readiness guard - only fetch if user exists
   useEffect(() => {
     if (user) {
+      // Request deduplication
+      const currentRequestId = ++requestIdRef.current;
+
+      console.log('[DASHBOARD] Fetching applications for user:', user._id, 'requestId:', currentRequestId);
+      
       withLoader(() => fetchApplications(), setLoading)
-        .then(() => toast.success('Applications loaded successfully'))
+        .then(() => {
+          console.log('[DASHBOARD] Applications fetched successfully');
+          toast.success('Applications loaded successfully');
+        })
         .catch((err) => {
-          console.error(err);
+          console.error('[DASHBOARD] Error fetching applications:', err);
           toast.error('Failed to load applications');
         });
     }
@@ -61,17 +71,18 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Filter user's applications
-  const userApps = applications.filter((app) => app.userId === user?._id || app.userId === user?.userId);
+  // Backend already scopes applications by userId, no need to filter on frontend
   const stats = {
-    total: userApps.length,
-    applied: userApps.filter((app) => app.status.toLowerCase() === 'applied').length,
-    interview: userApps.filter((app) => app.status.toLowerCase() === 'interview').length,
-    accepted: userApps.filter((app) => app.status.toLowerCase() === 'accepted').length,
+    total: applications.length,
+    applied: applications.filter((app) => app.status.toLowerCase() === 'applied').length,
+    interview: applications.filter((app) => app.status.toLowerCase() === 'interview').length,
+    accepted: applications.filter((app) => app.status.toLowerCase() === 'accepted').length,
   };
 
+  console.log('[DASHBOARD_STATS] total=', stats.total, 'applied=', stats.applied, 'interview=', stats.interview, 'accepted=', stats.accepted, 'applications=', applications.length);
+
   // Show skeleton if not fetched yet
-  if (!hasFetched) {
+  if (!hasFetched || isLoading) {
     return (
       <DashboardLayout>
         <div className="space-y-8">
@@ -87,6 +98,64 @@ export default function DashboardPage() {
             <StatCardSkeleton />
             <StatCardSkeleton />
           </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error state if fetch failed
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Welcome back!</h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Track your job applications and manage your career journey
+            </p>
+          </div>
+          <Card className="p-8 border-red-200 bg-red-50 dark:bg-red-900/10">
+            <CardHeader>
+              <CardTitle className="text-red-600 dark:text-red-400">Unable to Load Applications</CardTitle>
+              <CardDescription>
+                {error}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => fetchApplications()}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show empty state if no applications
+  if (applications.length === 0) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user?.firstName}!</h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Track your job applications and manage your career journey
+            </p>
+          </div>
+          <Card className="p-8">
+            <CardHeader>
+              <CardTitle>No Applications Yet</CardTitle>
+              <CardDescription>
+                Start tracking your job applications by adding your first one
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push('/applicant')}>
+                Add Your First Application
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     );

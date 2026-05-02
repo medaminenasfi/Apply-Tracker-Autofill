@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import { User } from '../../users/schemas/user.schema';
+import { Document } from 'mongoose';
+import { UserId } from '../../common/utils/userId.util';
 
 export type FeedbackDocument = Feedback & Document;
 
@@ -16,16 +16,20 @@ export enum FeedbackStatus {
   RESOLVED = 'RESOLVED',
 }
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, collection: 'feedbacks' })
 export class Feedback {
-  @Prop({ type: Types.ObjectId, required: true, index: true, ref: User.name })
-  userId: Types.ObjectId;
+  @Prop({
+    type: String,
+    required: true,
+    index: true
+  })
+  userId!: UserId;
 
   @Prop({ type: String, enum: FeedbackType, required: true })
-  type: FeedbackType;
+  type!: FeedbackType;
 
   @Prop({ type: String, required: true })
-  message: string;
+  message!: string;
 
   @Prop({ type: String })
   attachment?: string;
@@ -34,16 +38,24 @@ export class Feedback {
   adminReply?: string;
 
   @Prop({ type: String, enum: FeedbackStatus, default: FeedbackStatus.NEW, index: true })
-  status: FeedbackStatus;
+  status!: FeedbackStatus;
 
   @Prop({ type: Date })
-  createdAt: Date;
+  createdAt!: Date;
 
   @Prop({ type: Date })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export const FeedbackSchema = SchemaFactory.createForClass(Feedback);
+
+// Pre-save hook to auto-normalize userId to string
+FeedbackSchema.pre('save', function (this: any) {
+  if (this.userId && typeof this.userId !== 'string') {
+    console.log('[FEEDBACK_SCHEMA] Auto-normalizing userId to string:', this.userId);
+    this.userId = String(this.userId);
+  }
+});
 
 // Index for efficient queries
 FeedbackSchema.index({ userId: 1, createdAt: -1 });

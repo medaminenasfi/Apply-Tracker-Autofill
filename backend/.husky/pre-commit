@@ -1,0 +1,29 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running pre-commit checks..."
+
+# Run type check
+echo "🔍 Running type check..."
+npm run type-check
+if [ $? -ne 0 ]; then
+  echo "❌ Type check failed. Commit blocked."
+  exit 1
+fi
+
+# Run lint
+echo "🔍 Running lint..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Lint failed. Commit blocked."
+  exit 1
+fi
+
+# Check for forbidden ObjectId usage in userId context
+echo "🔍 Checking for forbidden ObjectId usage in userId context..."
+if grep -r "userId.*ObjectId" src/ --include="*.ts" 2>/dev/null || grep -r "new ObjectId.*userId" src/ --include="*.ts" 2>/dev/null; then
+  echo "❌ Found ObjectId usage with userId. This is forbidden. Commit blocked."
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed. Proceeding with commit."

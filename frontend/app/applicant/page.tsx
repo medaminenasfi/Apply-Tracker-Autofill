@@ -21,16 +21,22 @@ export default function ApplicantPage() {
 
   useEffect(() => {
     if (user) {
+      console.log('[APPLICANT_PAGE] Fetching applications for user:', user._id);
       withLoader(() => fetchApplications(), setLoading)
-        .then(() => toast.success('Applications loaded successfully'))
+        .then(() => {
+          console.log('[APPLICANT_PAGE] Applications fetched successfully');
+          toast.success('Applications loaded successfully');
+        })
         .catch((err) => {
-          console.error(err);
+          console.error('[APPLICANT_PAGE] Error fetching applications:', err);
           toast.error('Failed to load applications');
         });
     }
   }, [user, fetchApplications, setLoading]);
 
-  const userApplications = user ? applications.filter((app) => app.userId === user._id || app.userId === user.userId) : [];
+  const userApplications = applications; // Backend already scopes by userId
+
+  console.log('[APPLICANT_PAGE] applications count:', userApplications.length);
 
   // Show skeleton if not fetched yet
   if (!hasFetched) {

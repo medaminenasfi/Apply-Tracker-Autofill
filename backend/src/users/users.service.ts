@@ -94,7 +94,7 @@ export class UsersService {
     });
   }
 
-  async updateUser(userId: string, updateData: any): Promise<User> {
+  async updateUser(userId: string, updateData: any): Promise<User | null> {
     console.log('UsersService.updateUser called with userId:', userId, 'and data:', updateData);
     const user = await this.userModel.findById(userId).exec();
     console.log('Current user before update:', user);

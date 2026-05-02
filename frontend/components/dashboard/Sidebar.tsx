@@ -85,7 +85,7 @@ export function Sidebar() {
             return (
               <Tooltip key={item.href}>
                 <TooltipTrigger asChild>
-                  <Link href={item.href} onClick={handleNavClick}>
+                  <Link href={item.href}>
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}
                       className={`w-full justify-start gap-3 transition-all duration-300 ${

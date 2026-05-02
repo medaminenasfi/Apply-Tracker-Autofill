@@ -40,7 +40,7 @@ interface AddApplicationModalProps {
 
 export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalProps) {
   const { user } = useAuth();
-  const { addApplication } = useApplicationStore();
+  const { addApplication, fetchApplications } = useApplicationStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ApplicationFormData>({
@@ -58,6 +58,7 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
   const onSubmit = async (data: ApplicationFormData) => {
     if (!user) return;
 
+    console.log('[ADD_APPLICATION_MODAL] Submitting application...');
     setIsSubmitting(true);
     try {
       const applicationData: any = {
@@ -75,12 +76,17 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
         applicationData.note = data.note;
       }
 
+      console.log('[ADD_APPLICATION_MODAL] Calling addApplication with data=', applicationData);
       await addApplication(applicationData);
+
+      console.log('[ADD_APPLICATION_MODAL] Refetching applications to sync state...');
+      await fetchApplications();
 
       toast.success('Application added successfully!');
       form.reset();
       onOpenChange(false);
     } catch (error: any) {
+      console.error('[ADD_APPLICATION_MODAL] Error:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to add application');
     } finally {
       setIsSubmitting(false);
