@@ -10,7 +10,30 @@ export class ApplicationsService {
   constructor(@InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>) {}
 
   async findAll(): Promise<Application[]> {
-    return this.applicationModel.find().populate('userId').exec();
+    const applications = await this.applicationModel.find().exec();
+    
+    // Manually populate user data for each application
+    const populatedApplications = await Promise.all(
+      applications.map(async (app) => {
+        try {
+          const User = this.applicationModel.db.model('User');
+          const user = await User.findById(app.userId).select('email firstName lastName').exec();
+          return {
+            ...(app as any).toObject(),
+            userId: user ? {
+              _id: user._id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName
+            } : app.userId
+          };
+        } catch (error) {
+          return app;
+        }
+      })
+    );
+
+    return populatedApplications;
   }
 
   async findByUserId(userId: UserId): Promise<Application[]> {
