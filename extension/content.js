@@ -1,13 +1,45 @@
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'autofill') {
-    const profile = request.profile;
-    autofillForm(profile);
-    
-    // Detect job info from the page
-    const jobInfo = detectJobInfo();
-    
-    sendResponse({ success: true, jobInfo });
+  console.log('Content script received message:', request.action);
+  
+  try {
+    if (request.action === 'autofill') {
+      console.log('Autofill request profile:', request.profile);
+      const profile = request.profile;
+      
+      if (!profile) {
+        console.error('Profile is missing in autofill request');
+        sendResponse({ success: false, error: 'Profile is missing' });
+        return true;
+      }
+      
+      console.log('Starting autofill with profile:', profile);
+      autofillForm(profile);
+      
+      // Detect job info from the page
+      const jobInfo = detectJobInfo();
+      
+      console.log('Sending response with job info:', jobInfo);
+      
+      // Add debug info to response
+      const debugInfo = {
+        hostname: window.location.hostname,
+        url: window.location.href,
+        h1Count: document.querySelectorAll('h1').length,
+        ogTitle: document.querySelector('meta[property="og:title"]')?.content || null,
+        ogSiteName: document.querySelector('meta[property="og:site_name"]')?.content || null
+      };
+      
+      console.log('Debug info:', debugInfo);
+      sendResponse({ success: true, jobInfo, debugInfo });
+    } else if (request.action === 'ping') {
+      // Ping to check if content script is loaded
+      console.log('Ping received');
+      sendResponse({ success: true });
+    }
+  } catch (error) {
+    console.error('Error in content script message handler:', error);
+    sendResponse({ success: false, error: error.message });
   }
   return true;
 });
@@ -58,17 +90,49 @@ const fieldKeywords = {
   ]
 };
 
-// Job title keywords for confidence scoring
+// Job title keywords for confidence scoring (English and French)
 const jobTitleKeywords = [
-  'developer', 'engineer', 'designer', 'manager', 'intern', 'internship', 'stage',
-  'fullstack', 'frontend', 'backend', 'software', 'data', 'analyst', 'marketing', 'sales',
-  'product', 'qa', 'devops', 'architect', 'consultant', 'specialist', 'lead', 'senior', 'junior',
+  // English
+  'developer', 'engineer', 'designer', 'manager', 'intern', 'internship',
+  'fullstack', 'frontend', 'backend', 'software', 'data', 'analyst',
+  'architect', 'consultant', 'specialist', 'lead', 'senior', 'junior',
+  'marketing', 'sales', 'product', 'qa', 'devops',
   // French
-  'développeur', 'developpeur', 'ingénieur', 'ingenieur', 'designer', 'stagiaire', 'stage',
-  'commercial', 'marketing', 'analyste', 'chef de projet', 'directeur', 'gérant'
+  'développeur', 'developpeur', 'ingénieur', 'ingenieur', 'designer',
+  'stagiaire', 'stage', 'fullstack', 'frontend', 'backend',
+  'logiciel', 'données', 'data', 'analyste', 'chef de projet',
+  'directeur', 'gérant', 'commercial', 'marketing'
 ];
 
+// Generic text to ignore
+const genericTextToIgnore = [
+  'contactez-nous', 'restons en contact', 'let\'s connect', 'connect',
+  'apply', 'submit', 'retour', 'back', 'fr', 'en', 'close', 'cancel',
+  'save', 'upload', 'delete', 'voir', 'voir plus', 'see more', 'learn more'
+];
+
+// Native value setter for React forms
+function setNativeValue(element, value) {
+  const valueSetter = Object.getOwnPropertyDescriptor(element, "value")?.set;
+  const prototype = Object.getPrototypeOf(element);
+  const prototypeValueSetter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+
+  if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
+    prototypeValueSetter.call(element, value);
+  } else if (valueSetter) {
+    valueSetter.call(element, value);
+  } else {
+    element.value = value;
+  }
+
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+  element.dispatchEvent(new Event("change", { bubbles: true }));
+  element.dispatchEvent(new Event("blur", { bubbles: true }));
+}
+
 function autofillForm(profile) {
+  console.log('Autofill profile:', profile);
+  
   // Track which fields have been filled to avoid conflicts
   const filledFields = new Set();
   
@@ -96,12 +160,19 @@ function autofillForm(profile) {
   const fullPhoneNumber = profile.phone || `${countryCode}${localPhone}`;
   console.log('Phone autofill:', { countryCode, localPhone, fullPhoneNumber, original: profile.phone });
   
+  // Check if phone field should include country code
+  const requiresFullPhone = checkPhoneRequiresFullCode();
+  console.log('Phone requires full code:', requiresFullPhone);
+  
   // First, try to handle country code fields separately
-  const countryCodeResult = fillCountryCode(countryCode, filledFields);
-  console.log('Country code fill result:', countryCodeResult);
+  if (!requiresFullPhone) {
+    const countryCodeResult = fillCountryCode(countryCode, filledFields);
+    console.log('Country code fill result:', countryCodeResult);
+  }
   
   // Then fill phone number fields
-  fillPhoneFields(localPhone, filledFields);
+  const phoneToFill = requiresFullPhone ? fullPhoneNumber : localPhone;
+  fillPhoneFields(phoneToFill, fullPhoneNumber, filledFields);
   
   // Field mappings with multiple selectors to try (excluding phone)
   const fieldMappings = {
@@ -148,16 +219,21 @@ function autofillForm(profile) {
       { selector: 'input[name="fullName"]', type: 'name' },
       { selector: 'input[name="full_name"]', type: 'name' },
       { selector: 'input[name="fullname"]', type: 'name' },
+      { selector: 'input[name="complete name"]', type: 'name' },
       { selector: 'input[name="nom complet"]', type: 'name' },
       { selector: 'input[id="fullName"]', type: 'name' },
       { selector: 'input[id="full_name"]', type: 'name' },
+      { selector: 'input[id="nom complet"]', type: 'name' },
       { selector: 'input[placeholder*="full name" i]', type: 'name' },
       { selector: 'input[placeholder*="Full Name" i]', type: 'name' },
+      { selector: 'input[placeholder*="complete name" i]', type: 'name' },
+      { selector: 'input[placeholder*="Complete Name" i]', type: 'name' },
       { selector: 'input[placeholder*="name" i]', type: 'name' },
       { selector: 'input[placeholder*="nom complet" i]', type: 'name' },
       { selector: 'input[placeholder*="Nom complet" i]', type: 'name' },
       { selector: 'input[aria-label*="full name" i]', type: 'name' },
       { selector: 'input[aria-label*="Full Name" i]', type: 'name' },
+      { selector: 'input[aria-label*="complete name" i]', type: 'name' },
       { selector: 'input[aria-label*="nom complet" i]', type: 'name' },
       { selector: 'input[aria-label*="Nom complet" i]', type: 'name' },
     ],
@@ -173,6 +249,8 @@ function autofillForm(profile) {
       { selector: 'input[placeholder*="Email" i]', type: 'email' },
       { selector: 'input[placeholder*="e-mail" i]', type: 'email' },
       { selector: 'input[placeholder*="E-mail" i]', type: 'email' },
+      { selector: 'input[placeholder*="mail" i]', type: 'email' },
+      { selector: 'input[placeholder*="Mail" i]', type: 'email' },
       { selector: 'input[placeholder*="courriel" i]', type: 'email' },
       { selector: 'input[placeholder*="Courriel" i]', type: 'email' },
       { selector: 'input[placeholder*="adresse email" i]', type: 'email' },
@@ -236,6 +314,9 @@ function autofillForm(profile) {
     for (const mapping of mappings) {
       const element = document.querySelector(mapping.selector);
       if (element && element.tagName === 'INPUT' && !filledFields.has(element) && element.type !== 'file') {
+        const context = getFieldContext(element);
+        console.log('Detected field context:', context);
+        console.log('Filling field:', field, value);
         fillInput(element, value);
         filledFields.add(element);
         break; // Stop trying once we find and fill a field
@@ -245,12 +326,15 @@ function autofillForm(profile) {
 
   // Then try to find fields by label text (only if not already filled)
   const labelMappings = [
+    { label: 'Full Name', value: `${profile.firstName} ${profile.lastName}` },
+    { label: 'full name', value: `${profile.firstName} ${profile.lastName}` },
+    { label: 'fullname', value: `${profile.firstName} ${profile.lastName}` },
+    { label: 'complete name', value: `${profile.firstName} ${profile.lastName}` },
+    { label: 'Nom complet', value: `${profile.firstName} ${profile.lastName}` },
     { label: 'Prénom', value: profile.firstName },
     { label: 'First Name', value: profile.firstName },
     { label: 'Nom', value: profile.lastName },
     { label: 'Last Name', value: profile.lastName },
-    { label: 'Nom complet', value: `${profile.firstName} ${profile.lastName}` },
-    { label: 'Full Name', value: `${profile.firstName} ${profile.lastName}` },
     { label: 'Adresse e-mail', value: profile.email },
     { label: 'Courriel', value: profile.email },
     { label: 'Email', value: profile.email },
@@ -266,6 +350,77 @@ function autofillForm(profile) {
   
   // Detect CV upload fields and show message
   detectAndNotifyCvFields();
+}
+
+function checkPhoneRequiresFullCode() {
+  // Check if any phone label mentions "include country code"
+  const phoneKeywords = ['phone', 'téléphone', 'telephone', 'tel', 'tél', 'mobile', 'numéro', 'numero'];
+  const includeCodeKeywords = ['include country code', 'inclure code pays', 'code pays inclus', '+'];
+  
+  // Check labels
+  const labels = document.querySelectorAll('label');
+  for (const label of labels) {
+    const labelText = normalizeText(label.textContent);
+    const isPhoneLabel = phoneKeywords.some(keyword => labelText.includes(normalizeText(keyword)));
+    
+    if (isPhoneLabel) {
+      const includesCode = includeCodeKeywords.some(keyword => labelText.includes(normalizeText(keyword)));
+      if (includesCode) {
+        console.log('Phone label requires full code:', label.textContent);
+        return true;
+      }
+    }
+  }
+  
+  // Check placeholders
+  const inputs = document.querySelectorAll('input[type="tel"], input[type="text"]');
+  for (const input of inputs) {
+    const placeholder = input.placeholder || '';
+    const normalizedPlaceholder = normalizeText(placeholder);
+    const isPhoneInput = phoneKeywords.some(keyword => normalizedPlaceholder.includes(normalizeText(keyword)));
+    
+    if (isPhoneInput) {
+      const includesCode = includeCodeKeywords.some(keyword => normalizedPlaceholder.includes(normalizeText(keyword)));
+      if (includesCode) {
+        console.log('Phone placeholder requires full code:', placeholder);
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+function getFieldContext(element) {
+  const context = {
+    name: element.name,
+    id: element.id,
+    placeholder: element.placeholder,
+    ariaLabel: element.getAttribute('aria-label'),
+    labelText: '',
+    parentText: '',
+    previousSiblingText: ''
+  };
+  
+  // Get label text
+  const label = document.querySelector(`label[for="${element.id}"]`);
+  if (label) {
+    context.labelText = label.textContent.trim();
+  }
+  
+  // Get parent text
+  const parent = element.closest('div, section, fieldset');
+  if (parent) {
+    context.parentText = parent.textContent.trim().substring(0, 100);
+  }
+  
+  // Get previous sibling text
+  const previousSibling = element.previousElementSibling;
+  if (previousSibling) {
+    context.previousSiblingText = previousSibling.textContent.trim().substring(0, 50);
+  }
+  
+  return context;
 }
 
 function detectAndNotifyCvFields() {
@@ -373,17 +528,16 @@ function showCvUploadMessage(fileInput) {
 }
 
 function detectJobInfo() {
-  const jobTitle = detectJobTitle();
-  const companyName = detectCompanyName();
-  const jobUrl = window.location.href;
+  const { position, company } = detectJobTitle();
   
-  console.log('Detected job info:', { jobTitle, companyName, jobUrl });
+  console.log('Detected job info:', { position, company });
   
+  // Don't return jobUrl from content script - it may be in an iframe
+  // The popup will use the tab URL instead
   return {
-    jobTitle: jobTitle || '',
-    companyName: companyName || '',
-    jobUrl: jobUrl,
-    confidence: calculateConfidence(jobTitle, companyName)
+    jobTitle: position || '',
+    companyName: company || '',
+    confidence: calculateConfidence(position, company)
   };
 }
 
@@ -396,129 +550,266 @@ function calculateConfidence(jobTitle, companyName) {
 
 function detectJobTitle() {
   console.log('Detecting job title...');
+  console.log('Current hostname:', window.location.hostname);
+  console.log('Current URL:', window.location.href);
   
-  // Generic titles to ignore
-  const genericTitles = [
-    "let's connect", 'connect', 'contact', 'apply', 'application form', 'join us', 'careers', 'jobs', 'opportunities'
-  ];
+  // AshbyHQ-specific detection - remove hostname check since content script may be in iframe
+  const ashbyResult = detectAshbyHQJob();
+  if (ashbyResult.position || ashbyResult.company) {
+    console.log('AshbyHQ detection succeeded:', ashbyResult);
+    return ashbyResult;
+  }
   
-  let detectedTitle = null;
-  let confidence = 0;
+  // First, try to detect from visible chips/badges in the header section
+  const headerChips = scanHeaderChips();
+  console.log('Visible chips:', headerChips);
   
-  // Try h1 first (most reliable)
+  let detectedPosition = null;
+  let detectedCompany = null;
+  
+  for (const chip of headerChips) {
+    const chipText = chip.textContent.trim().toLowerCase();
+    const normalizedText = normalizeText(chipText);
+    
+    // Check if chip contains job keywords
+    const hasJobKeywords = jobTitleKeywords.some(keyword => 
+      normalizedText.includes(normalizeText(keyword))
+    );
+    
+    // Check if chip is generic text to ignore
+    const isGeneric = genericTextToIgnore.some(text => 
+      normalizedText.includes(normalizeText(text))
+    );
+    
+    if (!isGeneric && hasJobKeywords && chipText.length > 2 && chipText.length <= 100) {
+      detectedPosition = chip.textContent.trim();
+      console.log('Detected position from chip:', detectedPosition);
+      break;
+    }
+  }
+  
+  // If we found a position, try to find company from nearby chips
+  if (detectedPosition) {
+    for (const chip of headerChips) {
+      const chipText = chip.textContent.trim().toLowerCase();
+      const normalizedText = normalizeText(chipText);
+      
+      // Check if chip does NOT contain job keywords
+      const hasJobKeywords = jobTitleKeywords.some(keyword => 
+        normalizedText.includes(normalizeText(keyword))
+      );
+      
+      // Check if chip is generic text to ignore
+      const isGeneric = genericTextToIgnore.some(text => 
+        normalizedText.includes(normalizeText(text))
+      );
+      
+      if (!isGeneric && !hasJobKeywords && chipText.length > 2 && chipText.length <= 60) {
+        detectedCompany = chip.textContent.trim();
+        console.log('Detected company from chip:', detectedCompany);
+        break;
+      }
+    }
+  }
+  
+  // If we found both, return them directly
+  if (detectedPosition && detectedCompany) {
+    return { position: detectedPosition, company: detectedCompany };
+  }
+  
+  // Fallback to h1 detection
   const h1 = document.querySelector('h1');
   if (h1 && h1.textContent.trim()) {
     const h1Text = h1.textContent.trim().toLowerCase();
-    const isGeneric = genericTitles.some(title => h1Text.includes(title));
-    const hasJobKeywords = jobTitleKeywords.some(keyword => h1Text.includes(keyword));
+    const normalizedH1 = normalizeText(h1Text);
+    const isGeneric = genericTextToIgnore.some(text => 
+      normalizedH1.includes(normalizeText(text))
+    );
+    const hasJobKeywords = jobTitleKeywords.some(keyword => 
+      normalizedH1.includes(normalizeText(keyword))
+    );
     
-    if (!isGeneric && h1Text.length > 5) {
-      detectedTitle = h1.textContent.trim();
-      confidence = hasJobKeywords ? 90 : 70;
-      console.log('Job title found in h1:', detectedTitle, 'confidence:', confidence);
-      return detectedTitle;
-    }
-  }
-  
-  // Try visible chips/badges near h1
-  if (h1) {
-    const chips = detectChipsNearElement(h1);
-    console.log('Detected chips near h1:', chips);
-    
-    for (const chip of chips) {
-      const chipText = chip.textContent.trim().toLowerCase();
-      const hasJobKeywords = jobTitleKeywords.some(keyword => chipText.includes(keyword));
-      const isGeneric = genericTitles.some(title => chipText.includes(title));
-      
-      if (hasJobKeywords && !isGeneric && chipText.length > 5) {
-        detectedTitle = chip.textContent.trim();
-        confidence = 85;
-        console.log('Job title found in chip:', detectedTitle, 'confidence:', confidence);
-        return detectedTitle;
+    if (!isGeneric && h1Text.length > 5 && h1Text.length <= 100) {
+      if (!detectedPosition) {
+        detectedPosition = h1.textContent.trim();
+        console.log('Detected position from h1:', detectedPosition);
       }
     }
   }
   
-  // Try h2
-  const h2s = document.querySelectorAll('h2');
-  for (const h2 of h2s) {
-    const h2Text = h2.textContent.trim().toLowerCase();
-    const isGeneric = genericTitles.some(title => h2Text.includes(title));
-    const hasJobKeywords = jobTitleKeywords.some(keyword => h2Text.includes(keyword));
-    
-    if (!isGeneric && hasJobKeywords && h2Text.length > 5) {
-      detectedTitle = h2.textContent.trim();
-      confidence = 80;
-      console.log('Job title found in h2:', detectedTitle, 'confidence:', confidence);
-      return detectedTitle;
-    }
-  }
-  
-  // Try meta og:title
+  // Try meta og:title as another fallback
   const ogTitle = document.querySelector('meta[property="og:title"]');
-  if (ogTitle && ogTitle.content) {
+  if (ogTitle && ogTitle.content && !detectedPosition) {
     const ogTitleText = ogTitle.content.trim().toLowerCase();
-    const isGeneric = genericTitles.some(title => ogTitleText.includes(title));
-    const hasJobKeywords = jobTitleKeywords.some(keyword => ogTitleText.includes(keyword));
+    const normalizedOgTitle = normalizeText(ogTitleText);
+    const isGeneric = genericTextToIgnore.some(text => 
+      normalizedOgTitle.includes(normalizeText(text))
+    );
+    const hasJobKeywords = jobTitleKeywords.some(keyword => 
+      normalizedOgTitle.includes(normalizeText(keyword))
+    );
     
-    if (!isGeneric && ogTitleText.length > 5) {
-      detectedTitle = ogTitle.content.trim();
-      confidence = hasJobKeywords ? 75 : 50;
-      console.log('Job title found in og:title:', detectedTitle, 'confidence:', confidence);
-      return detectedTitle;
+    if (!isGeneric && hasJobKeywords && ogTitleText.length > 5 && ogTitleText.length <= 100) {
+      detectedPosition = ogTitle.content.trim();
+      console.log('Detected position from og:title:', detectedPosition);
     }
   }
   
-  // Try elements with job title related classes/attributes
-  const jobTitleSelectors = [
-    '[class*="job-title"]',
-    '[class*="jobTitle"]',
-    '[id*="job-title"]',
-    '[id*="jobTitle"]',
-    '[class*="position"]',
-    '[class*="poste"]',
-    '[class*="role"]',
-    '[class*="vacancy"]',
-    '[class*="emploi"]',
-    '[class*="offre"]',
-    '[data-test*="job-title"]',
-    '[data-testid*="job-title"]'
+  // Try to extract company from og:site_name
+  const ogSiteName = document.querySelector('meta[property="og:site_name"]');
+  if (ogSiteName && ogSiteName.content && !detectedCompany) {
+    const siteName = ogSiteName.content.trim();
+    if (siteName.length > 2 && siteName.length <= 60) {
+      detectedCompany = siteName;
+      console.log('Detected company from og:site_name:', detectedCompany);
+    }
+  }
+  
+  return { position: detectedPosition, company: detectedCompany };
+}
+
+function detectAshbyHQJob() {
+  console.log('Detecting AshbyHQ job...');
+  
+  let position = null;
+  let company = null;
+  
+  // Log all h1 elements for debugging
+  const allH1s = document.querySelectorAll('h1');
+  console.log('AshbyHQ: Found h1 elements:', allH1s.length);
+  allH1s.forEach((h1, index) => {
+    console.log(`AshbyHQ: h1[${index}]:`, h1.textContent.trim());
+  });
+  
+  // Log all meta tags for debugging
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  const ogSiteName = document.querySelector('meta[property="og:site_name"]');
+  console.log('AshbyHQ: og:title:', ogTitle?.content);
+  console.log('AshbyHQ: og:site_name:', ogSiteName?.content);
+  
+  // Try og:title first for position
+  if (ogTitle && ogTitle.content) {
+    position = ogTitle.content.trim();
+    console.log('AshbyHQ: Found position from og:title:', position);
+  }
+  
+  // Try to find company name - AshbyHQ specific
+  const companySelectors = [
+    '[class*="company"]',
+    '[class*="organization"]',
+    '[class*="employer"]',
+    '[data-test*="company"]',
+    '[data-testid*="company"]',
+    '.ashby-company',
+    '.company-header',
+    'a[href*="/company/"]',
+    'a[href*="/companies/"]'
   ];
   
-  for (const selector of jobTitleSelectors) {
+  for (const selector of companySelectors) {
     const elements = document.querySelectorAll(selector);
+    console.log(`AshbyHQ: Found ${elements.length} elements for selector:`, selector);
+    
     for (const element of elements) {
-      if (element.textContent && element.textContent.trim() && element.textContent.trim().length > 5) {
-        const text = element.textContent.trim().toLowerCase();
-        const isGeneric = genericTitles.some(title => text.includes(title));
-        const hasJobKeywords = jobTitleKeywords.some(keyword => text.includes(keyword));
+      if (element && element.textContent && element.textContent.trim().length > 2) {
+        const text = element.textContent.trim();
+        // Filter out generic text
+        const normalizedText = normalizeText(text.toLowerCase());
+        const isGeneric = genericTextToIgnore.some(t => normalizedText.includes(normalizeText(t)));
         
-        if (!isGeneric && hasJobKeywords) {
-          detectedTitle = element.textContent.trim();
-          confidence = 85;
-          console.log('Job title found in element:', detectedTitle, 'confidence:', confidence);
-          return detectedTitle;
+        if (!isGeneric) {
+          company = text;
+          console.log('AshbyHQ: Found company from selector:', selector, company);
+          break;
         }
       }
     }
+    
+    if (company) break;
   }
   
-  // Try document.title as last resort
-  if (document.title) {
-    const titleText = document.title.trim().toLowerCase();
-    const isGeneric = genericTitles.some(title => titleText.includes(title));
-    const hasJobKeywords = jobTitleKeywords.some(keyword => titleText.includes(keyword));
-    
-    if (!isGeneric && titleText.length > 5) {
-      detectedTitle = document.title.trim();
-      confidence = hasJobKeywords ? 60 : 30;
-      console.log('Job title found in document.title:', detectedTitle, 'confidence:', confidence);
-      return detectedTitle;
+  // Try to extract company from URL
+  if (!company) {
+    const urlMatch = window.location.href.match(/jobs\.ashbyhq\.com\/([^\/]+)/);
+    if (urlMatch && urlMatch[1]) {
+      // Company slug in URL, convert to title case
+      const companySlug = urlMatch[1];
+      const companyName = companySlug.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      
+      if (companyName.length > 2 && companyName.length <= 60) {
+        company = companyName;
+        console.log('AshbyHQ: Found company from URL:', company);
+      }
     }
   }
   
-  console.log('No valid job title detected');
-  return null;
+  // Try meta tags as fallback for company
+  if (!company && ogSiteName && ogSiteName.content) {
+    company = ogSiteName.content.trim();
+    console.log('AshbyHQ: Found company from og:site_name:', company);
+  }
+  
+  console.log('AshbyHQ: Final result:', { position, company });
+  return { position, company };
+}
+
+function scanHeaderChips() {
+  const chips = [];
+  
+  // Find header section (first 500px from top)
+  const headerElements = [];
+  const allElements = document.querySelectorAll('button, span, div, a, p, h1, h2');
+  
+  allElements.forEach(element => {
+    const rect = element.getBoundingClientRect();
+    if (rect.top < 500 && rect.top > 0) {
+      headerElements.push(element);
+    }
+  });
+  
+  // Filter for chip-like elements
+  headerElements.forEach(element => {
+    const text = element.textContent?.trim();
+    if (!text || text.length === 0 || text.length > 60) return;
+    
+    const normalizedText = normalizeText(text.toLowerCase());
+    
+    // Ignore generic text
+    const isGeneric = genericTextToIgnore.some(text => 
+      normalizedText.includes(normalizeText(text))
+    );
+    if (isGeneric) return;
+    
+    // Check if it's a chip-like element
+    const isChip = isChipElement(element);
+    if (isChip) {
+      chips.push(element);
+    }
+  });
+  
+  return chips;
+}
+
+function isChipElement(element) {
+  // Check for border-radius
+  const style = window.getComputedStyle(element);
+  const borderRadius = parseFloat(style.borderRadius) || 0;
+  const hasBorderRadius = borderRadius > 4;
+  
+  // Check for role="button"
+  const hasButtonRole = element.getAttribute('role') === 'button';
+  
+  // Check for chip/badge/tag/pill in class or id
+  const className = element.className || '';
+  const id = element.id || '';
+  const hasChipClass = /\b(chip|badge|tag|pill)\b/i.test(className) || /\b(chip|badge|tag|pill)\b/i.test(id);
+  
+  // Check if it's a button or span
+  const isButtonOrSpan = element.tagName === 'BUTTON' || element.tagName === 'SPAN';
+  
+  return hasBorderRadius || hasButtonRole || hasChipClass || isButtonOrSpan;
 }
 
 function detectChipsNearElement(element) {
@@ -557,96 +848,13 @@ function detectChipsNearElement(element) {
 function detectCompanyName() {
   console.log('Detecting company name...');
   
-  // First, try to detect from chips near h1
-  const h1 = document.querySelector('h1');
-  if (h1) {
-    const chips = detectChipsNearElement(h1);
-    console.log('Detected chips for company detection:', chips);
-    
-    for (const chip of chips) {
-      const chipText = chip.textContent.trim().toLowerCase();
-      const hasJobKeywords = jobTitleKeywords.some(keyword => chipText.includes(keyword));
-      
-      // If chip doesn't have job keywords, it's likely the company name
-      if (!hasJobKeywords && chipText.length > 2) {
-        const companyName = chip.textContent.trim();
-        // Filter out common non-company words
-        if (!/apply|submit|save|cancel|close|upload|delete/i.test(companyName)) {
-          console.log('Company name found in chip:', companyName);
-          return companyName;
-        }
-      }
-    }
-  }
-  
-  // Prefer elements with company-related classes/attributes first
-  const companySelectors = [
-    '[class*="company"]',
-    '[class*="company-name"]',
-    '[class*="employer"]',
-    '[class*="organization"]',
-    '[class*="organisation"]',
-    '[class*="entreprise"]',
-    '[class*="société"]',
-    '[class*="recruiter"]',
-    '[class*="recruteur"]',
-    '[id*="company"]',
-    '[id*="employer"]',
-    '[data-test*="company"]',
-    '[data-testid*="company"]'
-  ];
-  
-  for (const selector of companySelectors) {
-    const elements = document.querySelectorAll(selector);
-    for (const element of elements) {
-      if (element.textContent && element.textContent.trim() && element.textContent.trim().length > 2) {
-        const text = element.textContent.trim();
-        // Filter out common non-company words
-        if (!/apply|submit|save|cancel|close|upload|delete/i.test(text)) {
-          console.log('Company name found in element:', text);
-          return text;
-        }
-      }
-    }
-  }
-  
-  // Try meta og:site_name
-  const ogSiteName = document.querySelector('meta[property="og:site_name"]');
-  if (ogSiteName && ogSiteName.content) {
-    const siteName = ogSiteName.content.trim();
-    if (siteName.length > 2) {
-      console.log('Company name found in og:site_name:', siteName);
-      return siteName;
-    }
-  }
-  
-  // Try document.title as fallback
-  if (document.title) {
-    const title = document.title.trim();
-    // Try to extract company from title (common patterns: "Job at Company", "Company - Job")
-    const patterns = [
-      /at\s+([A-Za-z\s&]+)$/i,
-      /([A-Za-z\s&]+)\s*[-–]\s*/,
-      /([A-Za-z\s&]+)\s*\|\s*/,
-    ];
-    
-    for (const pattern of patterns) {
-      const match = title.match(pattern);
-      if (match && match[1] && match[1].trim().length > 2) {
-        const company = match[1].trim();
-        if (!/apply|submit|save|cancel|close/i.test(company)) {
-          console.log('Company name extracted from title:', company);
-          return company;
-        }
-      }
-    }
-  }
-  
-  console.log('No company name detected');
-  return null;
+  // Company detection is now integrated into detectJobTitle
+  // This function is kept for backward compatibility but delegates to detectJobTitle
+  const { company } = detectJobTitle();
+  return company;
 }
 
-function fillPhoneFields(phoneNumber, filledFields) {
+function fillPhoneFields(phoneNumber, fullPhoneNumber, filledFields) {
   console.log('Filling phone fields with:', phoneNumber);
   
   // Phone field keywords
@@ -758,7 +966,6 @@ function fillPhoneFields(phoneNumber, filledFields) {
   
   // If no split inputs, fill all phone inputs with full number
   if (!hasSplitPhone) {
-    const fullPhoneNumber = profile?.phone || phoneNumber;
     console.log('Using full phone number for single inputs:', fullPhoneNumber);
     
     phoneContainers.forEach(({ inputs }) => {
@@ -912,24 +1119,13 @@ function showCountryCodeMessage() {
 }
 
 function fillInput(element, value) {
-  // Focus the element first
-  element.focus();
+  // Use native value setter for React forms
+  setNativeValue(element, value);
   
-  // Clear existing value
-  element.value = '';
-  
-  // Set new value
-  element.value = value;
-  
-  // Also try setAttribute for masked inputs (React/Styled components)
+  // Also set attribute for compatibility
   element.setAttribute('value', value);
   
-  // Trigger input events to ensure the form recognizes the change
-  element.dispatchEvent(new Event('input', { bubbles: true }));
-  element.dispatchEvent(new Event('change', { bubbles: true }));
-  
-  // Blur the element
-  element.blur();
+  console.log('Filled input:', element.name || element.id, 'with value:', value);
 }
 
 function fillByLabel(labelText, value, filledFields = new Set()) {

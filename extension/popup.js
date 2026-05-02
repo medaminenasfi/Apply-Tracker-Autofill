@@ -288,46 +288,119 @@ async function handleAutofill() {
   // Send message to content script to autofill
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   
+  if (!tab) {
+    showMessage('No active tab found', 'error');
+    return;
+  }
+  
+  console.log('Active tab:', tab.url);
+  
   // Get current tab URL for job URL field
   jobUrlInput.value = tab.url;
   
-  chrome.tabs.sendMessage(tab.id, {
-    action: 'autofill',
-    profile: userProfile
-  }, (response) => {
-    if (chrome.runtime.lastError) {
-      showMessage('Content script not loaded. Refresh the page.', 'error');
-    } else if (response && response.success) {
-      // Fill job info from detection
-      if (response.jobInfo) {
-        const { jobTitle, companyName, confidence } = response.jobInfo;
-        console.log('Received job info:', { jobTitle, companyName, confidence });
-        
-        // Only fill if fields are empty and confidence is medium or high
-        if (confidence === 'high' || confidence === 'medium') {
-          if (jobTitle && !positionInput.value) {
-            positionInput.value = jobTitle;
-          }
-          
-          if (companyName && !companyNameInput.value) {
-            companyNameInput.value = companyName;
-          }
-          
-          if (confidence === 'high') {
-            showMessage('Form autofilled successfully with job details!', 'success');
-          } else {
-            showMessage('Form autofilled. Please verify company and position before saving.', 'warning');
-          }
+  // Function to check if content script is loaded
+  const checkContentScript = async () => {
+    return new Promise((resolve) => {
+      chrome.tabs.sendMessage(tab.id, { action: 'ping' }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Ping failed:', chrome.runtime.lastError);
+          resolve({ loaded: false, error: chrome.runtime.lastError.message });
         } else {
-          showMessage('Form autofilled. Please verify company and position manually.', 'warning');
+          console.log('Content script is loaded');
+          resolve({ loaded: true });
+        }
+      });
+    });
+  };
+  
+  // Function to send autofill message
+  const sendAutofillMessage = async () => {
+    return new Promise((resolve) => {
+      console.log('Sending autofill message with profile:', userProfile);
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'autofill',
+        profile: userProfile
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Chrome runtime error:', chrome.runtime.lastError);
+          resolve({ error: chrome.runtime.lastError.message });
+        } else {
+          console.log('Autofill response:', response);
+          resolve(response);
+        }
+      });
+    });
+  };
+  
+  // Check if content script is loaded
+  const checkResult = await checkContentScript();
+  
+  // If content script not loaded, inject it
+  if (!checkResult.loaded) {
+    console.log('Content script not loaded, attempting injection...');
+    
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.js']
+      });
+      
+      console.log('Content script injected');
+      
+      // Wait for the script to initialize
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Verify it's loaded now
+      const recheckResult = await checkContentScript();
+      if (!recheckResult.loaded) {
+        showMessage('Content script failed to load. Please refresh the page.', 'error');
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to inject content script:', error);
+      showMessage('This website blocks extension scripts. Please refresh the page.', 'error');
+      return;
+    }
+  }
+  
+  // Send autofill message
+  const response = await sendAutofillMessage();
+  
+  if (response && response.success) {
+    // Log debug info if available
+    if (response.debugInfo) {
+      console.log('Content script debug info:', response.debugInfo);
+    }
+    
+    // Fill job info from detection
+    if (response.jobInfo) {
+      const { jobTitle, companyName, confidence } = response.jobInfo;
+      console.log('Received job info:', { jobTitle, companyName, confidence });
+      
+      // Only fill if fields are empty and confidence is medium or high
+      if (confidence === 'high' || confidence === 'medium') {
+        if (jobTitle && !positionInput.value) {
+          positionInput.value = jobTitle;
+        }
+        
+        if (companyName && !companyNameInput.value) {
+          companyNameInput.value = companyName;
+        }
+        
+        if (confidence === 'high') {
+          showMessage('Form autofilled successfully with job details!', 'success');
+        } else {
+          showMessage('Form autofilled. Please verify company and position before saving.', 'warning');
         }
       } else {
-        showMessage('Form autofilled successfully!', 'success');
+        showMessage('Form autofilled. Please verify company and position manually.', 'warning');
       }
     } else {
-      showMessage('Failed to autofill form', 'error');
+      showMessage('Form autofilled successfully!', 'success');
     }
-  });
+  } else {
+    showMessage('Failed to autofill form', 'error');
+  }
 }
 
 function handlePreviewCv() {
