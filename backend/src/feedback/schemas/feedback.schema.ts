@@ -16,7 +16,7 @@ export enum FeedbackStatus {
   RESOLVED = 'RESOLVED',
 }
 
-@Schema({ timestamps: true, collection: 'feedbacks' })
+@Schema({ timestamps: true, collection: 'feedback' })
 export class Feedback {
   @Prop({
     type: String,
@@ -30,6 +30,9 @@ export class Feedback {
 
   @Prop({ type: String, required: true })
   message!: string;
+
+  @Prop({ type: Number, min: 1, max: 5, required: true })
+  rating!: number;
 
   @Prop({ type: String })
   attachment?: string;

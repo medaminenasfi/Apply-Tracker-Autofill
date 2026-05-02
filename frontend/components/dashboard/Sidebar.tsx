@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, LogOut, LayoutGrid, Briefcase, User, Settings, Shield, Chrome } from 'lucide-react';
+import { ChevronDown, LogOut, LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare } from 'lucide-react';
 import { useSidebarStore } from '@/store/sidebarStore';
 
 export function Sidebar() {
@@ -39,6 +39,7 @@ export function Sidebar() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
     { href: '/applicant', label: 'Applications', icon: Briefcase },
     { href: '/profile', label: 'Profile', icon: User },
+    { href: '/feedback', label: 'Feedback', icon: MessageSquare },
     { href: '/extension', label: 'Extension', icon: Chrome },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];

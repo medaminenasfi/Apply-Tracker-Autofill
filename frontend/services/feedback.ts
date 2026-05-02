@@ -17,6 +17,7 @@ export interface Feedback {
   userId: string;
   type: FeedbackType;
   message: string;
+  rating: number;
   attachment?: string;
   adminReply?: string;
   status: FeedbackStatus;
@@ -32,6 +33,7 @@ export interface Feedback {
 export interface CreateFeedbackDto {
   type: FeedbackType;
   message: string;
+  rating: number;
   attachment?: string;
 }
 
@@ -73,5 +75,9 @@ export const feedbackApi = {
   updateFeedback: async (id: string, data: UpdateFeedbackDto): Promise<Feedback> => {
     const response = await api.patch(`/admin/feedback/${id}`, data);
     return response.data;
+  },
+
+  deleteFeedback: async (id: string): Promise<void> => {
+    await api.delete(`/feedback/${id}`);
   },
 };

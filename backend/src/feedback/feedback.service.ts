@@ -127,4 +127,23 @@ export class FeedbackService {
     Object.assign(feedback, updateFeedbackDto);
     return feedback.save();
   }
+
+  async delete(id: string, userId?: UserId) {
+    const feedback = await this.feedbackModel.findById(id);
+    if (!feedback) {
+      throw new NotFoundException('Feedback not found');
+    }
+
+    // If userId is provided, check ownership
+    if (userId) {
+      validateUserId(userId);
+      const userIdString = normalizeUserId(userId);
+      if (feedback.userId !== userIdString) {
+        throw new ForbiddenException('You do not have permission to delete this feedback');
+      }
+    }
+
+    await this.feedbackModel.deleteOne({ _id: id });
+    return { message: 'Feedback deleted successfully' };
+  }
 }

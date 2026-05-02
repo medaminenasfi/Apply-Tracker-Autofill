@@ -1,0 +1,191 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
+import { Clock, ArrowRight, FileText, MessageSquare, Plus, Trash2, Star } from 'lucide-react';
+import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { CardSkeleton, ListSkeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import FeedbackButton from '@/components/feedback/FeedbackButton';
+
+const statusColors: Record<FeedbackStatus, string> = {
+  [FeedbackStatus.NEW]: 'bg-gray-100 text-gray-800',
+  [FeedbackStatus.VIEWED]: 'bg-blue-100 text-blue-800',
+  [FeedbackStatus.RESOLVED]: 'bg-green-100 text-green-800',
+};
+
+const typeLabels: Record<FeedbackType, string> = {
+  [FeedbackType.BUG]: 'Bug Report',
+  [FeedbackType.IMPROVEMENT]: 'Improvement',
+  [FeedbackType.GENERAL]: 'General',
+};
+
+export default function FeedbackPage() {
+  const { user } = useAuth();
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
+  const { setLoading } = useLoadingStore();
+
+  useEffect(() => {
+    if (user) {
+      loadFeedback();
+    }
+  }, [user]);
+
+  const loadFeedback = async () => {
+    try {
+      const data = await withLoader(() => feedbackApi.getMyFeedback(), setLoading);
+      setFeedback(data);
+      setIsFetching(false);
+    } catch (error) {
+      console.error('Failed to load feedback:', error);
+      toast.error('Failed to load feedback history');
+      setIsFetching(false);
+    }
+  };
+
+  const handleDelete = async (feedbackId: string) => {
+    if (!confirm('Are you sure you want to delete this feedback?')) {
+      return;
+    }
+
+    try {
+      await withLoader(() => feedbackApi.deleteFeedback(feedbackId), setLoading);
+      setFeedback(feedback.filter((item) => item._id !== feedbackId));
+      toast.success('Feedback deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete feedback:', error);
+      toast.error('Failed to delete feedback');
+    }
+  };
+
+  // Show skeleton while fetching
+  if (isFetching) {
+    return (
+      <DashboardLayout title="My Feedback">
+        <div className="space-y-6 transition-opacity duration-200">
+          <ListSkeleton count={3} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <DashboardLayout title="My Feedback">
+      <div className="max-w-4xl space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>My Feedback</CardTitle>
+                <CardDescription>View all your feedback and admin responses</CardDescription>
+              </div>
+              <FeedbackButton />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {feedback.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No feedback submitted yet</p>
+                <p className="text-sm mt-2">Click the feedback button to submit your first feedback</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {feedback.map((item) => (
+                  <div key={item._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm font-medium text-gray-900">
+                            {typeLabels[item.type]}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
+                            {item.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <Clock className="w-3 h-3" />
+                          {formatDate(item.createdAt)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(item._id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText className="w-4 h-4 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-900">Your Message</span>
+                        </div>
+                        <p className="text-sm text-gray-700 line-clamp-2">{item.message}</p>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Star className="w-4 h-4 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-900">Rating</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-4 h-4 ${
+                                star <= item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                          <span className="text-sm text-gray-600 ml-2">({item.rating}/5)</span>
+                        </div>
+                      </div>
+                      
+                      {item.adminReply && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <MessageSquare className="w-4 h-4 text-gray-600" />
+                            <span className="text-sm font-medium text-gray-900">Admin Reply</span>
+                          </div>
+                          <div className="bg-blue-50 p-3 rounded-md">
+                            <p className="text-sm text-gray-700 line-clamp-2">{item.adminReply}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+}

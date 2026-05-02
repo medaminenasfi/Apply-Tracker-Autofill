@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Clock, FileText, Send } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, Send, Star, X, ZoomIn } from 'lucide-react';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
 import { useToast } from '@/hooks/use-toast';
 import { AdminLayout } from '@/components/AdminLayout';
@@ -29,6 +29,7 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
   const [status, setStatus] = useState<FeedbackStatus>(FeedbackStatus.NEW);
   const [saving, setSaving] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const { setLoading } = useLoadingStore();
@@ -159,12 +160,45 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
               <h3 className="font-semibold text-gray-900">User Message</h3>
             </div>
             <p className="text-gray-700 whitespace-pre-wrap">{feedback.message}</p>
-            {feedback.attachment && (
-              <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                <span className="text-sm text-gray-600">Attachment: {feedback.attachment}</span>
-              </div>
-            )}
           </div>
+
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Star className="w-5 h-5 text-gray-600" />
+              <h3 className="font-semibold text-gray-900">Rating</h3>
+            </div>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-5 h-5 ${
+                    star <= feedback.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                  }`}
+                />
+              ))}
+              <span className="text-sm text-gray-600 ml-2">({feedback.rating}/5)</span>
+            </div>
+          </div>
+
+          {feedback.attachment && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <ZoomIn className="w-5 h-5 text-gray-600" />
+                <h3 className="font-semibold text-gray-900">Screenshot</h3>
+              </div>
+              <div className="relative">
+                <img
+                  src={feedback.attachment}
+                  alt="Feedback screenshot"
+                  className="w-full h-64 object-cover rounded-md border cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setIsImageModalOpen(true)}
+                />
+                <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
+                  Click to zoom
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="border-t pt-6">
             <h3 className="font-semibold text-gray-900 mb-4">Admin Response</h3>
@@ -209,6 +243,23 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
       </div>
+
+      {isImageModalOpen && feedback.attachment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={() => setIsImageModalOpen(false)}>
+          <button
+            className="absolute top-4 right-4 text-white hover:text-gray-300"
+            onClick={() => setIsImageModalOpen(false)}
+          >
+            <X className="w-8 h-8" />
+          </button>
+          <img
+            src={feedback.attachment}
+            alt="Feedback screenshot zoomed"
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </AdminLayout>
   );
 }
