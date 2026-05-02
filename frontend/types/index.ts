@@ -32,6 +32,7 @@ export interface User {
   linkedin?: string;
   portfolio?: string;
   profilePictureUrl?: string;
+  profilePictureUpdatedAt?: number;
   role: 'user' | 'admin';
   createdAt: string;
 }

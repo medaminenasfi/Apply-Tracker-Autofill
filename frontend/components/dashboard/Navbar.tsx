@@ -26,6 +26,11 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
     return `${first}${last}`.toUpperCase();
   };
 
+  // Add cache-busting parameter to force image reload
+  const profilePictureUrl = user?.profilePictureUrl 
+    ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${user.profilePictureUrl}?t=${user.profilePictureUpdatedAt || Date.now()}`
+    : null;
+
   return (
     <header className="border-b bg-card text-card-foreground">
       <div className="flex items-center justify-between gap-4 px-6 py-4">
@@ -54,9 +59,9 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Avatar className="h-8 w-8 cursor-pointer">
-            {user?.profilePictureUrl ? (
+            {profilePictureUrl ? (
               <AvatarImage 
-                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${user.profilePictureUrl}`} 
+                src={profilePictureUrl} 
                 alt="Profile" 
               />
             ) : null}

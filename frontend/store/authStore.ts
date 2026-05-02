@@ -59,7 +59,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Profile picture upload response:', response.data);
       
       // Refresh profile to get updated profile picture URL
-      await useAuthStore.getState().fetchProfile();
+      const updatedUser = await useAuthStore.getState().fetchProfile();
+      
+      // Update profilePictureUpdatedAt timestamp for cache-busting
+      const currentUser = get().user;
+      if (currentUser) {
+        const userWithTimestamp = {
+          ...updatedUser,
+          profilePictureUpdatedAt: Date.now()
+        };
+        localStorage.setItem('user', JSON.stringify(userWithTimestamp));
+        set({ user: userWithTimestamp });
+      }
       
       return response.data.profilePictureUrl;
     } catch (error: any) {
@@ -121,15 +132,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       await setAuthCookie(token, 'user');
       
-      // Store in localStorage
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('isAuthenticated', 'true');
-      
-      // Set state
-      set({ 
-        user, 
-        isAuthenticated: true
-      });
+      // Fetch full profile to get profile picture URL
+      try {
+        const profileResponse = await api.get('/profile');
+        const fullProfile = profileResponse.data;
+        // Merge user data with profile data
+        const fullUser = {
+          ...user,
+          ...fullProfile,
+          profilePictureUpdatedAt: Date.now()
+        };
+        
+        // Store in localStorage
+        localStorage.setItem('user', JSON.stringify(fullUser));
+        localStorage.setItem('isAuthenticated', 'true');
+        
+        // Set state
+        set({ 
+          user: fullUser, 
+          isAuthenticated: true
+        });
+      } catch (profileError) {
+        console.error('Failed to fetch profile after login:', profileError);
+        // Fallback to basic user data
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('isAuthenticated', 'true');
+        set({ 
+          user, 
+          isAuthenticated: true
+        });
+      }
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Login failed');
     } finally {
