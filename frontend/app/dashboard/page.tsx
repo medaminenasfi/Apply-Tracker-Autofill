@@ -1,19 +1,21 @@
 'use client';
 
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useApplicationStore } from '@/store/applicationStore';
-import { BarChart3, TrendingUp, Briefcase, CheckCircle } from 'lucide-react';
-import { useEffect } from 'react';
+import { BarChart3, TrendingUp, Briefcase, CheckCircle, UserCheck, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { applications, fetchApplications, hasFetched } = useApplicationStore();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
 
   // Fetch applications on mount
   useEffect(() => {
@@ -24,6 +26,25 @@ export default function DashboardPage() {
         toast.error('Failed to load applications');
       });
   }, [fetchApplications]);
+
+  // Check if profile is incomplete
+  useEffect(() => {
+    if (user && !hasCheckedProfile) {
+      // Check if user has skipped the profile complete prompt before
+      const hasSkippedProfilePrompt = localStorage.getItem('hasSkippedProfilePrompt');
+      
+      // Check if profile is incomplete (missing phone, CV, or other required fields)
+      const isProfileIncomplete = !user.phone || !user.countryCode;
+      
+      console.log('Profile check:', { isProfileIncomplete, hasSkippedProfilePrompt, userPhone: user.phone, userCountryCode: user.countryCode });
+      
+      if (isProfileIncomplete && !hasSkippedProfilePrompt) {
+        setShowProfileModal(true);
+      }
+      
+      setHasCheckedProfile(true);
+    }
+  }, [user, hasCheckedProfile]);
 
   // Filter user's applications
   const userApps = applications.filter((app) => app.userId === user?._id);
@@ -66,15 +87,16 @@ export default function DashboardPage() {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8">
-        {/* Welcome Section */}
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user?.firstName}!</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Track your job applications and manage your career journey
-          </p>
-        </div>
+    <>
+      <DashboardLayout>
+        <div className="space-y-8">
+          {/* Welcome Section */}
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user?.firstName}!</h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Track your job applications and manage your career journey
+            </p>
+          </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -166,5 +188,55 @@ export default function DashboardPage() {
         </Card>
       </div>
     </DashboardLayout>
+
+    {/* Profile Incomplete Modal */}
+    {showProfileModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <UserCheck className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Complete Your Profile</CardTitle>
+            <CardDescription>
+              Your profile is missing some important information.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md bg-muted p-4 text-sm">
+              <p className="font-semibold mb-2">Complete your profile to get started:</p>
+              <ul className="space-y-1 text-muted-foreground">
+                <li>• Add your phone number</li>
+                <li>• Upload your CV</li>
+                <li>• Set your preferences</li>
+              </ul>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  router.push('/profile');
+                }}
+                className="w-full"
+              >
+                Complete Profile
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  localStorage.setItem('hasSkippedProfilePrompt', 'true');
+                  setShowProfileModal(false);
+                }}
+                className="w-full"
+              >
+                Skip for now
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )}
+  </>
   );
 }
