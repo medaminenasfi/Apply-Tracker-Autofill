@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -48,9 +49,12 @@ export function SignupForm() {
         email: data.email,
         password: data.password,
       });
+      toast.success('Account created successfully');
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Signup failed');
+      const message = err instanceof Error ? err.message : 'Signup failed';
+      setError(message);
+      toast.error(message);
     }
   };
 

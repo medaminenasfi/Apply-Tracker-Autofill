@@ -18,13 +18,6 @@ export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('admin_token');
-
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
-
     try {
       const response = await api.get('/auth/me');
       if (response.data.role === 'admin') {

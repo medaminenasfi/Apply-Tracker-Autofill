@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Application, ApplicationStatus, Note } from '@/types';
 import api from '@/services/api';
 
@@ -6,6 +7,7 @@ interface ApplicationState {
   applications: Application[];
   notes: Record<string, Note[]>; // key = applicationId
   isLoading: boolean;
+  hasFetched: boolean;
   fetchApplications: () => Promise<void>;
   addApplication: (appData: any) => Promise<void>;
   updateApplication: (_id: string, updateData: any) => Promise<void>;
@@ -25,10 +27,13 @@ interface ApplicationState {
   getNotesByApplication: (applicationId: string) => Note[];
 }
 
-export const useApplicationStore = create<ApplicationState>()((set, get) => ({
+export const useApplicationStore = create<ApplicationState>()(
+  persist(
+    (set, get) => ({
   applications: [],
   notes: {},
   isLoading: false,
+  hasFetched: false,
 
   fetchApplications: async () => {
     set({ isLoading: true });
@@ -38,7 +43,7 @@ export const useApplicationStore = create<ApplicationState>()((set, get) => ({
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch applications');
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: false, hasFetched: true });
     }
   },
 
@@ -209,7 +214,13 @@ export const useApplicationStore = create<ApplicationState>()((set, get) => ({
   getNotesByApplication: (applicationId) => {
     return get().notes[applicationId] || [];
   },
-}));
+    }),
+    {
+      name: 'application-storage',
+      partialize: (state) => ({ applications: state.applications, notes: state.notes, hasFetched: state.hasFetched }),
+    }
+  )
+);
 
 // Extension store for extension-specific API calls
 interface ExtensionState {

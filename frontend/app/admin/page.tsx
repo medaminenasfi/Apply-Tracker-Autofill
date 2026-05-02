@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Briefcase, TrendingUp, CheckCircle, XCircle, Clock, ArrowRight } from 'lucide-react';
 import api from '@/services/api';
+import { toast } from 'sonner';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -15,19 +16,20 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
+    const loadStats = async () => {
+      try {
+        const response = await api.get('/admin/stats');
+        setStats(response.data);
+        toast.success('Dashboard statistics loaded successfully');
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+        toast.error('Failed to load dashboard statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadStats();
   }, []);
-
-  const fetchStats = async () => {
-    try {
-      const response = await api.get('/admin/stats');
-      setStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const statCards = [
     {

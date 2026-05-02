@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import { setAuthCookie } from '@/app/actions/auth';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -16,6 +19,8 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const setAdmin = useAuthStore((state) => state.setAdmin);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,13 +31,18 @@ export default function AdminLoginPage() {
       const response = await api.post('/auth/login', { email, password });
       
       if (response.data.user.role === 'admin') {
-        localStorage.setItem('admin_token', response.data.access_token);
+        await setAuthCookie(response.data.access_token, 'admin');
+        setAdmin(response.data.user);
+        toast.success('Admin login successful');
         router.push('/admin');
       } else {
         setError('Access denied. Admin role required.');
+        toast.error('Unauthorized access');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      const message = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

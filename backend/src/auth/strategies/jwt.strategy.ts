@@ -11,7 +11,28 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private usersService: UsersService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (request: any) => {
+          let token = null;
+          if (request && request.headers && request.headers.cookie) {
+            const cookies = request.headers.cookie.split(';').reduce((acc: any, cookie: string) => {
+              const [key, value] = cookie.split('=').map((c: string) => c.trim());
+              acc[key] = value;
+              return acc;
+            }, {});
+            
+            // Strictly separate tokens using x-app-role header or url fallback
+            const appRole = request.headers['x-app-role'];
+            if (appRole === 'admin' || request.url?.includes('/admin')) {
+              token = cookies['admin_token'];
+            } else {
+              token = cookies['user_token'];
+            }
+          }
+          return token;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET'),
     });
@@ -22,6 +43,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException();
     }
+    // Also include role from payload if not present in user
     return user;
   }
 }

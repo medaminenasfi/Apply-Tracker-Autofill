@@ -18,6 +18,7 @@ import {
 import { useState } from 'react';
 import { ApplicationCard } from './ApplicationCard';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 const STATUSES: { status: ApplicationStatus; title: string }[] = [
   { status: 'applied', title: 'Applied' },
@@ -73,7 +74,12 @@ export function KanbanBoard() {
 
     if (activeStatus && active.id !== over.id) {
       // Move card to new column via API
-      await moveApplication(String(active.id), activeStatus.status);
+      try {
+        await moveApplication(String(active.id), activeStatus.status);
+        toast.success(`Application moved to ${activeStatus.title}`);
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to move application');
+      }
     }
 
     setActiveId(null);

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Users, FileText, LogOut, Menu, X, Shield, MessageCircle } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -15,8 +16,10 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin_token');
+  const adminLogout = useAuthStore((state) => state.adminLogout);
+
+  const handleLogout = async () => {
+    await adminLogout();
     router.push('/admin/login');
   };
 

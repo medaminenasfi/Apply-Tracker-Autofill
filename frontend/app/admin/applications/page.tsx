@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Trash2, ArrowLeft, Briefcase, ExternalLink } from 'lucide-react';
 import api from '@/services/api';
+import { toast } from 'sonner';
 
 export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -22,8 +23,10 @@ export default function AdminApplicationsPage() {
     try {
       const response = await api.get('/admin/applications');
       setApplications(response.data);
+      toast.success('Applications loaded successfully');
     } catch (error) {
       console.error('Failed to fetch applications:', error);
+      toast.error('Failed to load applications');
     } finally {
       setLoading(false);
     }
@@ -37,9 +40,10 @@ export default function AdminApplicationsPage() {
     try {
       await api.delete(`/admin/applications/${applicationId}`);
       setApplications(applications.filter((app) => app._id !== applicationId));
+      toast.success('Application deleted successfully');
     } catch (error) {
       console.error('Failed to delete application:', error);
-      alert('Failed to delete application');
+      toast.error('Failed to delete application');
     }
   };
 

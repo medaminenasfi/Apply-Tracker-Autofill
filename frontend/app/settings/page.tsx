@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
 import { Clock, ArrowRight, FileText, MessageSquare } from 'lucide-react';
+import { toast } from 'sonner';
 
 const statusColors: Record<FeedbackStatus, string> = {
   [FeedbackStatus.NEW]: 'bg-gray-100 text-gray-800',
@@ -31,8 +32,10 @@ export default function SettingsPage() {
     try {
       const data = await feedbackApi.getMyFeedback();
       setFeedback(data);
+      toast.success('Settings and feedback loaded successfully');
     } catch (error) {
       console.error('Failed to load feedback:', error);
+      toast.error('Failed to load feedback history');
     } finally {
       setLoading(false);
     }

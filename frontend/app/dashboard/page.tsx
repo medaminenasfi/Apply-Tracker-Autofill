@@ -8,15 +8,21 @@ import { useRouter } from 'next/navigation';
 import { useApplicationStore } from '@/store/applicationStore';
 import { BarChart3, TrendingUp, Briefcase, CheckCircle } from 'lucide-react';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { applications, fetchApplications } = useApplicationStore();
+  const { applications, fetchApplications, hasFetched } = useApplicationStore();
 
   // Fetch applications on mount
   useEffect(() => {
-    fetchApplications();
+    fetchApplications()
+      .then(() => toast.success('Applications loaded successfully'))
+      .catch((err) => {
+        console.error(err);
+        toast.error('Failed to load applications');
+      });
   }, [fetchApplications]);
 
   // Filter user's applications
@@ -79,7 +85,11 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-muted-foreground text-sm">{stat.label}</p>
-                    <p className="text-3xl font-bold mt-2">{stat.value}</p>
+                    {hasFetched ? (
+                      <p className="text-3xl font-bold mt-2">{stat.value}</p>
+                    ) : (
+                      <div className="h-9 w-16 bg-muted animate-pulse rounded mt-2" />
+                    )}
                   </div>
                   <div className={`p-3 rounded-lg ${stat.color}`}>
                     <Icon className={`h-6 w-6 ${stat.textColor}`} />

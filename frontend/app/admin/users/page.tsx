@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, ArrowLeft, Shield, User } from 'lucide-react';
 import api from '@/services/api';
+import { toast } from 'sonner';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -21,8 +22,10 @@ export default function AdminUsersPage() {
     try {
       const response = await api.get('/admin/users');
       setUsers(response.data);
+      toast.success('Users loaded successfully');
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      toast.error('Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -36,9 +39,10 @@ export default function AdminUsersPage() {
     try {
       await api.delete(`/admin/users/${userId}`);
       setUsers(users.filter((user) => user._id !== userId));
+      toast.success('User deleted successfully');
     } catch (error) {
       console.error('Failed to delete user:', error);
-      alert('Failed to delete user');
+      toast.error('Failed to delete user');
     }
   };
 

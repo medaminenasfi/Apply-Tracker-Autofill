@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import { Info, Edit, Check, Trash2, MessageSquare, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApplicationStore } from '@/store/applicationStore';
+import { toast } from 'sonner';
 
 interface ApplicationCardProps {
   application: Application;
@@ -90,12 +91,14 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
         // Adding a new note
         const newNote = await addNote(application._id, noteText);
         setNotes([newNote, ...notes]);
+        toast.success('Note added successfully');
       }
       setIsEditingNote(false);
       setNoteText('');
       setEditingNoteIndex(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save note:', error);
+      toast.error(error.message || 'Failed to save note');
     } finally {
       setIsSavingNote(false);
     }
@@ -122,8 +125,10 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
       setEditingNoteText('');
       // Update notes state
       setNotes(notes.map(n => n._id === note._id ? response : n));
-    } catch (error) {
+      toast.success('Note updated successfully');
+    } catch (error: any) {
       console.error('Failed to update note:', error);
+      toast.error(error.message || 'Failed to update note');
     } finally {
       setIsSavingNote(false);
     }
@@ -141,8 +146,10 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
       await deleteNoteById(note._id);
       console.log('After deleteNoteById - deleted note:', note._id);
       setNotes(notes.filter(n => n._id !== note._id));
-    } catch (error) {
+      toast.success('Note deleted successfully');
+    } catch (error: any) {
       console.error('Failed to delete note:', error);
+      toast.error(error.message || 'Failed to delete note');
     }
   };
 

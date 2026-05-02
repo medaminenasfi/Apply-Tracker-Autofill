@@ -4,10 +4,11 @@ import api from '@/services/api';
 
 interface AuthState {
   user: User | null;
+  admin: any | null; // using any for now or specify Admin type
   isAuthenticated: boolean;
+  isAdminAuthenticated: boolean;
   isLoading: boolean;
   isInitialized: boolean;
-  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (userData: {
     firstName: string;
@@ -16,8 +17,10 @@ interface AuthState {
     password: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  adminLogout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<void>;
   setUser: (user: User | null) => void;
+  setAdmin: (admin: any | null) => void;
   initialize: () => void;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
@@ -30,12 +33,15 @@ interface AuthState {
   deleteProfilePicture: () => Promise<void>;
 }
 
+import { setAuthCookie, clearAuthCookie } from '@/app/actions/auth';
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  admin: null,
   isAuthenticated: false,
+  isAdminAuthenticated: false,
   isLoading: false,
   isInitialized: false,
-  token: null,
 
   uploadProfilePicture: async (file: File) => {
     set({ isLoading: true });
@@ -83,20 +89,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialize: () => {
     if (typeof window === 'undefined') return;
     
-    const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
+    const adminStr = localStorage.getItem('admin');
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    const isAdminAuthenticated = localStorage.getItem('isAdminAuthenticated') === 'true';
     
     let user = null;
+    let admin = null;
     if (userStr) {
-      try {
-        user = JSON.parse(userStr);
-      } catch (e) {
-        console.error('Failed to parse user from localStorage:', e);
-      }
+      try { user = JSON.parse(userStr); } catch (e) {}
+    }
+    if (adminStr) {
+      try { admin = JSON.parse(adminStr); } catch (e) {}
     }
 
-    set({ user, isAuthenticated, token, isInitialized: true });
+    set({ user, admin, isAuthenticated, isAdminAuthenticated, isInitialized: true });
   },
 
   login: async (email: string, password: string) => {
@@ -107,16 +114,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = response.data.user;
       const token = response.data.access_token;
       
+      // Prevent admin from logging in as normal user
+      if (user.role === 'admin') {
+        throw new Error('Please use the admin login portal.');
+      }
+      
+      await setAuthCookie(token, 'user');
+      
       // Store in localStorage
-      localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isAuthenticated', 'true');
       
       // Set state
       set({ 
         user, 
-        isAuthenticated: true,
-        token
+        isAuthenticated: true
       });
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Login failed');
@@ -133,16 +145,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = response.data.user;
       const token = response.data.access_token;
       
+      await setAuthCookie(token, 'user');
+      
       // Store in localStorage
-      localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('isAuthenticated', 'true');
       
       // Set state
       set({ 
         user, 
-        isAuthenticated: true,
-        token
+        isAuthenticated: true
       });
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Signup failed');
@@ -157,11 +169,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('admin_token');
+      await clearAuthCookie('user');
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
-      set({ user: null, isAuthenticated: false, token: null });
+      set({ user: null, isAuthenticated: false });
+    }
+  },
+
+  adminLogout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Admin logout error:', error);
+    } finally {
+      await clearAuthCookie('admin');
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+      set({ admin: null, isAdminAuthenticated: false });
     }
   },
 
@@ -210,6 +234,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.removeItem('isAuthenticated');
     }
     set({ user, isAuthenticated: user !== null });
+  },
+
+  setAdmin: (admin) => {
+    if (admin) {
+      localStorage.setItem('admin', JSON.stringify(admin));
+      localStorage.setItem('isAdminAuthenticated', 'true');
+    } else {
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+    }
+    set({ admin, isAdminAuthenticated: admin !== null });
   },
 
   forgotPassword: async (email: string) => {

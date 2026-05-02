@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Filter, ArrowRight } from 'lucide-react';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { AdminLayout } from '@/components/AdminLayout';
 
 const statusColors: Record<FeedbackStatus, string> = {
@@ -24,7 +24,6 @@ export default function AdminFeedbackPage() {
   const [statusFilter, setStatusFilter] = useState<FeedbackStatus | ''>('');
   const [typeFilter, setTypeFilter] = useState<FeedbackType | ''>('');
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     loadFeedback();
@@ -37,12 +36,9 @@ export default function AdminFeedbackPage() {
         typeFilter || undefined
       );
       setFeedback(data);
+      toast.success('Feedback loaded successfully');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load feedback',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load feedback');
     } finally {
       setLoading(false);
     }
@@ -51,17 +47,10 @@ export default function AdminFeedbackPage() {
   const handleStatusChange = async (id: string, newStatus: FeedbackStatus) => {
     try {
       await feedbackApi.updateFeedback(id, { status: newStatus });
-      toast({
-        title: 'Success',
-        description: 'Status updated successfully',
-      });
+      toast.success('Status updated successfully');
       loadFeedback();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update status',
-        variant: 'destructive',
-      });
+      toast.error('Failed to update status');
     }
   };
 

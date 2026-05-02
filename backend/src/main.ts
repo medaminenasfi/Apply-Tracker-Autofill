@@ -31,7 +31,7 @@ async function bootstrap() {
     origin: true, // Allow all origins for development
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-app-role'],
     exposedHeaders: ['Content-Disposition', 'Content-Type'],
   });
 
