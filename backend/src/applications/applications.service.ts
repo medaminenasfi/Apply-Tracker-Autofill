@@ -30,14 +30,20 @@ export class ApplicationsService {
     
     if (dateApplied) {
       console.log('Original dateApplied:', dateApplied);
-      // If date is in YYYY-MM-DD format, create a Date object with local timezone
+      // If date is in YYYY-MM-DD format, use current local time with that date
       if (dateApplied.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const now = new Date();
         const [year, month, day] = dateApplied.split('-').map(Number);
-        const localDate = new Date(year, month - 1, day, 12, 0, 0); // Noon to avoid timezone issues
+        // Create date with the provided date and current local time
+        const localDate = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
         console.log('Local date created:', localDate);
         dateApplied = localDate.toISOString();
         console.log('ISO date:', dateApplied);
       }
+    } else {
+      // Use current UTC time if no date provided
+      dateApplied = new Date().toISOString();
+      console.log('No date provided, using current UTC time:', dateApplied);
     }
     
     const application = new this.applicationModel({

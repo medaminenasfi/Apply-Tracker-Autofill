@@ -75,6 +75,16 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
     addSuffix: true,
   }) : 'No date';
 
+  // Log for debugging timezone
+  if (application.dateApplied) {
+    console.log('Date debug:', {
+      dateApplied: application.dateApplied,
+      parsedDate: new Date(application.dateApplied),
+      localString: new Date(application.dateApplied).toLocaleString(),
+      timeAgo
+    });
+  }
+
   const lastNote = notes.length > 0 ? notes[0] : undefined;
 
   const handleSaveNote = async () => {
@@ -286,7 +296,11 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
                 </div>
                 <div>
                   <p className="text-sm font-medium">Date Applied</p>
-                  <p className="text-sm">{application.dateApplied ? new Date(application.dateApplied).toLocaleDateString() : 'Not set'}</p>
+                  <p className="text-sm">
+                    {application.dateApplied 
+                      ? format(new Date(application.dateApplied), 'PPp')
+                      : 'Not set'}
+                  </p>
                 </div>
                 {application.jobUrl && application.jobUrl.trim() !== '' && (
                   <div>
