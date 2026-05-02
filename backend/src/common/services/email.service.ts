@@ -19,7 +19,7 @@ export class EmailService {
   }
 
   async sendPasswordResetEmail(email: string, resetToken: string) {
-    const resetLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    const resetLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3001'}/reset-password?token=${resetToken}`;
 
     const mailOptions = {
       from: this.configService.get<string>('EMAIL_FROM') || 'noreply@applytracker.com',

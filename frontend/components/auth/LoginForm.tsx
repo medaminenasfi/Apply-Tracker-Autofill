@@ -126,6 +126,11 @@ export function LoginForm() {
             </Link>
           </p>
           <div className="mt-2">
+            <Link href="/forgot-password" className="text-primary hover:underline text-xs">
+              Forgot password?
+            </Link>
+          </div>
+          <div className="mt-2">
             <Link href="/" className="text-muted-foreground hover:text-primary text-xs">
               ← Return to Home
             </Link>
