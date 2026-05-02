@@ -7,6 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
 import { Clock, ArrowRight, FileText, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { CardSkeleton, ListSkeleton } from '@/components/ui/skeleton';
 
 const statusColors: Record<FeedbackStatus, string> = {
   [FeedbackStatus.NEW]: 'bg-gray-100 text-gray-800',
@@ -21,25 +25,43 @@ const typeLabels: Record<FeedbackType, string> = {
 };
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [feedback, setFeedback] = useState<Feedback[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
-    loadFeedback();
-  }, []);
+    if (user) {
+      loadFeedback();
+    }
+  }, [user]);
 
   const loadFeedback = async () => {
     try {
-      const data = await feedbackApi.getMyFeedback();
+      const data = await withLoader(() => feedbackApi.getMyFeedback(), setLoading);
       setFeedback(data);
-      toast.success('Settings and feedback loaded successfully');
+      setIsFetching(false);
     } catch (error) {
       console.error('Failed to load feedback:', error);
       toast.error('Failed to load feedback history');
-    } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
+
+  // Show skeleton while fetching
+  if (isFetching) {
+    return (
+      <DashboardLayout title="Settings">
+        <div className="space-y-6 transition-opacity duration-200">
+          <ListSkeleton count={3} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -72,11 +94,7 @@ export default function SettingsPage() {
             <CardDescription>View all your feedback and admin responses</CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            ) : feedback.length === 0 ? (
+            {feedback.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No feedback submitted yet</p>
                 <p className="text-sm mt-2">Click the feedback button in the bottom right to submit your first feedback</p>

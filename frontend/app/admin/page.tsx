@@ -9,27 +9,63 @@ import { Button } from '@/components/ui/button';
 import { Users, Briefcase, TrendingUp, CheckCircle, XCircle, Clock, ArrowRight } from 'lucide-react';
 import api from '@/services/api';
 import { toast } from 'sonner';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { StatCardSkeleton } from '@/components/ui/skeleton';
 
 export default function AdminPage() {
   const router = useRouter();
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalApplications: 0,
+    applicationsByStatus: {
+      pending: 0,
+      interview: 0,
+      accepted: 0,
+      rejected: 0,
+    },
+  });
+  const [isFetching, setIsFetching] = useState(true);
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const response = await api.get('/admin/stats');
-        setStats(response.data);
-        toast.success('Dashboard statistics loaded successfully');
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-        toast.error('Failed to load dashboard statistics');
-      } finally {
-        setLoading(false);
-      }
-    };
     loadStats();
   }, []);
+
+  const loadStats = async () => {
+    try {
+      const response = await withLoader(() => api.get('/admin/stats'), setLoading);
+      setStats(response.data);
+      setIsFetching(false);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+      setIsFetching(false);
+    }
+  };
+
+  // Show skeleton while fetching
+  if (isFetching) {
+    return (
+      <AdminProtectedRoute>
+        <AdminLayout>
+          <div className="space-y-8 transition-opacity duration-200">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight">Admin Dashboard</h1>
+              <p className="text-muted-foreground mt-2 text-lg">
+                Overview of platform statistics
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </div>
+          </div>
+        </AdminLayout>
+      </AdminProtectedRoute>
+    );
+  }
 
   const statCards = [
     {
@@ -79,12 +115,7 @@ export default function AdminPage() {
   return (
     <AdminProtectedRoute>
       <AdminLayout title="Admin Dashboard">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          </div>
-        ) : (
-          <div className="space-y-8">
+        <div className="space-y-8">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {statCards.map((stat) => {
@@ -152,7 +183,6 @@ export default function AdminPage() {
               </Card>
             </div>
           </div>
-        )}
       </AdminLayout>
     </AdminProtectedRoute>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useApplicationStore } from '@/store/applicationStore';
 import { BarChart3, TrendingUp, Briefcase, CheckCircle, UserCheck, ArrowRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { StatCardSkeleton, ListSkeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -16,18 +19,26 @@ export default function DashboardPage() {
   const { applications, fetchApplications, hasFetched } = useApplicationStore();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
+  const { setLoading } = useLoadingStore();
 
-  // Fetch applications on mount
+  // Redirect if not authenticated
   useEffect(() => {
-    fetchApplications()
-      .then(() => toast.success('Applications loaded successfully'))
-      .catch((err) => {
-        console.error(err);
-        toast.error('Failed to load applications');
-      });
-  }, [fetchApplications]);
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
 
-  // Check if profile is incomplete
+  useEffect(() => {
+    if (user) {
+      withLoader(() => fetchApplications(), setLoading)
+        .then(() => toast.success('Applications loaded successfully'))
+        .catch((err) => {
+          console.error(err);
+          toast.error('Failed to load applications');
+        });
+    }
+  }, [user, fetchApplications, setLoading]);
+
   useEffect(() => {
     if (user && !hasCheckedProfile) {
       // Check if user has skipped the profile complete prompt before
@@ -46,14 +57,40 @@ export default function DashboardPage() {
     }
   }, [user, hasCheckedProfile]);
 
+  if (!user) {
+    return null;
+  }
+
   // Filter user's applications
-  const userApps = applications.filter((app) => app.userId === user?._id);
+  const userApps = applications.filter((app) => app.userId === user?._id || app.userId === user?.userId);
   const stats = {
     total: userApps.length,
     applied: userApps.filter((app) => app.status.toLowerCase() === 'applied').length,
     interview: userApps.filter((app) => app.status.toLowerCase() === 'interview').length,
     accepted: userApps.filter((app) => app.status.toLowerCase() === 'accepted').length,
   };
+
+  // Show skeleton if not fetched yet
+  if (!hasFetched) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Welcome back!</h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Track your job applications and manage your career journey
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const statCards = [
     {
@@ -89,7 +126,7 @@ export default function DashboardPage() {
   return (
     <>
       <DashboardLayout>
-        <div className="space-y-8">
+        <div className="space-y-8 transition-opacity duration-200">
           {/* Welcome Section */}
           <div>
             <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user?.firstName}!</h1>
@@ -107,11 +144,7 @@ export default function DashboardPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-muted-foreground text-sm">{stat.label}</p>
-                    {hasFetched ? (
-                      <p className="text-3xl font-bold mt-2">{stat.value}</p>
-                    ) : (
-                      <div className="h-9 w-16 bg-muted animate-pulse rounded mt-2" />
-                    )}
+                    <p className="text-3xl font-bold mt-2">{stat.value}</p>
                   </div>
                   <div className={`p-3 rounded-lg ${stat.color}`}>
                     <Icon className={`h-6 w-6 ${stat.textColor}`} />

@@ -5,6 +5,8 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import FeedbackButton from '@/components/feedback/FeedbackButton'
 import { Toaster } from '@/components/ui/sonner'
+import { GlobalLoader } from '@/components/ui/GlobalLoader'
+import { AuthLoader } from '@/components/ui/AuthLoader'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -43,7 +45,11 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-background">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            {children}
+            <AuthLoader />
+            <GlobalLoader />
+            <div className="opacity-100 transition-opacity duration-200">
+              {children}
+            </div>
             <FeedbackButton />
             <Toaster />
           </AuthProvider>

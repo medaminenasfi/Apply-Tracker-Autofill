@@ -9,22 +9,50 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 export default function ApplicantPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { fetchApplications, isLoading, hasFetched, applications } = useApplicationStore();
+  const { fetchApplications, hasFetched, applications } = useApplicationStore();
   const { user } = useAuth();
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
-    fetchApplications()
-      .then(() => toast.success('Applications loaded successfully'))
-      .catch((err) => {
-        console.error(err);
-        toast.error('Failed to load applications');
-      });
-  }, [fetchApplications]);
+    if (user) {
+      withLoader(() => fetchApplications(), setLoading)
+        .then(() => toast.success('Applications loaded successfully'))
+        .catch((err) => {
+          console.error(err);
+          toast.error('Failed to load applications');
+        });
+    }
+  }, [user, fetchApplications, setLoading]);
 
-  const userApplications = user ? applications.filter((app) => app.userId === user._id) : [];
+  const userApplications = user ? applications.filter((app) => app.userId === user._id || app.userId === user.userId) : [];
+
+  // Show skeleton if not fetched yet
+  if (!hasFetched) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">My Applications</h1>
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Application
+            </Button>
+          </div>
+          <ListSkeleton count={6} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <DashboardLayout>
@@ -32,32 +60,26 @@ export default function ApplicantPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Applications</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your job applications {hasFetched ? `(${userApplications.length})` : ''}
+            Track your job applications
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2" disabled={isLoading}>
-          <Plus className="h-5 w-5" />
+        <Button onClick={() => setIsModalOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
           Add Application
         </Button>
       </div>
-
-      {isLoading || !hasFetched ? (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Loading applications...</p>
-        </div>
-      ) : userApplications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64">
-          <p className="text-muted-foreground mb-4">No applications yet</p>
-          <Button onClick={() => setIsModalOpen(true)} variant="outline">
-            Add your first application
-          </Button>
-        </div>
-      ) : (
-        <div className="flex-1">
+      <div className="transition-opacity duration-200">
+        {userApplications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64">
+            <p className="text-muted-foreground mb-4">No applications yet</p>
+            <Button onClick={() => setIsModalOpen(true)} variant="outline">
+              Add your first application
+            </Button>
+          </div>
+        ) : (
           <KanbanBoard />
-        </div>
-      )}
-
+        )}
+      </div>
       <AddApplicationModal
         open={isModalOpen}
         onOpenChange={setIsModalOpen}

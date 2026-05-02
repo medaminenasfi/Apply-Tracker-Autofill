@@ -140,6 +140,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const fullUser = {
           ...user,
           ...fullProfile,
+          userId: fullProfile.userId || user.userId,
           profilePictureUpdatedAt: Date.now()
         };
         
@@ -232,6 +233,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Update user object with profile data, preserving required fields
       const updatedUser: User = {
         _id: currentUser?._id || '',
+        userId: currentUser?.userId,
         firstName: profile.firstName,
         lastName: profile.lastName,
         email: profile.email,
@@ -312,6 +314,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Merge profile data with user data, preserving required fields
       const updatedUser: User = {
         _id: currentUser?._id || '',
+        userId: profile.userId || currentUser?.userId,
         firstName: profile.firstName,
         lastName: profile.lastName,
         email: profile.email,

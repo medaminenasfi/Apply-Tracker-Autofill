@@ -6,6 +6,9 @@ import { Filter, ArrowRight } from 'lucide-react';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
 import { toast } from 'sonner';
 import { AdminLayout } from '@/components/AdminLayout';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { CardSkeleton, ListSkeleton } from '@/components/ui/skeleton';
 
 const statusColors: Record<FeedbackStatus, string> = {
   [FeedbackStatus.NEW]: 'bg-gray-100 text-gray-800',
@@ -21,32 +24,39 @@ const typeLabels: Record<FeedbackType, string> = {
 
 export default function AdminFeedbackPage() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
-  const [statusFilter, setStatusFilter] = useState<FeedbackStatus | ''>('');
-  const [typeFilter, setTypeFilter] = useState<FeedbackType | ''>('');
-  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FeedbackStatus | 'all'>('all');
+  const [isFetching, setIsFetching] = useState(true);
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
     loadFeedback();
-  }, [statusFilter, typeFilter]);
+  }, []);
 
   const loadFeedback = async () => {
     try {
-      const data = await feedbackApi.getAllFeedback(
-        statusFilter || undefined,
-        typeFilter || undefined
-      );
+      const data = await withLoader(() => feedbackApi.getAllFeedback(), setLoading);
       setFeedback(data);
-      toast.success('Feedback loaded successfully');
+      setIsFetching(false);
     } catch (error) {
       toast.error('Failed to load feedback');
-    } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
 
+  // Show skeleton while fetching
+  if (isFetching) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6 transition-opacity duration-200">
+          <ListSkeleton count={5} />
+        </div>
+      </AdminLayout>
+    );
+  }
+
   const handleStatusChange = async (id: string, newStatus: FeedbackStatus) => {
     try {
-      await feedbackApi.updateFeedback(id, { status: newStatus });
+      await withLoader(() => feedbackApi.updateFeedback(id, { status: newStatus }), setLoading);
       toast.success('Status updated successfully');
       loadFeedback();
     } catch (error) {
@@ -62,40 +72,20 @@ export default function AdminFeedbackPage() {
     });
   };
 
-  if (loading) {
-    return (
-      <AdminLayout title="Manage Feedback">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   return (
     <AdminLayout title="Manage Feedback">
       <div className="bg-white rounded-lg shadow mb-6 p-4">
         <div className="flex items-center gap-4">
           <Filter className="w-5 h-5 text-gray-600" />
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as FeedbackStatus | '')}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as FeedbackStatus | 'all')}
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All Statuses</option>
+            <option value="all">All Statuses</option>
             <option value={FeedbackStatus.NEW}>New</option>
             <option value={FeedbackStatus.VIEWED}>Viewed</option>
             <option value={FeedbackStatus.RESOLVED}>Resolved</option>
-          </select>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as FeedbackType | '')}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Types</option>
-            <option value={FeedbackType.BUG}>Bug Report</option>
-            <option value={FeedbackType.IMPROVEMENT}>Improvement</option>
-            <option value={FeedbackType.GENERAL}>General</option>
           </select>
         </div>
       </div>

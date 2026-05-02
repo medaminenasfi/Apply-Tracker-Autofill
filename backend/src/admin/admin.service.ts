@@ -21,11 +21,28 @@ export class AdminService {
     const totalUsers = await this.usersService.getTotalCount();
     const totalApplications = await this.applicationsService.getTotalCount();
     const applicationsByStatus = await this.applicationsService.getStatsByStatus();
+    
+    // Get count of regular users only (exclude admins)
+    const allUsers = await this.usersService.findAll();
+    const regularUsersCount = allUsers.filter((user: any) => user.role !== 'admin').length;
+
+    // Transform array to object for easier frontend consumption
+    const statusMap: any = {
+      applied: 0,
+      pending: 0,
+      interview: 0,
+      accepted: 0,
+      rejected: 0,
+    };
+
+    applicationsByStatus.forEach((stat: any) => {
+      statusMap[stat._id] = stat.count;
+    });
 
     return {
-      totalUsers,
+      totalUsers: regularUsersCount,
       totalApplications,
-      applicationsByStatus,
+      applicationsByStatus: statusMap,
     };
   }
 

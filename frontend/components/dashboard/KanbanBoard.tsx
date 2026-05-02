@@ -38,7 +38,7 @@ export function KanbanBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Filter applications for current user
-  const userApplications = applications.filter((app) => app.userId === user?._id);
+  const userApplications = applications.filter((app) => app.userId === user?._id || app.userId === user?.userId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

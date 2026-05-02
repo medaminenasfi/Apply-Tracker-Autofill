@@ -23,11 +23,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
     }
   }, [isAuthenticated, isInitialized, router]);
 
-  // Show loading state while initializing
-  if (!isInitialized) {
-    return null;
-  }
-
+  // Let GlobalLoader handle the loading state - don't return null
   if (!isAuthenticated) {
     return null;
   }

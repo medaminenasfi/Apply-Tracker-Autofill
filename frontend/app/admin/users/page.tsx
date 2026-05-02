@@ -9,10 +9,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Trash2, ArrowLeft, Shield, User } from 'lucide-react';
 import api from '@/services/api';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { CardSkeleton, ListSkeleton } from '@/components/ui/skeleton';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
+  const { user: currentAdmin } = useAuth();
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
     fetchUsers();
@@ -20,24 +26,43 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get('/admin/users');
-      setUsers(response.data);
-      toast.success('Users loaded successfully');
+      const response = await withLoader(() => api.get('/admin/users'), setLoading);
+      // Filter to show only regular users, not admins
+      setUsers(response.data.filter((user: any) => user.role !== 'admin'));
+      setIsFetching(false);
     } catch (error) {
       console.error('Failed to fetch users:', error);
       toast.error('Failed to load users');
-    } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
 
+  // Show skeleton while fetching
+  if (isFetching) {
+    return (
+      <AdminProtectedRoute>
+        <AdminLayout>
+          <div className="space-y-6 transition-opacity duration-200">
+            <ListSkeleton count={5} />
+          </div>
+        </AdminLayout>
+      </AdminProtectedRoute>
+    );
+  }
+
   const handleDelete = async (userId: string, firstName: string) => {
+    // Prevent admin from deleting themselves
+    if (userId === currentAdmin?._id) {
+      toast.error('You cannot delete your own account');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to delete user ${firstName}?`)) {
       return;
     }
 
     try {
-      await api.delete(`/admin/users/${userId}`);
+      await withLoader(() => api.delete(`/admin/users/${userId}`), setLoading);
       setUsers(users.filter((user) => user._id !== userId));
       toast.success('User deleted successfully');
     } catch (error) {
@@ -73,11 +98,7 @@ export default function AdminUsersPage() {
           {/* Users Table */}
           <Card>
             <CardContent className="p-0">
-              {loading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                </div>
-              ) : users.length === 0 ? (
+              {users.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                   <User className="h-12 w-12 mb-4 opacity-50" />
                   <p>No users found</p>

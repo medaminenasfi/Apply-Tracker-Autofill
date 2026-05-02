@@ -21,7 +21,6 @@ const typeLabels: Record<FeedbackType, string> = {
 
 export default function FeedbackDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -44,8 +43,6 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
         variant: 'destructive',
       });
       router.push('/settings');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -58,14 +55,6 @@ export default function FeedbackDetailPage({ params }: { params: Promise<{ id: s
       minute: '2-digit',
     });
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   if (!feedback) {
     return null;

@@ -10,27 +10,43 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, ArrowLeft, Briefcase, ExternalLink } from 'lucide-react';
 import api from '@/services/api';
 import { toast } from 'sonner';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { CardSkeleton, ListSkeleton } from '@/components/ui/skeleton';
 
 export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
-    fetchApplications();
+    loadApplications();
   }, []);
 
-  const fetchApplications = async () => {
+  const loadApplications = async () => {
     try {
-      const response = await api.get('/admin/applications');
+      const response = await withLoader(() => api.get('/admin/applications'), setLoading);
       setApplications(response.data);
-      toast.success('Applications loaded successfully');
+      setIsFetching(false);
     } catch (error) {
-      console.error('Failed to fetch applications:', error);
+      console.error('Failed to load applications:', error);
       toast.error('Failed to load applications');
-    } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
+
+  // Show skeleton while fetching
+  if (isFetching) {
+    return (
+      <AdminProtectedRoute>
+        <AdminLayout>
+          <div className="space-y-6 transition-opacity duration-200">
+            <ListSkeleton count={5} />
+          </div>
+        </AdminLayout>
+      </AdminProtectedRoute>
+    );
+  }
 
   const handleDelete = async (applicationId: string, companyName: string) => {
     if (!confirm(`Are you sure you want to delete application for ${companyName}?`)) {
@@ -38,7 +54,7 @@ export default function AdminApplicationsPage() {
     }
 
     try {
-      await api.delete(`/admin/applications/${applicationId}`);
+      await withLoader(() => api.delete(`/admin/applications/${applicationId}`), setLoading);
       setApplications(applications.filter((app) => app._id !== applicationId));
       toast.success('Application deleted successfully');
     } catch (error) {
@@ -85,11 +101,7 @@ export default function AdminApplicationsPage() {
           {/* Applications Table */}
           <Card>
             <CardContent className="p-0">
-              {loading ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                </div>
-              ) : applications.length === 0 ? (
+              {applications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                   <Briefcase className="h-12 w-12 mb-4 opacity-50" />
                   <p>No applications found</p>

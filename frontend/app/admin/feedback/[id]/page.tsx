@@ -7,6 +7,9 @@ import { ArrowLeft, Clock, FileText, Send } from 'lucide-react';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
 import { useToast } from '@/hooks/use-toast';
 import { AdminLayout } from '@/components/AdminLayout';
+import { withLoader } from '@/hooks/useLoader';
+import { useLoadingStore } from '@/store/loadingStore';
+import { CardSkeleton } from '@/components/ui/skeleton';
 
 const statusColors: Record<FeedbackStatus, string> = {
   [FeedbackStatus.NEW]: 'bg-gray-100 text-gray-800',
@@ -24,10 +27,11 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [adminReply, setAdminReply] = useState('');
   const [status, setStatus] = useState<FeedbackStatus>(FeedbackStatus.NEW);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
     const init = async () => {
@@ -37,17 +41,13 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
     init();
   }, [params]);
 
-  useEffect(() => {
-    if (feedback) {
-      setAdminReply(feedback.adminReply || '');
-      setStatus(feedback.status);
-    }
-  }, [feedback]);
-
   const loadFeedback = async (id: string) => {
     try {
-      const data = await feedbackApi.getFeedbackByIdAdmin(id);
+      const data = await withLoader(() => feedbackApi.getFeedbackByIdAdmin(id), setLoading);
       setFeedback(data);
+      setStatus(data.status);
+      setAdminReply(data.adminReply || '');
+      setIsFetching(false);
     } catch (error) {
       toast({
         title: 'Error',
@@ -55,14 +55,24 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
         variant: 'destructive',
       });
       router.push('/admin/feedback');
-    } finally {
-      setLoading(false);
+      setIsFetching(false);
     }
   };
 
+  // Show skeleton while fetching
+  if (isFetching) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6 transition-opacity duration-200">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </AdminLayout>
+    );
+  }
+
   const handleSave = async () => {
     const resolvedParams = await params;
-    setSaving(true);
     try {
       // Only add auto-reply if status is RESOLVED and NO reply exists yet
       let replyToSend = adminReply;
@@ -70,10 +80,12 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
         replyToSend = 'Thank you for your feedback. We have reviewed it and marked it as resolved.';
       }
 
-      await feedbackApi.updateFeedback(resolvedParams.id, {
-        adminReply: replyToSend,
-        status,
-      });
+      await withLoader(async () => {
+        await feedbackApi.updateFeedback(resolvedParams.id, {
+          adminReply: replyToSend,
+          status,
+        });
+      }, setLoading);
 
       toast({
         title: 'Success',
@@ -102,16 +114,6 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
       minute: '2-digit',
     });
   };
-
-  if (loading) {
-    return (
-      <AdminLayout title="Feedback Details">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      </AdminLayout>
-    );
-  }
 
   if (!feedback) {
     return null;
