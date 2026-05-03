@@ -3,18 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Clock, FileText, Send, Star, X, ZoomIn } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, Send, Star, X, ZoomIn, CheckCircle } from 'lucide-react';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { AdminLayout } from '@/components/AdminLayout';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
-import { CardSkeleton } from '@/components/ui/skeleton';
 
-const statusColors: Record<FeedbackStatus, string> = {
-  [FeedbackStatus.NEW]: 'bg-gray-100 text-gray-800',
-  [FeedbackStatus.VIEWED]: 'bg-blue-100 text-blue-800',
-  [FeedbackStatus.RESOLVED]: 'bg-green-100 text-green-800',
+const statusStyles: Record<FeedbackStatus, string> = {
+  [FeedbackStatus.NEW]: 'bg-slate-500/10 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300',
+  [FeedbackStatus.VIEWED]: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
+  [FeedbackStatus.RESOLVED]: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
 };
 
 const typeLabels: Record<FeedbackType, string> = {
@@ -31,7 +30,6 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
   const [isFetching, setIsFetching] = useState(true);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const router = useRouter();
-  const { toast } = useToast();
   const { setLoading } = useLoadingStore();
 
   useEffect(() => {
@@ -50,32 +48,15 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
       setAdminReply(data.adminReply || '');
       setIsFetching(false);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load feedback',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load feedback');
       router.push('/admin/feedback');
       setIsFetching(false);
     }
   };
 
-  // Show skeleton while fetching
-  if (isFetching) {
-    return (
-      <AdminLayout>
-        <div className="space-y-6 transition-opacity duration-200">
-          <CardSkeleton />
-          <CardSkeleton />
-        </div>
-      </AdminLayout>
-    );
-  }
-
   const handleSave = async () => {
     const resolvedParams = await params;
     try {
-      // Only add auto-reply if status is RESOLVED and NO reply exists yet
       let replyToSend = adminReply;
       if (status === FeedbackStatus.RESOLVED && !adminReply.trim() && !feedback?.adminReply) {
         replyToSend = 'Thank you for your feedback. We have reviewed it and marked it as resolved.';
@@ -88,19 +69,10 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
         });
       }, setLoading);
 
-      toast({
-        title: 'Success',
-        description: 'Feedback updated successfully',
-      });
-
-      // Reload feedback to get updated data
+      toast.success('Feedback updated successfully');
       await loadFeedback(resolvedParams.id);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update feedback',
-        variant: 'destructive',
-      });
+      toast.error('Failed to update feedback');
     } finally {
       setSaving(false);
     }
@@ -116,150 +88,168 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
     });
   };
 
-  if (!feedback) {
-    return null;
+  if (isFetching) {
+    return (
+      <AdminLayout title="Feedback Details">
+        <div className="space-y-4">
+          <div className="h-8 w-32 rounded-lg bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
+          <div className="h-64 rounded-2xl bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
+        </div>
+      </AdminLayout>
+    );
   }
+
+  if (!feedback) return null;
 
   return (
     <AdminLayout title="Feedback Details">
-      <Link
-        href="/admin/feedback"
-        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Feedback
-      </Link>
+      <div className="space-y-4">
+        {/* Back Link */}
+        <Link
+          href="/admin/feedback"
+          className="inline-flex items-center gap-2 text-sm text-[#111827]/60 dark:text-[#E5E7EB]/50 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Feedback
+        </Link>
 
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-900">
-                {typeLabels[feedback.type]}
-              </span>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[feedback.status]}`}>
-                {feedback.status}
-              </span>
+        {/* Main Card */}
+        <div className="rounded-2xl border border-[#E5E7EB] dark:border-white/[0.08] bg-white dark:bg-white/[0.03] overflow-hidden">
+          {/* Header */}
+          <div className="p-5 border-b border-[#E5E7EB] dark:border-white/[0.06]">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold">{typeLabels[feedback.type]}</span>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusStyles[feedback.status]}`}>
+                  {feedback.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-[#111827]/40 dark:text-[#E5E7EB]/30">
+                <Clock className="w-3.5 h-3.5" />
+                {formatDate(feedback.createdAt)}
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-sm text-gray-500">
-              <Clock className="w-4 h-4" />
-              {formatDate(feedback.createdAt)}
-            </div>
-          </div>
-          <div className="text-sm text-gray-600">
-            <span className="font-medium">User:</span>{' '}
-            {feedback.user ? `${feedback.user.firstName} ${feedback.user.lastName}` : 'Unknown'}
-            {feedback.user?.email && ` (${feedback.user.email})`}
-          </div>
-        </div>
-
-        <div className="p-6 space-y-6">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-5 h-5 text-gray-600" />
-              <h3 className="font-semibold text-gray-900">User Message</h3>
-            </div>
-            <p className="text-gray-700 whitespace-pre-wrap">{feedback.message}</p>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Star className="w-5 h-5 text-gray-600" />
-              <h3 className="font-semibold text-gray-900">Rating</h3>
-            </div>
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`w-5 h-5 ${
-                    star <= feedback.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-                  }`}
-                />
-              ))}
-              <span className="text-sm text-gray-600 ml-2">({feedback.rating}/5)</span>
+            <div className="text-sm text-[#111827]/60 dark:text-[#E5E7EB]/40">
+              <span className="font-medium text-[#111827] dark:text-[#E5E7EB]">User:</span>{' '}
+              {feedback.user ? `${feedback.user.firstName} ${feedback.user.lastName}` : 'Unknown'}
+              {feedback.user?.email && ` (${feedback.user.email})`}
             </div>
           </div>
 
-          {feedback.attachment && (
+          {/* Content */}
+          <div className="p-5 space-y-5">
+            {/* Message */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <ZoomIn className="w-5 h-5 text-gray-600" />
-                <h3 className="font-semibold text-gray-900">Screenshot</h3>
+                <FileText className="w-4 h-4 text-[#111827]/40 dark:text-[#E5E7EB]/30" />
+                <h3 className="text-sm font-semibold">User Message</h3>
               </div>
-              <div className="relative">
-                <img
-                  src={feedback.attachment}
-                  alt="Feedback screenshot"
-                  className="w-full h-64 object-cover rounded-md border cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => setIsImageModalOpen(true)}
-                />
-                <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs">
-                  Click to zoom
-                </div>
+              <p className="text-sm text-[#111827]/70 dark:text-[#E5E7EB]/60 whitespace-pre-wrap bg-[#F9FAFB] dark:bg-white/[0.03] rounded-xl p-3 border border-[#E5E7EB] dark:border-white/[0.06]">
+                {feedback.message}
+              </p>
+            </div>
+
+            {/* Rating */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Star className="w-4 h-4 text-[#111827]/40 dark:text-[#E5E7EB]/30" />
+                <h3 className="text-sm font-semibold">Rating</h3>
+              </div>
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    className={`w-4 h-4 ${s <= feedback.rating ? 'fill-amber-400 text-amber-400' : 'text-[#111827]/10 dark:text-[#E5E7EB]/10'}`}
+                  />
+                ))}
+                <span className="text-xs text-[#111827]/40 dark:text-[#E5E7EB]/30 ml-2">({feedback.rating}/5)</span>
               </div>
             </div>
-          )}
 
-          <div className="border-t pt-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Admin Response</h3>
-            <div className="space-y-4">
+            {/* Screenshot */}
+            {feedback.attachment && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Reply
-                </label>
-                <textarea
-                  value={adminReply}
-                  onChange={(e) => setAdminReply(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Write your reply..."
-                />
+                <div className="flex items-center gap-2 mb-2">
+                  <ZoomIn className="w-4 h-4 text-[#111827]/40 dark:text-[#E5E7EB]/30" />
+                  <h3 className="text-sm font-semibold">Screenshot</h3>
+                </div>
+                <div className="relative rounded-xl overflow-hidden border border-[#E5E7EB] dark:border-white/[0.06]">
+                  <img
+                    src={feedback.attachment}
+                    alt="Feedback screenshot"
+                    className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setIsImageModalOpen(true)}
+                  />
+                  <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-[10px] backdrop-blur-sm">
+                    Click to zoom
+                  </div>
+                </div>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as FeedbackStatus)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {/* Admin Response */}
+            <div className="pt-4 border-t border-[#E5E7EB] dark:border-white/[0.06]">
+              <h3 className="text-sm font-semibold mb-3">Admin Response</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-[#111827]/60 dark:text-[#E5E7EB]/40 mb-1.5">
+                    Reply
+                  </label>
+                  <textarea
+                    value={adminReply}
+                    onChange={(e) => setAdminReply(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2.5 text-sm rounded-xl border border-[#E5E7EB] dark:border-white/[0.08] bg-[#F9FAFB] dark:bg-white/[0.03] text-[#111827] dark:text-[#E5E7EB] placeholder:text-[#111827]/30 dark:placeholder:text-[#E5E7EB]/30 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-colors resize-none"
+                    placeholder="Write your reply..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#111827]/60 dark:text-[#E5E7EB]/40 mb-1.5">
+                    Status
+                  </label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as FeedbackStatus)}
+                    className="w-full px-3 py-2.5 text-sm rounded-xl border border-[#E5E7EB] dark:border-white/[0.08] bg-[#F9FAFB] dark:bg-white/[0.03] text-[#111827] dark:text-[#E5E7EB] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-colors"
+                  >
+                    <option value={FeedbackStatus.NEW}>New</option>
+                    <option value={FeedbackStatus.VIEWED}>Viewed</option>
+                    <option value={FeedbackStatus.RESOLVED}>Resolved</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  <option value={FeedbackStatus.NEW}>New</option>
-                  <option value={FeedbackStatus.VIEWED}>Viewed</option>
-                  <option value={FeedbackStatus.RESOLVED}>Resolved</option>
-                </select>
+                  <Send className="w-4 h-4" />
+                  {saving ? 'Sending...' : 'Send Reply'}
+                </button>
               </div>
-
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-                {saving ? 'Sending...' : 'Send Reply'}
-              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {isImageModalOpen && feedback.attachment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={() => setIsImageModalOpen(false)}>
-          <button
-            className="absolute top-4 right-4 text-white hover:text-gray-300"
-            onClick={() => setIsImageModalOpen(false)}
-          >
-            <X className="w-8 h-8" />
-          </button>
-          <img
-            src={feedback.attachment}
-            alt="Feedback screenshot zoomed"
-            className="max-w-full max-h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+        {/* Image Modal */}
+        {isImageModalOpen && feedback.attachment && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={() => setIsImageModalOpen(false)}>
+            <button
+              className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+              onClick={() => setIsImageModalOpen(false)}
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={feedback.attachment}
+              alt="Feedback screenshot zoomed"
+              className="max-w-full max-h-full object-contain rounded-xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+      </div>
     </AdminLayout>
   );
 }

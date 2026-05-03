@@ -2,14 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api, { adminApi } from '@/services/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { adminApi } from '@/services/api';
+import { Shield, AlertCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
+import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -20,7 +17,6 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const setAdmin = useAuthStore((state) => state.setAdmin);
-  const adminLogout = useAuthStore((state) => state.adminLogout);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,22 +24,15 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      // 1. Call login - backend sets httpOnly admin_token cookie
       const response = await adminApi.post('/auth/login', { email, password });
 
-      console.log('[ADMIN LOGIN SUCCESS]', response.data.user);
-
-      // 2. Validate role
       if (response.data.user.role !== 'admin') {
         setError('Access denied. Admin role required.');
         toast.error('Unauthorized access');
         return;
       }
 
-      // 3. Set admin state ONLY (cookie handled by backend)
       setAdmin(response.data.user);
-
-      // 4. Redirect
       toast.success('Admin login successful');
       router.push('/admin/dashboard');
     } catch (err: any) {
@@ -56,71 +45,93 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            <Shield className="h-6 w-6 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] dark:bg-[#020617] p-4">
+      <div className="w-full max-w-md">
+        {/* Back Link */}
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-[#111827]/60 dark:text-[#E5E7EB]/50 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </Link>
+
+        {/* Login Card */}
+        <div className="rounded-2xl border border-[#E5E7EB] dark:border-white/[0.08] bg-white dark:bg-[#0B1220] p-8 shadow-xl">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#7C3AED] shadow-lg">
+              <Shield className="h-7 w-7 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight">Admin Login</h1>
+            <p className="text-sm text-[#111827]/50 dark:text-[#E5E7EB]/40 mt-2">
+              Enter your admin credentials to access the panel
+            </p>
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
-          <CardDescription>
-            Enter your admin credentials to access the admin panel
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
             {error && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                <AlertCircle className="h-4 w-4" />
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm">
+                <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
+              <label htmlFor="email" className="text-sm font-medium text-[#111827] dark:text-[#E5E7EB]">
+                Email
+              </label>
+              <input
                 id="email"
                 type="email"
                 placeholder="admin@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="w-full px-4 py-3 text-sm rounded-xl border border-[#E5E7EB] dark:border-white/[0.08] bg-[#F9FAFB] dark:bg-white/[0.03] text-[#111827] dark:text-[#E5E7EB] placeholder:text-[#111827]/30 dark:placeholder:text-[#E5E7EB]/30 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-colors"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <label htmlFor="password" className="text-sm font-medium text-[#111827] dark:text-[#E5E7EB]">
+                Password
+              </label>
               <div className="relative">
-                <Input
+                <input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="w-full px-4 py-3 text-sm rounded-xl border border-[#E5E7EB] dark:border-white/[0.08] bg-[#F9FAFB] dark:bg-white/[0.03] text-[#111827] dark:text-[#E5E7EB] placeholder:text-[#111827]/30 dark:placeholder:text-[#E5E7EB]/30 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-colors pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#111827]/30 dark:text-[#E5E7EB]/30 hover:text-[#111827] dark:hover:text-[#E5E7EB] transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
             
-            <Button type="submit" className="w-full" disabled={loading}>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
               {loading ? 'Logging in...' : 'Login'}
-            </Button>
+            </button>
           </form>
-          
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <Button variant="link" className="p-0 h-auto" onClick={() => router.push('/')}>
-              Back to Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-[#111827]/30 dark:text-[#E5E7EB]/30 mt-6">
+          Protected by ApplyFlow Security
+        </p>
+      </div>
     </div>
   );
 }
