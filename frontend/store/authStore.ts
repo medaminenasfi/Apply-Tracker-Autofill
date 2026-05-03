@@ -1,6 +1,43 @@
 import { create } from 'zustand';
 import { User } from '@/types';
-import api, { adminApi } from '@/services/api';
+import api, { adminApi, isTokenExpired } from '@/services/api';
+
+let authCheckInterval: NodeJS.Timeout | null = null;
+
+// Periodic auth check function
+const startAuthCheck = () => {
+  if (authCheckInterval) clearInterval(authCheckInterval);
+  
+  authCheckInterval = setInterval(() => {
+    if (typeof window === 'undefined') return;
+    
+    const userToken = document.cookie.split(';').find(c => c.trim().startsWith('user_token='))?.split('=')[1];
+    const adminToken = document.cookie.split(';').find(c => c.trim().startsWith('admin_token='))?.split('=')[1];
+    
+    let needsLogout = false;
+    let logoutRole: 'user' | 'admin' | null = null;
+    
+    if (userToken && isTokenExpired(userToken)) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      needsLogout = true;
+      logoutRole = 'user';
+    }
+    
+    if (adminToken && isTokenExpired(adminToken)) {
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+      needsLogout = true;
+      logoutRole = logoutRole || 'admin';
+    }
+    
+    if (needsLogout && logoutRole) {
+      clearInterval(authCheckInterval!);
+      authCheckInterval = null;
+      window.location.href = logoutRole === 'admin' ? '/admin/login' : '/login';
+    }
+  }, 60000); // Check every minute
+};
 
 interface AuthState {
   user: User | null;
@@ -105,19 +142,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
     const isAdminAuthenticated = localStorage.getItem('isAdminAuthenticated') === 'true';
 
-    // Only load user state if user is authenticated
+    // Check token expiration by reading from cookies
+    const userToken = document.cookie.split(';').find(c => c.trim().startsWith('user_token='))?.split('=')[1];
+    const adminToken = document.cookie.split(';').find(c => c.trim().startsWith('admin_token='))?.split('=')[1];
+
+    // Clear expired user session
+    let userValid = isAuthenticated;
+    if (userToken && isTokenExpired(userToken)) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      userValid = false;
+    }
+
+    // Clear expired admin session
+    let adminValid = isAdminAuthenticated;
+    if (adminToken && isTokenExpired(adminToken)) {
+      localStorage.removeItem('admin');
+      localStorage.removeItem('isAdminAuthenticated');
+      adminValid = false;
+    }
+
+    // Only load user state if user is authenticated and token is valid
     let user = null;
-    if (userStr && isAuthenticated) {
+    if (userStr && userValid) {
       try { user = JSON.parse(userStr); } catch (e) {}
     }
 
-    // Only load admin state if admin is authenticated
+    // Only load admin state if admin is authenticated and token is valid
     let admin = null;
-    if (adminStr && isAdminAuthenticated) {
+    if (adminStr && adminValid) {
       try { admin = JSON.parse(adminStr); } catch (e) {}
     }
 
-    set({ user, admin, isAuthenticated, isAdminAuthenticated, isInitialized: true });
+    set({ user, admin, isAuthenticated: userValid, isAdminAuthenticated: adminValid, isInitialized: true });
+    
+    // Start periodic auth check if user or admin is authenticated
+    if (userValid || adminValid) {
+      startAuthCheck();
+    }
   },
 
   login: async (email: string, password: string) => {
@@ -205,6 +267,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      if (authCheckInterval) {
+        clearInterval(authCheckInterval);
+        authCheckInterval = null;
+      }
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
       set({ user: null, isAuthenticated: false });
@@ -218,6 +284,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Admin logout error:', error);
     } finally {
+      if (authCheckInterval) {
+        clearInterval(authCheckInterval);
+        authCheckInterval = null;
+      }
       localStorage.removeItem('admin');
       localStorage.removeItem('isAdminAuthenticated');
       set({ admin: null, isAdminAuthenticated: false });

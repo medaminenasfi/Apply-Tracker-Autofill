@@ -1,5 +1,46 @@
 import axios from 'axios';
 
+// JWT token validation helper
+export const isTokenExpired = (token: string): boolean => {
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return true;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const payload = JSON.parse(jsonPayload);
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return true;
+  }
+};
+
+// Auth logout handler
+const handleAuthError = (role: 'user' | 'admin') => {
+  console.log(`[AUTH ERROR] ${role.toUpperCase()} session expired or invalid - logging out`);
+  
+  // Clear localStorage
+  if (role === 'user') {
+    localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
+  } else {
+    localStorage.removeItem('admin');
+    localStorage.removeItem('isAdminAuthenticated');
+  }
+  
+  // Force page reload to clear state and redirect
+  if (typeof window !== 'undefined') {
+    window.location.href = role === 'admin' ? '/admin/login' : '/login';
+  }
+};
+
 // Retry logic with exponential backoff
 const fetchWithRetry = async (
   fn: () => Promise<any>,
@@ -64,6 +105,12 @@ userApi.interceptors.response.use(
       message: error.message,
       status: error.response?.status,
     });
+    
+    // Auto-logout on 401
+    if (error.response?.status === 401) {
+      handleAuthError('user');
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -97,6 +144,12 @@ adminApi.interceptors.response.use(
       message: error.message,
       status: error.response?.status,
     });
+    
+    // Auto-logout on 401
+    if (error.response?.status === 401) {
+      handleAuthError('admin');
+    }
+    
     return Promise.reject(error);
   }
 );
