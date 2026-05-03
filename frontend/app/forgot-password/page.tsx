@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import {
   Form,
@@ -18,8 +16,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import Link from 'next/link';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail, Send, CheckCircle2 } from 'lucide-react';
 import api from '@/services/api';
+import { Spinner } from '@/components/ui/spinner';
+import { AuthLayout } from '@/components/auth/AuthLayout';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -65,79 +65,97 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Mail className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Check your email</CardTitle>
-            <CardDescription>
-              We've sent a password reset link to your email address.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center text-sm text-muted-foreground">
-              <p>If you don't receive the email within a few minutes, check your spam folder.</p>
-            </div>
-            <div className="flex justify-center">
-              <Link
-                href="/login"
-                className="text-sm font-semibold text-primary hover:underline"
-              >
-                <ArrowLeft className="mr-2 inline h-4 w-4" />
-                Back to login
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthLayout variant="forgot-password">
+        <div className="flex flex-col items-center justify-center h-full max-w-sm mx-auto w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-green-50 dark:bg-green-500/10 flex items-center justify-center mb-6">
+            <CheckCircle2 className="w-8 h-8 text-green-500" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            Check your email
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+            We&apos;ve sent a password reset link to your email address.
+          </p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-8">
+            If you don&apos;t receive the email within a few minutes, check your spam folder.
+          </p>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] dark:text-[#3B82F6] dark:hover:text-[#60A5FA] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to login
+          </Link>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Forgot password?</CardTitle>
-          <CardDescription>
-            Enter your email address and we'll send you a link to reset your password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" type="email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <AuthLayout variant="forgot-password">
+      <div className="flex flex-col justify-center h-full max-w-sm mx-auto w-full">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            Forgot password?
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Enter your email and we&apos;ll send you a reset link.
+          </p>
+        </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Sending...' : 'Send reset link'}
-              </Button>
-            </form>
-          </Form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="you@example.com"
+                      type="email"
+                      className="h-11 rounded-xl bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#2563EB] focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="mt-4 text-center text-sm">
-            <Link
-              href="/login"
-              className="text-muted-foreground hover:text-primary"
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-12 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none flex items-center justify-center gap-2"
             >
-              <ArrowLeft className="mr-2 inline h-4 w-4" />
-              Back to login
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              {isLoading ? (
+                <>
+                  <Spinner className="h-4 w-4" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send reset link
+                </>
+              )}
+            </button>
+          </form>
+        </Form>
+
+        {/* Links */}
+        <div className="mt-6 text-center space-y-2">
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to login
+          </Link>
+        </div>
+      </div>
+    </AuthLayout>
   );
 }
