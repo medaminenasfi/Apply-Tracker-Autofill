@@ -165,13 +165,21 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
         transition={{ duration: 0.2 }}
         className={`cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : 'opacity-100'}`}
       >
-        <div className="group p-4 rounded-2xl bg-white dark:bg-white/[0.06] border border-[#E5E7EB] dark:border-white/[0.12] shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] hover:-translate-y-1 hover:border-[#2563EB]/30 dark:hover:border-[#2563EB]/25 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] dark:hover:bg-white/[0.10] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300">
+        <div className="group p-4 rounded-2xl bg-white dark:bg-white/[0.07] border border-[#E5E7EB] dark:border-white/[0.12] shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] hover:-translate-y-1 hover:border-[#2563EB]/30 dark:hover:border-[#2563EB]/25 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] dark:hover:bg-white/[0.10] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 cursor-pointer"
+             onClick={() => setShowDetails(true)}
+        >
           <div className="space-y-3">
-            {/* Header: company + actions */}
+            {/* Header: company logo + name + actions */}
             <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-[15px] text-slate-900 dark:text-white truncate">{application.companyName}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{application.position}</p>
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                {/* Company Logo/Initials */}
+                <div className="shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-[#2563EB] to-[#7C3AED] flex items-center justify-center text-white text-sm font-bold">
+                  {application.companyName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-[15px] text-slate-900 dark:text-white truncate">{application.companyName}</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{application.position}</p>
+                </div>
               </div>
               <button
                 className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-all"
@@ -254,21 +262,21 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
       {/* ── Details Modal ── */}
       {showDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowDetails(false)}>
-          <div className="bg-white dark:bg-[#0B1220] border border-[#E5E7EB] dark:border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-[#0B1220] border border-slate-200 dark:border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold">{application.companyName}</h3>
-                  <p className="text-sm text-[#111827]/50 dark:text-[#E5E7EB]/40">{application.position}</p>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{application.companyName}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{application.position}</p>
                 </div>
-                <button onClick={() => setShowDetails(false)} className="p-1.5 rounded-lg hover:bg-[#111827]/5 dark:hover:bg-white/[0.06] transition-colors">
-                  <X className="w-4 h-4 text-[#111827]/40 dark:text-[#E5E7EB]/40" />
+                <button onClick={() => setShowDetails(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors">
+                  <X className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 </button>
               </div>
-              
+
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
-                  <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Status</span>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Status</span>
                   <span
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
                     style={{ backgroundColor: config.bg, color: config.color }}
@@ -277,26 +285,26 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
                     {config.label}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
-                  <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Applied</span>
-                  <span className="text-sm">
-                    {application.dateApplied 
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Applied</span>
+                  <span className="text-sm text-slate-900 dark:text-slate-200">
+                    {application.dateApplied
                       ? format(new Date(application.dateApplied), 'PPp')
                       : 'Not set'}
                   </span>
                 </div>
                 {application.jobUrl && application.jobUrl.trim() !== '' && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
-                    <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Job URL</span>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Job URL</span>
                     <a href={application.jobUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2563EB] hover:underline break-all truncate">
                       {application.jobUrl}
                     </a>
                   </div>
                 )}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Notes</span>
-                    <span className="text-sm">{notes.length} note{notes.length !== 1 ? 's' : ''}</span>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Notes</span>
+                    <span className="text-sm text-slate-900 dark:text-slate-200">{notes.length} note{notes.length !== 1 ? 's' : ''}</span>
                   </div>
                   <button
                     onClick={() => { setShowDetails(false); setShowNotesDialog(true); }}
@@ -305,6 +313,22 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
                     View All
                   </button>
                 </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => { setShowDetails(false); setShowNotesDialog(true); }}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+                >
+                  Add Note
+                </button>
+                <button
+                  onClick={() => { setShowDetails(false); }}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>

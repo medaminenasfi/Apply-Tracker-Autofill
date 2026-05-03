@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
-import { CardSkeleton } from '@/components/ui/skeleton';
+import { ListSkeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const { fetchProfile, user } = useAuthStore();
@@ -31,10 +31,8 @@ export default function ProfilePage() {
   if (isFetching) {
     return (
       <DashboardLayout title="Profile">
-        <div className="max-w-2xl mx-auto space-y-6 transition-opacity duration-200">
-          <CardSkeleton />
-          <CardSkeleton />
-          <CardSkeleton />
+        <div className="max-w-4xl mx-auto space-y-6 transition-opacity duration-200">
+          <ListSkeleton count={3} />
         </div>
       </DashboardLayout>
     );
@@ -42,7 +40,7 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout title="Profile">
-      <div className="max-w-2xl mx-auto transition-opacity duration-200">
+      <div className="max-w-4xl mx-auto transition-opacity duration-200">
         <ProfileForm />
       </div>
     </DashboardLayout>

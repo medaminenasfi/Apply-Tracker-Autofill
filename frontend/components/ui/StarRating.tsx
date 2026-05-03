@@ -37,9 +37,9 @@ export function StarRating({ value, onChange, readonly = false }: StarRatingProp
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`w-6 h-6 cursor-pointer transition-colors ${
-            star <= displayValue ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-          } ${readonly ? 'cursor-default' : ''}`}
+          className={`w-5 h-5 cursor-pointer transition-colors duration-200 ${
+            star <= displayValue ? 'fill-[#F59E0B] text-[#F59E0B]' : 'text-slate-300 dark:text-slate-600'
+          } ${readonly ? 'cursor-default' : 'hover:scale-110'}`}
           onMouseEnter={() => handleMouseEnter(star)}
           onMouseLeave={handleMouseLeave}
           onClick={() => handleClick(star)}

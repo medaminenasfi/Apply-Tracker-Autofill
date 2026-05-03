@@ -27,7 +27,11 @@ const STATUSES: { status: ApplicationStatus; title: string }[] = [
   { status: 'rejected', title: 'Rejected' },
 ];
 
-export function KanbanBoard() {
+interface KanbanBoardProps {
+  applications?: import('@/types').Application[];
+}
+
+export function KanbanBoard({ applications: externalApplications }: KanbanBoardProps = {}) {
   const { user } = useAuth();
   const {
     applications,
@@ -37,8 +41,8 @@ export function KanbanBoard() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Filter applications for current user
-  const userApplications = applications.filter((app) => app.userId === user?._id || app.userId === user?.userId);
+  // Use external applications if provided, otherwise filter from store
+  const userApplications = externalApplications || applications.filter((app) => app.userId === user?._id || app.userId === user?.userId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -95,13 +99,14 @@ export function KanbanBoard() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 xl:overflow-x-auto xl:pb-4 xl:snap-x xl:snap-mandatory xl:justify-start xl:grid-flow-col xl:auto-rows-fr">
         {STATUSES.map(({ status, title }) => (
           <motion.div
             key={status}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            className="xl:min-w-[320px] xl:snap-start"
           >
             <ApplicationColumn
               status={status}
