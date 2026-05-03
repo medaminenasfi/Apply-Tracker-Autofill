@@ -95,28 +95,21 @@ export function KanbanBoard() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 overflow-x-auto pb-4 -mx-6 px-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ staggerChildren: 0.1 }}
-          className="flex gap-6"
-        >
-          {STATUSES.map(({ status, title }) => (
-            <motion.div
-              key={status}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ApplicationColumn
-                status={status}
-                title={title}
-                applications={userApplications.filter((app) => app.status === status)}
-              />
-            </motion.div>
-          ))}
-        </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {STATUSES.map(({ status, title }) => (
+          <motion.div
+            key={status}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ApplicationColumn
+              status={status}
+              title={title}
+              applications={userApplications.filter((app) => app.status === status)}
+            />
+          </motion.div>
+        ))}
       </div>
 
       {/* Drag Overlay - shows preview while dragging */}

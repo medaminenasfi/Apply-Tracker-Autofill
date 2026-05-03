@@ -1,48 +1,23 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ChevronDown, LogOut, LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare } from 'lucide-react';
+import { LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare, X } from 'lucide-react';
 import { useSidebarStore } from '@/store/sidebarStore';
 
-export function Sidebar() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
+const navItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/applicant', label: 'Applications', icon: Briefcase },
+  { href: '/profile', label: 'Profile', icon: User },
+  { href: '/feedback', label: 'Feedback', icon: MessageSquare },
+  { href: '/extension', label: 'Extension', icon: Chrome },
+  { href: '/settings', label: 'Settings', icon: Settings },
+];
+
+function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
+  const { user } = useAuth();
   const pathname = usePathname();
-  const { isCollapsed, collapseSidebar } = useSidebarStore();
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
-  const handleNavClick = () => {
-    // Auto-collapse on navigation
-    if (!isCollapsed) {
-      collapseSidebar();
-    }
-  };
-
-  const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-    { href: '/applicant', label: 'Applications', icon: Briefcase },
-    { href: '/profile', label: 'Profile', icon: User },
-    { href: '/feedback', label: 'Feedback', icon: MessageSquare },
-    { href: '/extension', label: 'Extension', icon: Chrome },
-    { href: '/settings', label: 'Settings', icon: Settings },
-  ];
 
   const adminItems = user?.role === 'admin' ? [
     { href: '/admin', label: 'Admin Panel', icon: Shield },
@@ -50,116 +25,109 @@ export function Sidebar() {
 
   const allNavItems = [...navItems, ...adminItems];
 
-  const getInitials = () => {
-    if (!user) return '?';
-    const first = user.firstName?.[0] || '';
-    const last = user.lastName?.[0] || '';
-    if (!first && !last) return '?';
-    return `${first}${last}`.toUpperCase();
-  };
-
-  // Add cache-busting parameter to force image reload
-  const profilePictureUrl = user?.profilePictureUrl 
-    ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}${user.profilePictureUrl}?t=${user.profilePictureUpdatedAt || Date.now()}`
-    : null;
-
   return (
-    <aside className={`flex h-screen flex-col border-r bg-card text-card-foreground transition-all duration-300 ${
-      isCollapsed ? 'w-20' : 'w-64'
-    }`}>
+    <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="border-b px-6 py-4">
-        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold flex-shrink-0">
-            AF
-          </div>
-          {!isCollapsed && <span>ApplyFlow</span>}
+      <div className="flex items-center gap-2.5 px-4 h-[72px] shrink-0 border-b border-[#E5E7EB] dark:border-white/[0.08]">
+        <Link
+          href="/dashboard"
+          onClick={onNavigate}
+          className="flex items-center gap-2.5 min-w-0"
+        >
+          <img src="/logo.png" alt="ApplyFlow" className="h-8 w-8 shrink-0 rounded-lg" />
+          {!collapsed && (
+            <span className="text-lg font-bold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent whitespace-nowrap">
+              ApplyFlow
+            </span>
+          )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        <TooltipProvider delayDuration={0}>
-          {allNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Tooltip key={item.href}>
-                <TooltipTrigger asChild>
-                  <Link href={item.href}>
-                    <Button
-                      variant={isActive ? 'secondary' : 'ghost'}
-                      className={`w-full justify-start gap-3 transition-all duration-300 ${
-                        isCollapsed ? 'px-2' : ''
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
-                      <span className={`transition-all duration-300 ${isCollapsed ? 'hidden' : 'block'}`}>
-                        {item.label}
-                      </span>
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                {isCollapsed && (
-                  <TooltipContent side="right">
-                    {item.label}
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            );
-          })}
-        </TooltipProvider>
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        {allNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              title={collapsed ? item.label : undefined}
+              className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                collapsed ? 'justify-center' : ''
+              } ${
+                isActive
+                  ? 'bg-gradient-to-r from-[#2563EB]/10 to-[#7C3AED]/10 text-[#2563EB] dark:from-[#2563EB]/15 dark:to-[#7C3AED]/15 dark:text-[#3B82F6]'
+                  : 'text-[#111827]/60 dark:text-[#E5E7EB]/50 hover:bg-[#111827]/5 dark:hover:bg-white/[0.06] hover:text-[#111827] dark:hover:text-[#E5E7EB]'
+              }`}
+            >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-[#2563EB]" />
+              )}
+              <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-[#2563EB] dark:text-[#3B82F6]' : ''}`} />
+              {!collapsed && <span className="truncate">{item.label}</span>}
+              {/* Tooltip for collapsed */}
+              {collapsed && (
+                <span className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-[#111827] dark:bg-[#1E293B] text-white text-xs font-medium whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 pointer-events-none shadow-lg">
+                  {item.label}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
+    </div>
+  );
+}
 
-      {/* User Menu */}
-      <div className="border-t px-3 py-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className={`w-full justify-between transition-all duration-300 ${
-              isCollapsed ? 'px-2' : ''
-            }`}>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  {profilePictureUrl ? (
-                    <AvatarImage 
-                      src={profilePictureUrl} 
-                      alt="Profile" 
-                    />
-                  ) : null}
-                  <AvatarFallback className="text-xs font-semibold">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className={`text-left transition-all duration-300 ${isCollapsed ? 'hidden' : 'block'}`}>
-                  <p className="text-sm font-medium">{user?.firstName}</p>
-                  <p className="text-xs text-muted-foreground">{user?.role}</p>
-                </div>
-              </div>
-              {!isCollapsed && <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <div>
-                <p className="font-semibold">{user?.firstName} {user?.lastName}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile">Profile</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/settings">Settings</Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+/* ── Desktop Sidebar ── */
+export function Sidebar() {
+  const { isCollapsed } = useSidebarStore();
+
+  return (
+    <aside
+      className={`hidden lg:flex flex-col h-screen shrink-0 border-r border-[#E5E7EB] dark:border-white/[0.08] bg-white dark:bg-[#020617] transition-[width] duration-300 ease-in-out ${
+        isCollapsed ? 'w-[72px]' : 'w-[260px]'
+      }`}
+    >
+      <SidebarContent collapsed={isCollapsed} />
     </aside>
+  );
+}
+
+/* ── Mobile Drawer Sidebar ── */
+export function MobileSidebar() {
+  const { isOpen, closeMobile } = useSidebarStore();
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className={`lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={closeMobile}
+        aria-hidden="true"
+      />
+
+      {/* Drawer */}
+      <aside
+        className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-white dark:bg-[#020617] border-r border-[#E5E7EB] dark:border-white/[0.08] shadow-2xl transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Close button */}
+        <button
+          onClick={closeMobile}
+          className="absolute top-5 right-3 p-1.5 rounded-lg hover:bg-[#111827]/5 dark:hover:bg-white/[0.06] transition-colors z-10"
+          aria-label="Close sidebar"
+        >
+          <X className="w-5 h-5 text-[#111827]/50 dark:text-[#E5E7EB]/50" />
+        </button>
+
+        <SidebarContent collapsed={false} onNavigate={closeMobile} />
+      </aside>
+    </>
   );
 }

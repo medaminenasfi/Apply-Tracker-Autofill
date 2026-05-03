@@ -166,29 +166,33 @@ export default function DashboardPage() {
       label: 'Total Applications',
       value: stats.total,
       icon: Briefcase,
-      color: 'bg-blue-100 dark:bg-blue-900',
-      textColor: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-[#2563EB]/10 dark:bg-[#2563EB]/15',
+      iconBg: 'bg-gradient-to-br from-[#2563EB] to-[#7C3AED]',
+      textColor: 'text-[#2563EB] dark:text-[#3B82F6]',
     },
     {
       label: 'Applications Sent',
       value: stats.applied,
       icon: TrendingUp,
-      color: 'bg-yellow-100 dark:bg-yellow-900',
-      textColor: 'text-yellow-600 dark:text-yellow-400',
+      bg: 'bg-[#F59E0B]/10 dark:bg-[#F59E0B]/15',
+      iconBg: 'bg-gradient-to-br from-[#F59E0B] to-[#D97706]',
+      textColor: 'text-[#F59E0B] dark:text-[#FBBF24]',
     },
     {
       label: 'Interviews',
       value: stats.interview,
       icon: BarChart3,
-      color: 'bg-purple-100 dark:bg-purple-900',
-      textColor: 'text-purple-600 dark:text-purple-400',
+      bg: 'bg-[#8B5CF6]/10 dark:bg-[#8B5CF6]/15',
+      iconBg: 'bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED]',
+      textColor: 'text-[#8B5CF6] dark:text-[#A78BFA]',
     },
     {
       label: 'Offers Accepted',
       value: stats.accepted,
       icon: CheckCircle,
-      color: 'bg-green-100 dark:bg-green-900',
-      textColor: 'text-green-600 dark:text-green-400',
+      bg: 'bg-[#22C55E]/10 dark:bg-[#22C55E]/15',
+      iconBg: 'bg-gradient-to-br from-[#22C55E] to-[#16A34A]',
+      textColor: 'text-[#22C55E] dark:text-[#4ADE80]',
     },
   ];
 
@@ -209,14 +213,14 @@ export default function DashboardPage() {
           {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label} className="p-6">
+              <Card key={stat.label} className={`p-6 ${stat.bg} border-transparent hover:border-white/[0.1] transition-all`}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-muted-foreground text-sm">{stat.label}</p>
-                    <p className="text-3xl font-bold mt-2">{stat.value}</p>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">{stat.label}</p>
+                    <p className={`text-3xl font-bold mt-2 ${stat.textColor}`}>{stat.value}</p>
                   </div>
-                  <div className={`p-3 rounded-lg ${stat.color}`}>
-                    <Icon className={`h-6 w-6 ${stat.textColor}`} />
+                  <div className={`p-3 rounded-xl shadow-lg ${stat.iconBg}`}>
+                    <Icon className="h-6 w-6 text-white" />
                   </div>
                 </div>
               </Card>

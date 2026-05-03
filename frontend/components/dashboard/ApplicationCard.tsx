@@ -1,15 +1,13 @@
 'use client';
 
 import { Application, Note } from '@/types';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { motion } from 'framer-motion';
-import { Info, Edit, Check, Trash2, MessageSquare, Plus } from 'lucide-react';
+import { Info, Edit, Check, Trash2, MessageSquare, Plus, MoreHorizontal, Send, CalendarClock, CheckCircle2, XCircle, Clock, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApplicationStore } from '@/store/applicationStore';
 import { toast } from 'sonner';
@@ -18,11 +16,11 @@ interface ApplicationCardProps {
   application: Application;
 }
 
-const statusColors: Record<string, { bg: string; text: string }> = {
-  applied: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-800 dark:text-blue-200' },
-  interview: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-800 dark:text-purple-200' },
-  accepted: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-800 dark:text-green-200' },
-  rejected: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-800 dark:text-red-200' },
+const statusConfig: Record<string, { icon: typeof Send; color: string; bg: string; label: string }> = {
+  applied:   { icon: Send,         color: '#2563EB', bg: 'rgba(37,99,235,0.12)',  label: 'Applied' },
+  interview: { icon: CalendarClock, color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: 'Interview' },
+  accepted:  { icon: CheckCircle2,  color: '#22C55E', bg: 'rgba(34,197,94,0.12)',  label: 'Accepted' },
+  rejected:  { icon: XCircle,       color: '#EF4444', bg: 'rgba(239,68,68,0.12)',  label: 'Rejected' },
 };
 
 export function ApplicationCard({ application }: ApplicationCardProps) {
@@ -70,20 +68,11 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
     transform: CSS.Translate.toString(transform),
   };
 
-  const colors = statusColors[application.status] || statusColors.Applied;
+  const config = statusConfig[application.status] || statusConfig.applied;
+  const StatusIcon = config.icon;
   const timeAgo = application.dateApplied ? formatDistanceToNow(new Date(application.dateApplied), {
     addSuffix: true,
   }) : 'No date';
-
-  // Log for debugging timezone
-  if (application.dateApplied) {
-    console.log('Date debug:', {
-      dateApplied: application.dateApplied,
-      parsedDate: new Date(application.dateApplied),
-      localString: new Date(application.dateApplied).toLocaleString(),
-      timeAgo
-    });
-  }
 
   const lastNote = notes.length > 0 ? notes[0] : undefined;
 
@@ -176,246 +165,230 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
         transition={{ duration: 0.2 }}
         className={`cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : 'opacity-100'}`}
       >
-        <Card className="p-4 hover:shadow-md transition-shadow bg-card hover:bg-card/80">
-          <div className="space-y-2">
+        <div className="group p-4 rounded-2xl bg-white dark:bg-white/[0.06] border border-[#E5E7EB] dark:border-white/[0.12] shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] hover:-translate-y-1 hover:border-[#2563EB]/30 dark:hover:border-[#2563EB]/25 hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)] dark:hover:bg-white/[0.10] dark:hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300">
+          <div className="space-y-3">
+            {/* Header: company + actions */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-foreground truncate">{application.companyName}</h3>
-                <p className="text-sm text-muted-foreground truncate">{application.position}</p>
+                <h3 className="font-semibold text-[15px] text-slate-900 dark:text-white truncate">{application.companyName}</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-300 truncate">{application.position}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 flex-shrink-0"
+              <button
+                className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-all"
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowDetails(true);
                 }}
               >
-                <Info className="h-4 w-4" />
-              </Button>
+                <MoreHorizontal className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+              </button>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{timeAgo}</span>
-              <Badge
-                variant="outline"
-                className={`${colors.bg} ${colors.text} border-0`}
+            {/* Status badge + time */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <Clock className="w-3 h-3" />
+                {timeAgo}
+              </div>
+              <span
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                style={{ backgroundColor: config.bg, color: config.color }}
               >
-                {application.status}
-              </Badge>
+                <StatusIcon className="w-3 h-3" />
+                {config.label}
+              </span>
             </div>
 
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Note</p>
+            {/* Note section */}
+            <div className="pt-1 border-t border-slate-200 dark:border-white/[0.08]">
               {isEditingNote ? (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-2">
                   <Textarea
                     placeholder="Add a note..."
                     value={noteText}
                     onChange={(e) => setNoteText(e.target.value)}
                     rows={2}
-                    className="resize-none text-xs"
+                    className="resize-none text-xs bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.1] rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     onClick={(e) => e.stopPropagation()}
                   />
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCancelEdit();
-                      }}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }}
                       disabled={isSavingNote}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-white/[0.1] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors disabled:opacity-50"
                     >
                       Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSaveNote();
-                      }}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSaveNote(); }}
                       disabled={isSavingNote}
+                      className="px-3 py-1.5 text-xs font-medium text-white rounded-lg bg-[#2563EB] hover:bg-[#2563EB]/90 transition-colors disabled:opacity-50"
                     >
-                      {isSavingNote ? 'Saving...' : <Check className="h-4 w-4" />}
-                    </Button>
+                      {isSavingNote ? 'Saving...' : 'Save'}
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-2">
-                  <p className="text-xs text-muted-foreground line-clamp-2 flex-1">
-                    {lastNote?.text || 'No note'}
+                <div className="flex items-start gap-2 mt-2">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 flex-1 leading-relaxed">
+                    {lastNote?.text || 'No notes yet'}
                   </p>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 flex-shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setNoteText('');
-                        setIsEditingNote(true);
-                      }}
-                      title="Add new note"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                
-                  </div>
+                  <button
+                    className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setNoteText('');
+                      setIsEditingNote(true);
+                    }}
+                    title="Add new note"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                  </button>
                 </div>
               )}
             </div>
           </div>
-        </Card>
+        </div>
       </motion.div>
 
+      {/* ── Details Modal ── */}
       {showDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDetails(false)}>
-          <div className="bg-card rounded-lg shadow-lg max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold">Application Details</h3>
-                <p className="text-sm text-muted-foreground">ID: {application._id}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowDetails(false)}>
+          <div className="bg-white dark:bg-[#0B1220] border border-[#E5E7EB] dark:border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">{application.companyName}</h3>
+                  <p className="text-sm text-[#111827]/50 dark:text-[#E5E7EB]/40">{application.position}</p>
+                </div>
+                <button onClick={() => setShowDetails(false)} className="p-1.5 rounded-lg hover:bg-[#111827]/5 dark:hover:bg-white/[0.06] transition-colors">
+                  <X className="w-4 h-4 text-[#111827]/40 dark:text-[#E5E7EB]/40" />
+                </button>
               </div>
               
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm font-medium">Company</p>
-                  <p className="text-sm">{application.companyName}</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
+                  <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Status</span>
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                    style={{ backgroundColor: config.bg, color: config.color }}
+                  >
+                    <StatusIcon className="w-3 h-3" />
+                    {config.label}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Position</p>
-                  <p className="text-sm">{application.position}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Status</p>
-                  <Badge className={`${colors.bg} ${colors.text} border-0`}>
-                    {application.status}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Date Applied</p>
-                  <p className="text-sm">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
+                  <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Applied</span>
+                  <span className="text-sm">
                     {application.dateApplied 
                       ? format(new Date(application.dateApplied), 'PPp')
                       : 'Not set'}
-                  </p>
+                  </span>
                 </div>
                 {application.jobUrl && application.jobUrl.trim() !== '' && (
-                  <div>
-                    <p className="text-sm font-medium">Job URL</p>
-                    <a href={application.jobUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
+                    <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Job URL</span>
+                    <a href={application.jobUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2563EB] hover:underline break-all truncate">
                       {application.jobUrl}
                     </a>
                   </div>
                 )}
-                <div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">Notes ({notes.length})</p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setShowDetails(false);
-                        setShowNotesDialog(true);
-                      }}
-                    >
-                      View All
-                    </Button>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#F9FAFB] dark:bg-white/[0.03]">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35 w-20">Notes</span>
+                    <span className="text-sm">{notes.length} note{notes.length !== 1 ? 's' : ''}</span>
                   </div>
+                  <button
+                    onClick={() => { setShowDetails(false); setShowNotesDialog(true); }}
+                    className="text-xs font-medium text-[#2563EB] hover:underline"
+                  >
+                    View All
+                  </button>
                 </div>
               </div>
-
-              <Button onClick={() => setShowDetails(false)} className="w-full">
-                Close
-              </Button>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Notes Modal ── */}
       {showNotesDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowNotesDialog(false)}>
-          <div className="bg-card rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setShowNotesDialog(false)}>
+          <div className="bg-white dark:bg-[#0B1220] border border-[#E5E7EB] dark:border-white/[0.08] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-[#E5E7EB] dark:border-white/[0.06]">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
+                    <MessageSquare className="h-5 w-5 text-[#2563EB]" />
                     All Notes
                   </h3>
-                  <p className="text-sm text-muted-foreground">{localApplication.companyName} - {localApplication.position}</p>
+                  <p className="text-sm text-[#111827]/50 dark:text-[#E5E7EB]/40">{localApplication.companyName} - {localApplication.position}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setShowNotesDialog(false)}>
-                  ✕
-                </Button>
+                <button onClick={() => setShowNotesDialog(false)} className="p-1.5 rounded-lg hover:bg-[#111827]/5 dark:hover:bg-white/[0.06] transition-colors">
+                  <X className="w-4 h-4 text-[#111827]/40 dark:text-[#E5E7EB]/40" />
+                </button>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-3">
               {notes.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No notes yet</p>
+                <div className="text-center py-10">
+                  <MessageSquare className="w-8 h-8 mx-auto text-[#111827]/15 dark:text-[#E5E7EB]/15 mb-2" />
+                  <p className="text-sm text-[#111827]/30 dark:text-[#E5E7EB]/25">No notes yet</p>
+                </div>
               ) : (
-                <>
-                  {notes.map((note, index) => (
-                    <div key={note._id} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {format(new Date(note.createdAt), 'PPp')}
-                        </p>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleEditNoteInDialog(index)}
+                notes.map((note, index) => (
+                  <div key={note._id} className="border border-[#E5E7EB] dark:border-white/[0.06] rounded-xl p-4 space-y-3 bg-[#F9FAFB] dark:bg-white/[0.02]">
+                    <div className="flex items-start justify-between">
+                      <p className="text-xs font-medium text-[#111827]/40 dark:text-[#E5E7EB]/35">
+                        {format(new Date(note.createdAt), 'PPp')}
+                      </p>
+                      <div className="flex gap-1">
+                        <button
+                          className="p-1.5 rounded-lg hover:bg-[#111827]/5 dark:hover:bg-white/[0.06] transition-colors"
+                          onClick={() => handleEditNoteInDialog(index)}
+                        >
+                          <Edit className="h-3.5 w-3.5 text-[#111827]/40 dark:text-[#E5E7EB]/40" />
+                        </button>
+                        <button
+                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                          onClick={() => handleDeleteNote(index)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {editingNoteIndex === index ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editingNoteText}
+                          onChange={(e) => setEditingNoteText(e.target.value)}
+                          rows={3}
+                          className="resize-none text-sm bg-white dark:bg-white/[0.03] border-[#E5E7EB] dark:border-white/[0.08] rounded-xl"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleCancelNoteEdit}
+                            disabled={isSavingNote}
+                            className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#E5E7EB] dark:border-white/[0.08] hover:bg-[#111827]/5 dark:hover:bg-white/[0.04] transition-colors disabled:opacity-50"
                           >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-destructive"
-                            onClick={() => handleDeleteNote(index)}
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSaveNoteInDialog}
+                            disabled={isSavingNote}
+                            className="px-3 py-1.5 text-xs font-medium text-white rounded-lg bg-[#2563EB] hover:bg-[#2563EB]/90 transition-colors disabled:opacity-50"
                           >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                            {isSavingNote ? 'Saving...' : 'Save'}
+                          </button>
                         </div>
                       </div>
-                      
-                      {editingNoteIndex === index ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={editingNoteText}
-                            onChange={(e) => setEditingNoteText(e.target.value)}
-                            rows={3}
-                            className="resize-none text-sm"
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleCancelNoteEdit}
-                              disabled={isSavingNote}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={handleSaveNoteInDialog}
-                              disabled={isSavingNote}
-                            >
-                              {isSavingNote ? 'Saving...' : 'Save'}
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-sm whitespace-pre-wrap">{note.text}</p>
-                      )}
-                    </div>
-                  ))}
-                </>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap text-[#111827]/70 dark:text-[#E5E7EB]/60">{note.text}</p>
+                    )}
+                  </div>
+                ))
               )}
             </div>
           </div>
