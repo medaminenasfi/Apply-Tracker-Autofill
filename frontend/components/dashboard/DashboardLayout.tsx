@@ -6,6 +6,7 @@ import { Navbar } from './Navbar';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import FeedbackButton from '@/components/feedback/FeedbackButton';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -41,6 +42,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
           <div className="p-4 sm:p-6">{children}</div>
         </main>
       </div>
+      <FeedbackButton />
     </div>
   );
 }

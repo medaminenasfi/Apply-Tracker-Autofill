@@ -136,3 +136,132 @@
 .animate-bounce-slow {
   animation: bounce-slow 3s ease-in-out infinite;
 }
+
+/* Custom Toast Styles - ApplyFlow Design System */
+[data-sonner-toaster] {
+  --toast-position: bottom-right;
+}
+
+@media (max-width: 768px) {
+  [data-sonner-toaster] {
+    --toast-position: bottom-center;
+  }
+}
+
+/* Base Toast Style */
+.applyflow-toast {
+  background: rgba(11, 18, 32, 0.95) !important;
+  color: #E5E7EB !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px !important;
+  padding: 14px 18px !important;
+  box-shadow: 0 10px 40px rgba(59, 130, 246, 0.15) !important;
+  max-width: 420px;
+}
+
+/* Light Mode Override */
+.light .applyflow-toast {
+  background: #FFFFFF !important;
+  color: #111827 !important;
+  border: 1px solid #E5E7EB !important;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Success Toast - Green Glow */
+.applyflow-toast-success {
+  background: rgba(11, 18, 32, 0.95) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(34, 197, 94, 0.25) !important;
+}
+
+.light .applyflow-toast-success {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(34, 197, 94, 0.15) !important;
+}
+
+/* Error Toast - Red Glow */
+.applyflow-toast-error {
+  background: rgba(11, 18, 32, 0.95) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(239, 68, 68, 0.25) !important;
+}
+
+.light .applyflow-toast-error {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Warning Toast - Amber Glow */
+.applyflow-toast-warning {
+  background: rgba(11, 18, 32, 0.95) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.25) !important;
+}
+
+.light .applyflow-toast-warning {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Info Toast - Blue Glow */
+.applyflow-toast-info {
+  background: rgba(11, 18, 32, 0.95) !important;
+  border: 1px solid rgba(37, 99, 235, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(37, 99, 235, 0.25) !important;
+}
+
+.light .applyflow-toast-info {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(37, 99, 235, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Override any default black backgrounds */
+[data-sonner-toast] {
+  background: rgba(11, 18, 32, 0.95) !important;
+}
+
+.light [data-sonner-toast] {
+  background: #FFFFFF !important;
+}
+
+/* Remove any pure black backgrounds */
+[data-sonner-toast].bg-black,
+[data-sonner-toast].bg-neutral-900 {
+  background: rgba(11, 18, 32, 0.95) !important;
+}
+
+.light [data-sonner-toast].bg-black,
+.light [data-sonner-toast].bg-neutral-900 {
+  background: #FFFFFF !important;
+}
+
+/* Responsive width */
+@media (max-width: 768px) {
+  .applyflow-toast {
+    width: calc(100% - 32px);
+    max-width: none;
+  }
+}
+
+/* Positioning - Desktop: bottom-right with offset to avoid chat button */
+@media (min-width: 769px) {
+  [data-sonner-toaster] {
+    bottom: 80px !important;
+    right: 24px !important;
+  }
+}
+
+/* Positioning - Mobile: bottom-center */
+@media (max-width: 768px) {
+  [data-sonner-toaster] {
+    bottom: 24px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+}

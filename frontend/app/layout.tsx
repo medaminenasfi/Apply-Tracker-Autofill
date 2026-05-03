@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/components/providers/AuthProvider'
-import FeedbackButton from '@/components/feedback/FeedbackButton'
 import { Toaster } from '@/components/ui/sonner'
 import { GlobalLoader } from '@/components/ui/GlobalLoader'
 import { AuthLoader } from '@/components/ui/AuthLoader'
@@ -49,7 +48,6 @@ export default function RootLayout({
             <div className="opacity-100 transition-opacity duration-200">
               {children}
             </div>
-            <FeedbackButton />
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

@@ -11,6 +11,7 @@ import {
   Sparkles, MousePointerClick, Upload, Bell, Shield,
   Plus, Calendar, LogOut, User
 } from 'lucide-react';
+import FeedbackButton from '@/components/feedback/FeedbackButton';
 
 /* ── animation helpers ── */
 const fadeUp: Variants = {
@@ -640,6 +641,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      <FeedbackButton />
     </div>
   );
 }
