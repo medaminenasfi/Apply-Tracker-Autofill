@@ -1,0 +1,42 @@
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: applyflow-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    ports:
+      - "3002:3000"
+    networks:
+      - applyflow-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3002
+    container_name: applyflow-frontend
+    restart: unless-stopped
+    env_file:
+      - ./frontend/.env.local
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3002
+      NODE_ENV: development
+    ports:
+      - "3003:3001"
+    depends_on:
+      - backend
+    networks:
+      - applyflow-network
+
+networks:
+  applyflow-network:
+    driver: bridge

@@ -29,8 +29,8 @@ import { EmailService } from '../common/services/email.service';
     AuthService,
     LocalStrategy,
     JwtStrategy,
+    GoogleStrategy,
     EmailService,
-    // GoogleStrategy, // Uncomment when Google OAuth credentials are configured
   ],
   controllers: [AuthController],
 })

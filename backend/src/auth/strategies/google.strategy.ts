@@ -20,6 +20,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
   async validate(accessToken: string, refreshToken: string, profile: Profile) {
     const { id, emails, name } = profile;
+    
+    if (!emails || emails.length === 0) {
+      throw new Error('No email found in Google profile');
+    }
+    
     const email = emails[0].value;
     
     let user = await this.usersService.findByEmail(email);
@@ -28,8 +33,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       user = await this.usersService.createGoogleUser({
         googleId: id,
         email,
-        firstName: name.givenName,
-        lastName: name.familyName,
+        firstName: name?.givenName || '',
+        lastName: name?.familyName || '',
       });
     }
     
