@@ -27,51 +27,82 @@ export const checkHealth = async (): Promise<boolean> => {
   }
 };
 
-// Create axios instance
-const api = axios.create({
+// Base API configuration
+const baseConfig = {
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Send HTTP-only cookies
+};
+
+console.log('[API CONFIG] baseURL:', baseConfig.baseURL);
+
+// User API - only sends user_token
+export const userApi = axios.create({
+  ...baseConfig,
+  withCredentials: true,
 });
 
-// Request interceptor to add context role
-api.interceptors.request.use(
+userApi.interceptors.request.use(
   (config) => {
-    // Only access window if we're in the browser
+    config.withCredentials = true;
     if (typeof window !== 'undefined') {
-      const isAdminRoute = window.location.pathname.startsWith('/admin');
-      config.headers['x-app-role'] = isAdminRoute ? 'admin' : 'user';
+      config.headers['x-app-role'] = 'user';
     }
+    console.log('[USER API REQUEST]', config.method?.toUpperCase(), (config.baseURL || '') + (config.url || ''));
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle errors
-api.interceptors.response.use(
+userApi.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('[API ERROR]', {
+    console.error('[USER API ERROR]', {
       url: error.config?.url,
       message: error.message,
       status: error.response?.status,
     });
-
-    // Network error handling
-    if (error.message === 'Network Error') {
-      console.error('[NETWORK ERROR] Backend may be unreachable');
-    }
-
-    if (error.response?.status === 401) {
-      // We don't clear localStorage here entirely because we have separate user/admin contexts, 
-      // but if we are 401, maybe redirect.
-      // A better approach is handled by middleware or specific logout actions.
-    }
     return Promise.reject(error);
   }
 );
+
+// Admin API - only sends admin_token
+export const adminApi = axios.create({
+  ...baseConfig,
+  withCredentials: true,
+});
+
+adminApi.interceptors.request.use(
+  (config) => {
+    config.withCredentials = true;
+    if (typeof window !== 'undefined') {
+      config.headers['x-app-role'] = 'admin';
+    }
+    console.log('[ADMIN API REQUEST]', config.method?.toUpperCase(), (config.baseURL || '') + (config.url || ''));
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+adminApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.message === 'Network Error') {
+      console.error('[ADMIN NETWORK ERROR] Possible CORS or backend down');
+    }
+    console.error('[ADMIN API ERROR]', {
+      url: error.config?.url,
+      message: error.message,
+      status: error.response?.status,
+    });
+    return Promise.reject(error);
+  }
+);
+
+// Legacy API instance for backward compatibility (defaults to user)
+const api = userApi;
 
 export default api;
 export { fetchWithRetry };

@@ -8,8 +8,8 @@ export async function setAuthCookie(token: string, role: 'user' | 'admin') {
   
   cookieStore.set(cookieName, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: false, // Set to false for development (http)
+    sameSite: 'none', // Required for cross-origin requests
     path: '/',
     maxAge: 7 * 24 * 60 * 60 // 7 days
   });

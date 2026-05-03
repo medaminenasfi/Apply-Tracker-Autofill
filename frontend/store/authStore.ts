@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User } from '@/types';
-import api from '@/services/api';
+import api, { adminApi } from '@/services/api';
 
 interface AuthState {
   user: User | null;
@@ -33,7 +33,7 @@ interface AuthState {
   deleteProfilePicture: () => Promise<void>;
 }
 
-import { setAuthCookie, clearAuthCookie } from '@/app/actions/auth';
+// Cookies are handled by backend only - no frontend cookie management
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -117,15 +117,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try { admin = JSON.parse(adminStr); } catch (e) {}
     }
 
-    // Clear conflicting states - if user is authenticated, ensure admin is not
-    if (isAuthenticated && isAdminAuthenticated) {
-      // Both authenticated - this is a conflict, clear both
-      localStorage.removeItem('admin');
-      localStorage.removeItem('isAdminAuthenticated');
-      admin = null;
-      localStorage.removeItem('isAdminAuthenticated');
-    }
-
     set({ user, admin, isAuthenticated, isAdminAuthenticated, isInitialized: true });
   },
 
@@ -142,12 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error('Please use the admin login portal.');
       }
 
-      // Clear any existing admin state to prevent role mixing
-      localStorage.removeItem('admin');
-      localStorage.removeItem('isAdminAuthenticated');
-      set({ admin: null, isAdminAuthenticated: false });
-
-      await setAuthCookie(token, 'user');
+      // Cookie is set by backend - no frontend cookie management
 
       // Fetch full profile to get profile picture URL
       try {
@@ -195,12 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = response.data.user;
       const token = response.data.access_token;
 
-      // Clear any existing admin state to prevent role mixing
-      localStorage.removeItem('admin');
-      localStorage.removeItem('isAdminAuthenticated');
-      set({ admin: null, isAdminAuthenticated: false });
-
-      await setAuthCookie(token, 'user');
+      // Cookie is set by backend - no frontend cookie management
 
       // Store in localStorage
       localStorage.setItem('user', JSON.stringify(user));
@@ -224,29 +205,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      await clearAuthCookie('user');
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
-      // Also clear admin state to prevent role mixing
-      localStorage.removeItem('admin');
-      localStorage.removeItem('isAdminAuthenticated');
-      set({ user: null, isAuthenticated: false, admin: null, isAdminAuthenticated: false });
+      set({ user: null, isAuthenticated: false });
     }
   },
 
   adminLogout: async () => {
     try {
-      await api.post('/auth/logout');
+      // Call backend to clear admin_token cookie
+      await adminApi.post('/auth/logout');
     } catch (error) {
       console.error('Admin logout error:', error);
     } finally {
-      await clearAuthCookie('admin');
       localStorage.removeItem('admin');
       localStorage.removeItem('isAdminAuthenticated');
-      // Also clear user state to prevent role mixing
-      localStorage.removeItem('user');
-      localStorage.removeItem('isAuthenticated');
-      set({ admin: null, isAdminAuthenticated: false, user: null, isAuthenticated: false });
+      set({ admin: null, isAdminAuthenticated: false });
     }
   },
 

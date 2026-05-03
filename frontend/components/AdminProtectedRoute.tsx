@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/services/api';
+import { useAuthStore } from '@/store/authStore';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -10,26 +10,30 @@ interface AdminProtectedRouteProps {
 
 export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const { admin, isAdminAuthenticated, initialize } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    initialize();
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, [initialize]);
 
-  const checkAuth = async () => {
-    try {
-      const response = await api.get('/auth/me');
-      if (response.data.role !== 'admin') {
-        router.push('/admin/login');
-      } else {
-        setIsAuthorized(true);
-      }
-    } catch (error) {
+  useEffect(() => {
+    if (isReady && (!isAdminAuthenticated || !admin)) {
       router.push('/admin/login');
     }
-  };
+  }, [isReady, isAdminAuthenticated, admin, router]);
 
-  if (!isAuthorized) {
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAdminAuthenticated || !admin) {
     return null;
   }
 

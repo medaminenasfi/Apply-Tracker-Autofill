@@ -2,14 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '@/services/api';
+import api, { adminApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { setAuthCookie } from '@/app/actions/auth';
 import { useAuthStore } from '@/store/authStore';
 
 export default function AdminLoginPage() {
@@ -21,7 +20,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const setAdmin = useAuthStore((state) => state.setAdmin);
-  const logout = useAuthStore((state) => state.logout);
+  const adminLogout = useAuthStore((state) => state.adminLogout);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,20 +28,24 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const response = await api.post('/auth/login', { email, password });
+      // 1. Call login - backend sets httpOnly admin_token cookie
+      const response = await adminApi.post('/auth/login', { email, password });
 
-      if (response.data.user.role === 'admin') {
-        // Clear any existing user state to prevent role mixing
-        await logout();
+      console.log('[ADMIN LOGIN SUCCESS]', response.data.user);
 
-        await setAuthCookie(response.data.access_token, 'admin');
-        setAdmin(response.data.user);
-        toast.success('Admin login successful');
-        router.push('/admin');
-      } else {
+      // 2. Validate role
+      if (response.data.user.role !== 'admin') {
         setError('Access denied. Admin role required.');
         toast.error('Unauthorized access');
+        return;
       }
+
+      // 3. Set admin state ONLY (cookie handled by backend)
+      setAdmin(response.data.user);
+
+      // 4. Redirect
+      toast.success('Admin login successful');
+      router.push('/admin/dashboard');
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(message);

@@ -1,4 +1,4 @@
-import api from './api';
+import api, { adminApi } from './api';
 
 export enum FeedbackType {
   BUG = 'BUG',
@@ -60,7 +60,7 @@ export const feedbackApi = {
 
   // Admin methods
   getFeedbackByIdAdmin: async (id: string): Promise<Feedback> => {
-    const response = await api.get(`/admin/feedback/${id}`);
+    const response = await adminApi.get(`/admin/feedback/${id}`);
     return response.data;
   },
 
@@ -68,12 +68,12 @@ export const feedbackApi = {
     const params: any = {};
     if (status) params.status = status;
     if (type) params.type = type;
-    const response = await api.get('/admin/feedback', { params });
+    const response = await adminApi.get('/admin/feedback', { params });
     return response.data;
   },
 
   updateFeedback: async (id: string, data: UpdateFeedbackDto): Promise<Feedback> => {
-    const response = await api.patch(`/admin/feedback/${id}`, data);
+    const response = await adminApi.patch(`/admin/feedback/${id}`, data);
     return response.data;
   },
 

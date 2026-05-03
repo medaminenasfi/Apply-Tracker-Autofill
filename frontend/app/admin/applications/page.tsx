@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, ArrowLeft, Briefcase, ExternalLink } from 'lucide-react';
-import api from '@/services/api';
+import { adminApi } from '@/services/api';
 import { toast } from 'sonner';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
@@ -25,7 +25,7 @@ export default function AdminApplicationsPage() {
 
   const loadApplications = async () => {
     try {
-      const response = await withLoader(() => api.get('/admin/applications'), setLoading);
+      const response = await withLoader(() => adminApi.get('/admin/applications'), setLoading);
       setApplications(response.data);
       setIsFetching(false);
     } catch (error) {
@@ -54,7 +54,7 @@ export default function AdminApplicationsPage() {
     }
 
     try {
-      await withLoader(() => api.delete(`/admin/applications/${applicationId}`), setLoading);
+      await withLoader(() => adminApi.delete(`/admin/applications/${applicationId}`), setLoading);
       setApplications(applications.filter((app) => app._id !== applicationId));
       toast.success('Application deleted successfully');
     } catch (error) {

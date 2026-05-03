@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -18,14 +18,6 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
 
   const adminLogout = useAuthStore((state) => state.adminLogout);
   const admin = useAuthStore((state) => state.admin);
-  const isAdminAuthenticated = useAuthStore((state) => state.isAdminAuthenticated);
-
-  // Redirect if not authenticated as admin
-  useEffect(() => {
-    if (!isAdminAuthenticated || !admin) {
-      router.push('/admin/login');
-    }
-  }, [isAdminAuthenticated, admin, router]);
 
   const handleLogout = async () => {
     await adminLogout();
@@ -33,16 +25,11 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   };
 
   const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/applications', label: 'Applications', icon: FileText },
     { href: '/admin/feedback', label: 'Feedback', icon: MessageCircle },
   ];
-
-  // Don't render if not authenticated
-  if (!isAdminAuthenticated || !admin) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -15,7 +15,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'ApplyFlow - Job Application Tracker',
   description: 'Track your job applications with ease',
-  generator: 'v0.app',
   icons: {
     icon: [
       {

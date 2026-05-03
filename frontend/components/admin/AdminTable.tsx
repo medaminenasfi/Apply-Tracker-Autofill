@@ -23,11 +23,10 @@ import { useState } from 'react';
 import { ApplicationStatus } from '@/types';
 
 const statusColors: Record<ApplicationStatus, { bg: string; text: string }> = {
-  Applied: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-800 dark:text-blue-200' },
-  Pending: { bg: 'bg-yellow-100 dark:bg-yellow-900', text: 'text-yellow-800 dark:text-yellow-200' },
-  Interview: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-800 dark:text-purple-200' },
-  Accepted: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-800 dark:text-green-200' },
-  Rejected: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-800 dark:text-red-200' },
+  applied: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-800 dark:text-blue-200' },
+  interview: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-800 dark:text-purple-200' },
+  accepted: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-800 dark:text-green-200' },
+  rejected: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-800 dark:text-red-200' },
 };
 
 export function AdminTable() {
@@ -35,16 +34,13 @@ export function AdminTable() {
   const { user: currentUser } = useAuthStore();
   const [filterStatus, setFilterStatus] = useState<ApplicationStatus | 'All'>('All');
 
-  // Find user names for applications
-  const demoUsers = [
-    { id: '1', name: 'John Doe' },
-    { id: '2', name: 'Admin User' },
-  ];
-
-  const getUserName = (userId: string) => {
-    const user = demoUsers.find((u) => u.id === userId);
-    return user?.name || 'Unknown';
-  };
+  const getUserName = (userId: string | any) => {
+  // userId is populated as an object with user data
+  if (typeof userId === 'object' && userId) {
+    return `${userId.firstName || ''} ${userId.lastName || ''}`.trim() || userId.email || 'Unknown';
+  }
+  return 'Unknown';
+};
 
   const filteredApplications =
     filterStatus === 'All'
@@ -64,11 +60,10 @@ export function AdminTable() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="All">All Statuses</SelectItem>
-            <SelectItem value="Applied">Applied</SelectItem>
-            <SelectItem value="Pending">Pending</SelectItem>
-            <SelectItem value="Interview">Interview</SelectItem>
-            <SelectItem value="Accepted">Accepted</SelectItem>
-            <SelectItem value="Rejected">Rejected</SelectItem>
+            <SelectItem value="applied">Applied</SelectItem>
+            <SelectItem value="interview">Interview</SelectItem>
+            <SelectItem value="accepted">Accepted</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
         <span className="text-sm text-muted-foreground">
@@ -85,7 +80,6 @@ export function AdminTable() {
               <TableHead>User</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Date Applied</TableHead>
-              <TableHead>Priority</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -93,8 +87,8 @@ export function AdminTable() {
               filteredApplications.map((app) => {
                 const colors = statusColors[app.status];
                 return (
-                  <TableRow key={app.id}>
-                    <TableCell className="font-medium">{app.company}</TableCell>
+                  <TableRow key={app._id}>
+                    <TableCell className="font-medium">{app.companyName}</TableCell>
                     <TableCell>{app.position}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {getUserName(app.userId)}
@@ -103,7 +97,7 @@ export function AdminTable() {
                       <Select
                         value={app.status}
                         onValueChange={(value) =>
-                          handleStatusChange(app.id, value as ApplicationStatus)
+                          handleStatusChange(app._id, value as ApplicationStatus)
                         }
                       >
                         <SelectTrigger className="w-40">
@@ -115,28 +109,22 @@ export function AdminTable() {
                           </Badge>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Applied">Applied</SelectItem>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Interview">Interview</SelectItem>
-                          <SelectItem value="Accepted">Accepted</SelectItem>
-                          <SelectItem value="Rejected">Rejected</SelectItem>
+                          <SelectItem value="applied">Applied</SelectItem>
+                          <SelectItem value="interview">Interview</SelectItem>
+                          <SelectItem value="accepted">Accepted</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(app.dateApplied), { addSuffix: true })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {app.priority || 'medium'}
-                      </Badge>
+                      {app.dateApplied ? formatDistanceToNow(new Date(app.dateApplied), { addSuffix: true }) : 'N/A'}
                     </TableCell>
                   </TableRow>
                 );
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No applications found
                 </TableCell>
               </TableRow>

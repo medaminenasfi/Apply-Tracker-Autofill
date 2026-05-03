@@ -20,12 +20,32 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: any, @Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Request() req: any, @Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.login(loginDto);
+    
+    // Set cookie based on user role
+    const cookieName = result.user.role === 'admin' ? 'admin_token' : 'user_token';
+    
+    res.cookie(cookieName, result.access_token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false, // dev only
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    
+    return result;
   }
 
   @Post('logout')
-  async logout() {
+  async logout(@Request() req: any, @Res({ passthrough: true }) res: Response) {
+    // Only clear the cookie matching the x-app-role header
+    const appRole = req.headers['x-app-role'];
+    if (appRole === 'admin') {
+      res.clearCookie('admin_token', { path: '/' });
+    } else {
+      res.clearCookie('user_token', { path: '/' });
+    }
     return { message: 'Logged out successfully' };
   }
 

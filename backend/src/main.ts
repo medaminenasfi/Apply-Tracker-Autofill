@@ -88,13 +88,12 @@ async function bootstrap() {
   );
 
   // Enable CORS - allow frontend origins
-  app.enableCors({
-    origin: ['http://localhost:3001', 'http://localhost:3000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-app-role'],
-    exposedHeaders: ['Content-Disposition', 'Content-Type'],
-  });
+app.enableCors({
+  origin: 'http://localhost:3001',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-app-role'],
+});
 
   // Health check endpoint
   app.use('/health', async (req: any, res: any) => {

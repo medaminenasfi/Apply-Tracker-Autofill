@@ -53,9 +53,6 @@ export function middleware(request: NextRequest) {
   // Protect admin routes
   if (isAdminRoute && pathname !== '/admin/login') {
     if (!adminToken) {
-      if (userToken) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
     const payload = decodeJwt(adminToken);
@@ -74,11 +71,7 @@ export function middleware(request: NextRequest) {
   }
   if (pathname === '/admin/login') {
     if (adminToken) {
-      return NextResponse.redirect(new URL('/admin', request.url));
-    }
-    // Prevent normal users from accessing admin login
-    if (userToken) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
   }
 

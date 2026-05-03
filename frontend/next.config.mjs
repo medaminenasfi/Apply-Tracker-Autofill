@@ -17,11 +17,6 @@ const nextConfig = {
     'localhost',
     '127.0.0.1',
   ],
-  experimental: {
-    turbo: {
-      root: __dirname,
-    },
-  },
 }
 
 export default nextConfig
