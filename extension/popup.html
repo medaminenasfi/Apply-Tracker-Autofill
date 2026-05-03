@@ -3,120 +3,147 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apply Tracker</title>
+  <title>ApplyFlow</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <!-- Login View -->
-    <div id="loginView" class="view">
-      <div class="header">
-        <h1>Apply Tracker</h1>
-        <p class="subtitle">Autofill job applications</p>
-      </div>
-      
-      <div class="login-options">
-        <button id="syncFromWebsiteBtn" class="btn btn-primary">
-          <span class="icon">🔄</span>
-          Sync from Website
-        </button>
-        <p class="or-divider">or</p>
-        <button id="loginOnWebsiteBtn" class="btn btn-secondary">
-          <span class="icon">🌐</span>
-          Login on Website
-        </button>
-        <p class="or-divider">or</p>
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" required placeholder="Enter your email">
-          </div>
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" required placeholder="Enter your password">
-          </div>
-          <button type="submit" class="btn btn-secondary">Login with Email</button>
-        </form>
-      </div>
-      <div id="loginError" class="error"></div>
+  <!-- Toast Message -->
+  <div id="message" class="message"></div>
+
+  <!-- ═══ LOGIN VIEW ═══ -->
+  <div id="loginView" class="view">
+    <div class="login-header">
+      <div class="logo-mark">AF</div>
+      <h1 class="logo-title">ApplyFlow</h1>
+      <p class="login-tagline">Autofill job applications faster.</p>
     </div>
 
-    <!-- Profile View -->
-    <div id="profileView" class="view hidden">
-      <div class="header">
-        <h1>Apply Tracker</h1>
-        <p class="subtitle" id="userEmail"></p>
-      </div>
-      
-      <div class="section">
-        <h2>Autofill Profile</h2>
-        <button id="autofillBtn" class="btn btn-secondary">
-          <span class="icon">⚡</span>
-          Autofill Form
+    <div class="login-body">
+      <button id="syncFromWebsiteBtn" class="btn btn-gradient">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+        Sync from Website
+      </button>
+      <button id="loginOnWebsiteBtn" class="btn btn-outline">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Login on Website
+      </button>
+
+      <div class="divider"><span>or sign in with email</span></div>
+
+      <form id="loginForm">
+        <div class="field">
+          <input type="email" id="email" required placeholder="Email address">
+        </div>
+        <div class="field">
+          <input type="password" id="password" required placeholder="Password">
+        </div>
+        <button type="submit" class="btn btn-gradient">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Sign In
         </button>
+      </form>
+      <div id="loginError" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PROFILE VIEW ═══ -->
+  <div id="profileView" class="view hidden">
+    <!-- Compact Header -->
+    <div class="prof-header">
+      <div class="prof-left">
+        <div class="logo-mark-sm">AF</div>
+        <div class="prof-info">
+          <span id="userEmail" class="prof-email"></span>
+          <span class="badge-ok"><span class="dot-green"></span>Connected</span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="btn-icon-danger" title="Logout">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Logout</span>
+      </button>
+    </div>
+
+    <div class="prof-scroll">
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="action-row">
+          <button id="autofillBtn" class="action-card action-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Autofill</span>
+          </button>
+          <button id="uploadCvToPageBtn" class="action-card action-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Upload CV</span>
+          </button>
+        </div>
+        <p class="hint">Works on most job application forms.</p>
       </div>
 
-      <div class="section">
-        <h2>CV Assistant</h2>
-        <div id="cvInfo" class="cv-info">
-          <div class="cv-status">
-            <span class="status-indicator"></span>
-            <span id="cvText">Loading...</span>
-          </div>
-          <div id="cvFileName" class="cv-file-name"></div>
-          <div id="cvActions" class="cv-actions hidden">
-            <button id="openCvBtn" class="btn btn-outline btn-small">
-              <span class="icon">📄</span>
-              Open CV
-            </button>
-            <button id="copyCvLinkBtn" class="btn btn-outline btn-small">
-              <span class="icon">🔗</span>
-              Copy Link
-            </button>
-            <button id="copyFileNameBtn" class="btn btn-outline btn-small">
-              <span class="icon">📝</span>
-              Copy Name
-            </button>
-            <button id="uploadCvToPageBtn" class="btn btn-primary btn-small">
-              <span class="icon">⬆️</span>
-              Upload CV to Page
-            </button>
-          </div>
+      <!-- CV Assistant -->
+      <div class="card">
+        <h3 class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          CV Assistant
+        </h3>
+        <div id="cvInfo" class="cv-row">
+          <span class="status-indicator"></span>
+          <span id="cvText" class="cv-status-label">Loading...</span>
+        </div>
+        <div id="cvFileName" class="cv-filename"></div>
+        <div id="cvActions" class="cv-pills hidden">
+          <button id="openCvBtn" class="pill" title="Open CV in new tab">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open
+          </button>
+          <button id="copyCvLinkBtn" class="pill" title="Copy CV link">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Link
+          </button>
+          <button id="copyFileNameBtn" class="pill" title="Copy file name">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Name
+          </button>
         </div>
       </div>
 
-      <div class="section">
-        <h2>Save Application</h2>
-        <form id="saveApplicationForm">
-          <div class="form-group">
-            <label for="companyName">Company Name</label>
-            <input type="text" id="companyName" placeholder="e.g., Google">
+      <!-- Save Application -->
+      <div class="card card-last">
+        <h3 class="card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save Application
+        </h3>
+        <form id="saveApplicationForm" class="save-form">
+          <div class="row-2">
+            <div class="field">
+              <label for="companyName">Company *</label>
+              <input type="text" id="companyName" placeholder="Google" required>
+            </div>
+            <div class="field">
+              <label for="position">Position *</label>
+              <input type="text" id="position" placeholder="Software Eng." required>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="position">Position</label>
-            <input type="text" id="position" placeholder="e.g., Software Engineer">
-          </div>
-          <div class="form-group">
+          <div class="field">
             <label for="jobUrl">Job URL</label>
-            <input type="url" id="jobUrl" readonly>
+            <input type="url" id="jobUrl" readonly class="input-readonly">
           </div>
-          <div class="form-group">
-            <label for="dateApplied">Date Applied</label>
-            <input type="date" id="dateApplied">
+          <div class="row-2">
+            <div class="field">
+              <label for="dateApplied">Date</label>
+              <input type="date" id="dateApplied">
+            </div>
+            <div class="field">
+              <label for="note">Note</label>
+              <input type="text" id="note" placeholder="Optional...">
+            </div>
           </div>
-          <div class="form-group">
-            <label for="note">Note (optional)</label>
-            <textarea id="note" rows="3" placeholder="Add any notes..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">
-            <span class="icon">💾</span>
+          <p class="hint" style="margin-bottom:8px">Review before saving.</p>
+          <button type="submit" class="btn btn-gradient btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             Save Application
           </button>
         </form>
       </div>
-
-      <button id="logoutBtn" class="btn btn-text">Logout Extension</button>
-      <div id="message" class="message"></div>
     </div>
   </div>
 

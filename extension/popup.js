@@ -35,6 +35,17 @@ const userEmail = document.getElementById('userEmail');
 let userProfile = null;
 let token = null;
 
+// Loading state helper
+function setLoading(btn, loading) {
+  if (loading) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  } else {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
@@ -51,7 +62,12 @@ function setupEventListeners() {
   copyFileNameBtn.addEventListener('click', handleCopyFileName);
   uploadCvToPageBtn.addEventListener('click', handleUploadCvToPage);
   saveApplicationForm.addEventListener('submit', handleSaveApplication);
-  logoutBtn.addEventListener('click', handleLogout);
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', handleLogout);
+    console.log('Logout button found and listener attached');
+  } else {
+    console.error('Logout button not found!');
+  }
 }
 
 async function checkAuth() {
@@ -91,6 +107,7 @@ function handleLoginOnWebsite() {
 }
 
 async function handleSyncFromWebsite() {
+  setLoading(syncFromWebsiteBtn, true);
   try {
     // Find the website tab
     const [tab] = await chrome.tabs.query({ url: `${FRONTEND_URL}/*` });
@@ -136,6 +153,8 @@ async function handleSyncFromWebsite() {
   } catch (error) {
     console.error('Sync error:', error);
     showMessage('Failed to sync from website', 'error');
+  } finally {
+    setLoading(syncFromWebsiteBtn, false);
   }
 }
 
@@ -144,6 +163,8 @@ async function handleLogin(e) {
   
   const email = emailInput.value;
   const password = passwordInput.value;
+  const submitBtn = loginForm.querySelector('button[type="submit"]');
+  setLoading(submitBtn, true);
   
   try {
     const response = await fetch(`${API_BASE}/auth/login`, {
@@ -173,6 +194,8 @@ async function handleLogin(e) {
     loginError.textContent = '';
   } catch (error) {
     loginError.textContent = error.message;
+  } finally {
+    setLoading(submitBtn, false);
   }
 }
 
@@ -286,6 +309,7 @@ async function handleUploadCvToPage() {
     showMessage('No CV uploaded. Please upload your CV first.', 'error');
     return;
   }
+  setLoading(uploadCvToPageBtn, true);
   
   // Use direct file path to avoid IDM interception
   const cvUrl = getFullUrl(userProfile.cvUrl);
@@ -296,6 +320,7 @@ async function handleUploadCvToPage() {
   
   if (!tab) {
     showMessage('No active tab found', 'error');
+    setLoading(uploadCvToPageBtn, false);
     return;
   }
   
@@ -351,6 +376,7 @@ async function handleUploadCvToPage() {
         } catch (error) {
           console.error('Failed to inject content script:', error);
           showMessage('This website blocks extension scripts.', 'error');
+          setLoading(uploadCvToPageBtn, false);
           return;
         }
       }
@@ -362,6 +388,7 @@ async function handleUploadCvToPage() {
         firstName: userProfile.firstName || 'user',
         lastName: userProfile.lastName || 'cv'
       }, (response) => {
+        setLoading(uploadCvToPageBtn, false);
         if (chrome.runtime.lastError) {
           console.error('Error sending CV upload message:', chrome.runtime.lastError);
           showMessage('Failed to upload CV to page', 'error');
@@ -377,10 +404,12 @@ async function handleUploadCvToPage() {
     
     reader.onerror = () => {
       showMessage('Failed to read CV file', 'error');
+      setLoading(uploadCvToPageBtn, false);
     };
   } catch (error) {
     console.error('Error fetching CV:', error);
     showMessage('Failed to fetch CV from server', 'error');
+    setLoading(uploadCvToPageBtn, false);
   }
 }
 
@@ -389,12 +418,14 @@ async function handleAutofill() {
     showMessage('Profile not loaded', 'error');
     return;
   }
+  setLoading(autofillBtn, true);
   
   // Send message to content script to autofill
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   
   if (!tab) {
     showMessage('No active tab found', 'error');
+    setLoading(autofillBtn, false);
     return;
   }
   
@@ -459,11 +490,13 @@ async function handleAutofill() {
       const recheckResult = await checkContentScript();
       if (!recheckResult.loaded) {
         showMessage('Content script failed to load. Please refresh the page.', 'error');
+        setLoading(autofillBtn, false);
         return;
       }
     } catch (error) {
       console.error('Failed to inject content script:', error);
       showMessage('This website blocks extension scripts. Please refresh the page.', 'error');
+      setLoading(autofillBtn, false);
       return;
     }
   }
@@ -481,24 +514,23 @@ async function handleAutofill() {
     if (response.jobInfo) {
       const { jobTitle, companyName, confidence } = response.jobInfo;
       console.log('Received job info:', { jobTitle, companyName, confidence });
-      
-      // Only fill if fields are empty and confidence is medium or high
-      if (confidence === 'high' || confidence === 'medium') {
-        if (jobTitle && !positionInput.value) {
-          positionInput.value = jobTitle;
-        }
-        
-        if (companyName && !companyNameInput.value) {
-          companyNameInput.value = companyName;
-        }
-        
-        if (confidence === 'high') {
-          showMessage('Form autofilled successfully with job details!', 'success');
-        } else {
-          showMessage('Form autofilled. Please verify company and position before saving.', 'warning');
-        }
+
+      // Always populate when job info is detected
+      if (jobTitle) {
+        positionInput.value = jobTitle;
+        console.log('Position set to:', jobTitle);
+      }
+      if (companyName) {
+        companyNameInput.value = companyName;
+        console.log('Company set to:', companyName);
+      }
+
+      console.log('Form fields after autofill - Company:', companyNameInput.value, 'Position:', positionInput.value);
+
+      if (confidence === 'high') {
+        showMessage('Form autofilled successfully with job details!', 'success');
       } else {
-        showMessage('Form autofilled. Please verify company and position manually.', 'warning');
+        showMessage('Form autofilled. Please verify company and position before saving.', 'warning');
       }
     } else {
       showMessage('Form autofilled successfully!', 'success');
@@ -506,6 +538,7 @@ async function handleAutofill() {
   } else {
     showMessage('Failed to autofill form', 'error');
   }
+  setLoading(autofillBtn, false);
 }
 
 function handlePreviewCv() {
@@ -517,6 +550,8 @@ function handlePreviewCv() {
 
 async function handleSaveApplication(e) {
   e.preventDefault();
+  const saveBtn = saveApplicationForm.querySelector('button[type="submit"]');
+  setLoading(saveBtn, true);
   
   const applicationData = {
     companyName: companyNameInput.value,
@@ -525,6 +560,8 @@ async function handleSaveApplication(e) {
     dateApplied: dateAppliedInput.value,
     note: noteInput.value,
   };
+  
+  console.log('Saving application:', applicationData);
   
   try {
     const response = await fetch(`${API_BASE}/extension/save-application`, {
@@ -536,21 +573,33 @@ async function handleSaveApplication(e) {
       body: JSON.stringify(applicationData),
     });
     
-    const data = await response.json();
+    console.log('Save response status:', response.status);
+    
+    let data;
+    try {
+      data = await response.json();
+      console.log('Save response data:', data);
+    } catch (e) {
+      data = {};
+    }
     
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to save application');
+      throw new Error(data.message || `Server error: ${response.status}`);
     }
     
     showMessage('Application saved successfully!', 'success');
     saveApplicationForm.reset();
     dateAppliedInput.value = new Date().toISOString().split('T')[0];
   } catch (error) {
+    console.error('Save application error:', error);
     showMessage(error.message, 'error');
+  } finally {
+    setLoading(saveBtn, false);
   }
 }
 
 async function handleLogout() {
+  console.log('Logout clicked');
   // Clear chrome.storage.local (extension logout only)
   await chrome.storage.local.remove(['token', 'user']);
   token = null;
