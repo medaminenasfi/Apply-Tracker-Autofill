@@ -146,4 +146,8 @@ export class FeedbackService {
     await this.feedbackModel.deleteOne({ _id: id });
     return { message: 'Feedback deleted successfully' };
   }
+
+  async getTotalCount() {
+    return this.feedbackModel.countDocuments().exec();
+  }
 }

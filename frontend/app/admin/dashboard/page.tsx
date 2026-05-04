@@ -19,6 +19,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalApplications: 0,
+    totalFeedback: 0,
     applicationsByStatus: {
       pending: 0,
       interview: 0,
@@ -59,6 +60,7 @@ export default function AdminDashboardPage() {
   const statCards = [
     { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, gradient: 'from-blue-500 to-blue-600', bg: 'bg-blue-500/10 dark:bg-blue-500/15' },
     { label: 'Total Applications', value: stats?.totalApplications || 0, icon: Briefcase, gradient: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-500/10 dark:bg-emerald-500/15' },
+    { label: 'Total Feedback', value: stats?.totalFeedback || 0, icon: MessageCircle, gradient: 'from-teal-500 to-cyan-500', bg: 'bg-teal-500/10 dark:bg-teal-500/15' },
     { label: 'Pending', value: stats?.applicationsByStatus?.pending || 0, icon: Clock, gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-500/10 dark:bg-amber-500/15' },
     { label: 'Interviews', value: stats?.applicationsByStatus?.interview || 0, icon: TrendingUp, gradient: 'from-purple-500 to-violet-500', bg: 'bg-purple-500/10 dark:bg-purple-500/15' },
     { label: 'Accepted', value: stats?.applicationsByStatus?.accepted || 0, icon: CheckCircle, gradient: 'from-green-500 to-emerald-500', bg: 'bg-green-500/10 dark:bg-green-500/15' },

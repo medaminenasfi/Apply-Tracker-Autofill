@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { ApplicationsService } from '../applications/applications.service';
+import { FeedbackService } from '../feedback/feedback.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private usersService: UsersService,
     private applicationsService: ApplicationsService,
+    private feedbackService: FeedbackService,
   ) {}
 
   async getAllUsers() {
@@ -20,6 +22,7 @@ export class AdminService {
   async getStats() {
     const totalUsers = await this.usersService.getTotalCount();
     const totalApplications = await this.applicationsService.getTotalCount();
+    const totalFeedback = await this.feedbackService.getTotalCount();
     const applicationsByStatus = await this.applicationsService.getStatsByStatus();
     
     // Get count of regular users only (exclude admins)
@@ -42,6 +45,7 @@ export class AdminService {
     return {
       totalUsers: regularUsersCount,
       totalApplications,
+      totalFeedback,
       applicationsByStatus: statusMap,
     };
   }
