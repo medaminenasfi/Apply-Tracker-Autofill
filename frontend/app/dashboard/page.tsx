@@ -183,34 +183,6 @@ export default function DashboardPage() {
     );
   }
 
-  // ── Empty state ──
-  if (applications.length === 0) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-8">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.welcome')}, {user.firstName}!</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">{t('dashboard.startTracking')}</p>
-          </div>
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/10 dark:bg-[#2563EB]/15 flex items-center justify-center mb-4">
-              <Briefcase className="w-7 h-7 text-[#2563EB]" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">{t('dashboard.noAppsYet')}</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-sm">{t('dashboard.startTracking')}</p>
-            <button
-              onClick={() => router.push('/applicant')}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25 transition-all duration-300"
-            >
-              {t('dashboard.addApplication')}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   // ── Stat cards config ──
   const statCards = [
     {

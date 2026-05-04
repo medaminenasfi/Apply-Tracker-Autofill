@@ -3,6 +3,7 @@
 import { Application, Note } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { SourceBadge } from '@/components/ui/SourceBadge';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -192,19 +193,22 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
               </button>
             </div>
 
-            {/* Status badge + time */}
+            {/* Status badge + time + source */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                 <Clock className="w-3 h-3" />
                 {timeAgo}
               </div>
-              <span
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: config.bg, color: config.color }}
-              >
-                <StatusIcon className="w-3 h-3" />
-                {config.label}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <SourceBadge source={application.source as 'manual' | 'extension'} />
+                <span
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: config.bg, color: config.color }}
+                >
+                  <StatusIcon className="w-3 h-3" />
+                  {config.label}
+                </span>
+              </div>
             </div>
 
             {/* Note section */}

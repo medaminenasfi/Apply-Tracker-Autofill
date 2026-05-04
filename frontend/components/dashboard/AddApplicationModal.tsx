@@ -95,10 +95,10 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] border-slate-200 dark:border-white/[0.08] bg-white dark:bg-slate-900">
         <DialogHeader>
-          <DialogTitle>Add New Application</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-slate-900 dark:text-white">Add New Application</DialogTitle>
+          <DialogDescription className="text-slate-500 dark:text-slate-400">
             Fill in the details of your job application.
           </DialogDescription>
         </DialogHeader>
@@ -110,9 +110,13 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="company"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company Name</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Company Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Google" {...field} />
+                    <Input
+                      placeholder="e.g., Google"
+                      className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -124,9 +128,13 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="position"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Position</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Position</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Senior Software Engineer" {...field} />
+                    <Input
+                      placeholder="e.g., Senior Software Engineer"
+                      className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -138,11 +146,12 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Job URL (Optional)</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Job URL (Optional)</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="https://careers.google.com/..."
                       type="url"
+                      className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
                       {...field}
                     />
                   </FormControl>
@@ -156,9 +165,13 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="dateApplied"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date Applied</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Date Applied</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input
+                      type="date"
+                      className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -170,14 +183,14 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Status</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40">
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-slate-900">
                       <SelectItem value="applied">Applied</SelectItem>
                       <SelectItem value="interview">Interview</SelectItem>
                       <SelectItem value="accepted">Accepted</SelectItem>
@@ -194,11 +207,11 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="note"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Note (Optional)</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Note (Optional)</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder="Add any notes about this application..."
-                      className="min-h-20"
+                      className="min-h-20 border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
                       {...field}
                     />
                   </FormControl>
@@ -213,10 +226,15 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
+                className="border-slate-200 dark:border-white/[0.08] hover:bg-slate-50 dark:hover:bg-white/[0.04]"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25 hover:-translate-y-0.5 transition-all duration-300"
+              >
                 {isSubmitting ? 'Adding...' : 'Add Application'}
               </Button>
             </div>

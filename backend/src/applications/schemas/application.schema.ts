@@ -30,6 +30,9 @@ export class Application {
 
   @Prop({ required: false })
   dateApplied?: Date;
+
+  @Prop({ required: false, enum: ['manual', 'extension'], default: 'manual' })
+  source!: string;
 }
 
 export const ApplicationSchema = SchemaFactory.createForClass(Application);

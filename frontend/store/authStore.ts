@@ -134,8 +134,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  initialize: () => {
+  initialize: async () => {
     if (typeof window === 'undefined') return;
+
+    // Clear stale token from localStorage since backend now uses cookies
+    localStorage.removeItem('token');
 
     const userStr = localStorage.getItem('user');
     const adminStr = localStorage.getItem('admin');
@@ -162,20 +165,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       adminValid = false;
     }
 
-    // Only load user state if user is authenticated and token is valid
-    let user = null;
-    if (userStr && userValid) {
-      try { user = JSON.parse(userStr); } catch (e) {}
-    }
-
     // Only load admin state if admin is authenticated and token is valid
     let admin = null;
     if (adminStr && adminValid) {
       try { admin = JSON.parse(adminStr); } catch (e) {}
     }
 
+    // If user token exists, verify localStorage user against backend to prevent stale data
+    let user = null;
+    if (userToken && userValid) {
+      try {
+        const response = await api.get('/profile');
+        const fetchedUser = response.data;
+        localStorage.setItem('user', JSON.stringify(fetchedUser));
+        localStorage.setItem('isAuthenticated', 'true');
+        user = fetchedUser;
+        console.log('[AUTH STORE] Updated user from backend:', fetchedUser.email);
+      } catch (error) {
+        console.error('[AUTH STORE] Failed to fetch profile:', error);
+        // Token might be invalid, clear session
+        localStorage.removeItem('user');
+        localStorage.removeItem('isAuthenticated');
+        userValid = false;
+      }
+    } else if (userStr && userValid) {
+      // No token but user in localStorage, load it
+      try { user = JSON.parse(userStr); } catch (e) {}
+    }
+
     set({ user, admin, isAuthenticated: userValid, isAdminAuthenticated: adminValid, isInitialized: true });
-    
+
     // Start periodic auth check if user or admin is authenticated
     if (userValid || adminValid) {
       startAuthCheck();

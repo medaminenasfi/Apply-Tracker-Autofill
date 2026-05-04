@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDateString, IsEnum } from 'class-validator';
 
 export class SaveApplicationDto {
   @IsString()
@@ -18,4 +18,8 @@ export class SaveApplicationDto {
   @IsDateString()
   @IsOptional()
   dateApplied?: string;
+
+  @IsEnum(['manual', 'extension'])
+  @IsOptional()
+  source?: 'manual' | 'extension';
 }

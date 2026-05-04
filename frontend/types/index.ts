@@ -1,4 +1,5 @@
 export type ApplicationStatus = 'applied' | 'interview' | 'accepted' | 'rejected';
+export type ApplicationSource = 'manual' | 'extension';
 
 export interface Application {
   _id: string;
@@ -8,6 +9,7 @@ export interface Application {
   jobUrl?: string;
   status: ApplicationStatus;
   dateApplied?: string;
+  source?: ApplicationSource;
   createdAt: string;
   updatedAt: string;
 }

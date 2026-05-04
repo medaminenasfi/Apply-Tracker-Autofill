@@ -112,49 +112,57 @@ async function handleSyncFromWebsite() {
   try {
     // Find the website tab
     const [tab] = await chrome.tabs.query({ url: `${FRONTEND_URL}/*` });
-    
+
     if (!tab) {
       showMessage('Please open the website first', 'error');
       return;
     }
-    
+
     console.log('[EXT AUTH] Found website tab:', tab.id);
-    
-    // Inject script to get token
+
+    // Use Chrome cookies API to get the token
+    const cookies = await chrome.cookies.getAll({ url: FRONTEND_URL });
+    const userTokenCookie = cookies.find(c => c.name === 'user_token');
+    const adminTokenCookie = cookies.find(c => c.name === 'admin_token');
+    const websiteToken = userTokenCookie?.value || adminTokenCookie?.value;
+
+    console.log('[EXT AUTH] Token from cookies:', !!websiteToken);
+
+    // Inject script to get user from localStorage
     const result = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: () => {
-        const token = localStorage.getItem('token');
         const userStr = localStorage.getItem('user');
         const user = userStr ? JSON.parse(userStr) : null;
-        return { token, user };
+        return { user };
       }
     });
-    
-    const { token: websiteToken, user: websiteUser } = result[0].result;
-    console.log('[EXT AUTH] Token from website:', !!websiteToken);
-    console.log('[EXT AUTH] User from website:', websiteUser?.email || 'none');
-    console.log('[EXT AUTH] Stored user:', userProfile?.email || 'none');
-    
+
+    const { user: websiteUser } = result[0].result;
+    console.log('[EXT AUTH] User from website:', websiteUser?.email || 'none', 'userId:', websiteUser?.userId || websiteUser?._id || 'none');
+    console.log('[EXT AUTH] Stored user:', userProfile?.email || 'none', 'userId:', userProfile?.userId || userProfile?._id || 'none');
+
     if (websiteToken) {
-      // Check if user changed
-      if (websiteUser && userProfile && websiteUser.email !== userProfile.email) {
+      // Check if user changed (compare userId or _id instead of email)
+      const websiteUserId = websiteUser?.userId || websiteUser?._id;
+      const storedUserId = userProfile?.userId || userProfile?._id;
+      if (websiteUser && userProfile && websiteUserId !== storedUserId) {
         console.log('[EXT AUTH] User mismatch detected, clearing old extension data');
         await chrome.storage.local.remove(['token', 'user']);
       }
-      
+
       // Store in chrome.storage.local (clears old data if user changed)
       await chrome.storage.local.set({
         token: websiteToken,
         user: websiteUser
       });
-      
+
       token = websiteToken;
       userProfile = websiteUser;
-      
+
       // Verify with backend
       await fetchProfile();
-      
+
       const finalEmail = userProfile?.email || 'unknown';
       showMessage(`Synced as ${finalEmail}`, 'success');
       showProfileView();
@@ -182,6 +190,7 @@ async function handleLogin(e) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-app-role': 'user',
       },
       body: JSON.stringify({ email, password }),
     });
@@ -216,6 +225,7 @@ async function fetchProfile() {
     const response = await fetch(`${API_BASE}/extension/profile`, {
       headers: {
         'Authorization': `Bearer ${token}`,
+        'x-app-role': 'user',
       },
     });
     
@@ -582,6 +592,7 @@ async function handleSaveApplication(e) {
     jobUrl: jobUrlInput.value,
     dateApplied: dateAppliedInput.value,
     note: noteInput.value,
+    source: 'extension',
   };
   
   console.log('Saving application:', applicationData);
@@ -592,6 +603,7 @@ async function handleSaveApplication(e) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
+        'x-app-role': 'user',
       },
       body: JSON.stringify(applicationData),
     });

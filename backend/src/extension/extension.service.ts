@@ -38,6 +38,7 @@ export class ExtensionService {
     const filteredData: any = {
       companyName: applicationData.companyName,
       position: applicationData.position,
+      source: applicationData.source || 'extension',
     };
     
     if (applicationData.jobUrl && applicationData.jobUrl.trim()) {

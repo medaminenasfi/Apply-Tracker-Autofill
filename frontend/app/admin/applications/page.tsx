@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { AdminLayout } from '@/components/AdminLayout';
+import { SourceBadge } from '@/components/ui/SourceBadge';
 import { Trash2, Briefcase, ExternalLink, Search } from 'lucide-react';
 import { adminApi } from '@/services/api';
 import { toast } from 'sonner';
@@ -139,6 +140,7 @@ export default function AdminApplicationsPage() {
                       <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#111827]/50 dark:text-[#E5E7EB]/40">Position</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#111827]/50 dark:text-[#E5E7EB]/40">User</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#111827]/50 dark:text-[#E5E7EB]/40">Status</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#111827]/50 dark:text-[#E5E7EB]/40">Source</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#111827]/50 dark:text-[#E5E7EB]/40">Date</th>
                       <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#111827]/50 dark:text-[#E5E7EB]/40">Actions</th>
                     </tr>
@@ -153,6 +155,9 @@ export default function AdminApplicationsPage() {
                           <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusStyles[app.status] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}`}>
                             {app.status}
                           </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <SourceBadge source={app.source as 'manual' | 'extension'} />
                         </td>
                         <td className="px-5 py-3.5 text-sm text-[#111827]/50 dark:text-[#E5E7EB]/40">{app.dateApplied ? formatDate(app.dateApplied) : app.createdAt ? formatDate(app.createdAt) : 'N/A'}</td>
                         <td className="px-5 py-3.5 text-right">
@@ -188,9 +193,12 @@ export default function AdminApplicationsPage() {
                         <p className="font-semibold text-sm truncate">{app.companyName || app.company || 'N/A'}</p>
                         <p className="text-xs text-[#111827]/50 dark:text-[#E5E7EB]/40 truncate">{app.position || 'N/A'}</p>
                       </div>
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize shrink-0 ${statusStyles[app.status] || 'bg-gray-100 text-gray-600'}`}>
-                        {app.status}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <SourceBadge source={app.source as 'manual' | 'extension'} />
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${statusStyles[app.status] || 'bg-gray-100 text-gray-600'}`}>
+                          {app.status}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#E5E7EB] dark:border-white/[0.06]">
                       <div className="text-xs text-[#111827]/50 dark:text-[#E5E7EB]/40 min-w-0">
