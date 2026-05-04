@@ -1,5 +1,5 @@
 import { Controller, Get, Delete, Param, Post, Body, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AdminService } from './admin.service';
@@ -27,35 +27,35 @@ export class AdminController {
   }
 
   @Get('users')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async getAllUsers() {
     return this.adminService.getAllUsers();
   }
 
   @Get('applications')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async getAllApplications() {
     return this.adminService.getAllApplications();
   }
 
   @Get('stats')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async getStats() {
     return this.adminService.getStats();
   }
 
   @Delete('users/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
   }
 
   @Delete('applications/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('admin')
   async deleteApplication(@Param('id') id: string) {
     return this.adminService.deleteApplication(id);
