@@ -112,14 +112,7 @@ body {
 .logo-mark {
   width: 44px; height: 44px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(8px);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 16px;
-  color: #fff;
+  object-fit: contain;
   margin-bottom: 10px;
 }
 .logo-title {
@@ -312,15 +305,7 @@ body {
 .logo-mark-sm {
   width: 32px; height: 32px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 12px;
-  color: #fff;
-  flex-shrink: 0;
+  object-fit: contain;
 }
 .prof-info {
   display: flex;

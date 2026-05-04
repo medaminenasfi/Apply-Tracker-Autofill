@@ -71,23 +71,23 @@ function setupEventListeners() {
 }
 
 async function checkAuth() {
-  console.log('Checking auth...');
+  console.log('[EXT AUTH] Checking auth...');
   // First check chrome.storage.local for token
   const result = await chrome.storage.local.get(['token', 'user']);
-  console.log('Storage result:', result);
+  console.log('[EXT AUTH] Storage result:', result);
   token = result.token;
   userProfile = result.user;
   
-  console.log('Token from storage:', !!token);
-  console.log('User from storage:', !!userProfile);
+  console.log('[EXT AUTH] Token from storage:', !!token);
+  console.log('[EXT AUTH] User from storage:', userProfile?.email || 'none');
   
   if (token) {
-    console.log('Token found, fetching profile...');
+    console.log('[EXT AUTH] Token found, fetching profile from backend to verify...');
     // Verify token is still valid by fetching profile
     await fetchProfile();
     showProfileView();
   } else {
-    console.log('No token in storage, showing login view');
+    console.log('[EXT AUTH] No token in storage, showing login view');
     showLoginView();
   }
 }
@@ -117,7 +117,7 @@ async function handleSyncFromWebsite() {
       return;
     }
     
-    console.log('Found website tab:', tab.id);
+    console.log('[EXT AUTH] Found website tab:', tab.id);
     
     // Inject script to get token
     const result = await chrome.scripting.executeScript({
@@ -131,11 +131,18 @@ async function handleSyncFromWebsite() {
     });
     
     const { token: websiteToken, user: websiteUser } = result[0].result;
-    console.log('Token from website:', !!websiteToken);
-    console.log('User from website:', !!websiteUser);
+    console.log('[EXT AUTH] Token from website:', !!websiteToken);
+    console.log('[EXT AUTH] User from website:', websiteUser?.email || 'none');
+    console.log('[EXT AUTH] Stored user:', userProfile?.email || 'none');
     
     if (websiteToken) {
-      // Store in chrome.storage.local
+      // Check if user changed
+      if (websiteUser && userProfile && websiteUser.email !== userProfile.email) {
+        console.log('[EXT AUTH] User mismatch detected, clearing old extension data');
+        await chrome.storage.local.remove(['token', 'user']);
+      }
+      
+      // Store in chrome.storage.local (clears old data if user changed)
       await chrome.storage.local.set({
         token: websiteToken,
         user: websiteUser
@@ -144,14 +151,17 @@ async function handleSyncFromWebsite() {
       token = websiteToken;
       userProfile = websiteUser;
       
-      showMessage('Synced from website!', 'success');
+      // Verify with backend
       await fetchProfile();
+      
+      const finalEmail = userProfile?.email || 'unknown';
+      showMessage(`Synced as ${finalEmail}`, 'success');
       showProfileView();
     } else {
       showMessage('Not logged in on website', 'error');
     }
   } catch (error) {
-    console.error('Sync error:', error);
+    console.error('[EXT AUTH] Sync error:', error);
     showMessage('Failed to sync from website', 'error');
   } finally {
     setLoading(syncFromWebsiteBtn, false);
@@ -200,6 +210,7 @@ async function handleLogin(e) {
 }
 
 async function fetchProfile() {
+  console.log('[EXT AUTH] Fetching profile from backend...');
   try {
     const response = await fetch(`${API_BASE}/extension/profile`, {
       headers: {
@@ -213,11 +224,21 @@ async function fetchProfile() {
       throw new Error(data.message || 'Failed to fetch profile');
     }
     
+    console.log('[EXT AUTH] Backend user:', data?.email || 'none');
+    console.log('[EXT AUTH] Stored user:', userProfile?.email || 'none');
+    
+    // Check for user mismatch - if backend user differs from stored user, refresh
+    if (data?.email && userProfile?.email && data.email !== userProfile.email) {
+      console.log('[EXT AUTH] User mismatch detected, refreshing extension auth');
+      await chrome.storage.local.set({ user: data });
+    }
+    
+    // Always use backend response as the source of truth
     userProfile = data;
     userEmail.textContent = data.email;
     
-    console.log('Extension profile:', data);
-    console.log('Extension cvUrl:', data?.cvUrl);
+    console.log('[EXT AUTH] Extension profile updated:', data.email);
+    console.log('[EXT AUTH] Extension cvUrl:', data?.cvUrl);
     
     // Update chrome.storage.local with latest user data
     await chrome.storage.local.set({ user: data });
@@ -228,9 +249,10 @@ async function fetchProfile() {
     // Set default date
     dateAppliedInput.value = new Date().toISOString().split('T')[0];
   } catch (error) {
-    console.error('Failed to fetch profile:', error);
+    console.error('[EXT AUTH] Failed to fetch profile:', error);
     // If token is invalid, clear it and show login view
     if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+      console.log('[EXT AUTH] Token invalid, clearing extension storage');
       await chrome.storage.local.remove(['token', 'user']);
       token = null;
       userProfile = null;
@@ -599,9 +621,9 @@ async function handleSaveApplication(e) {
 }
 
 async function handleLogout() {
-  console.log('Logout clicked');
+  console.log('[EXT AUTH] Logout clicked');
   // Clear chrome.storage.local (extension logout only)
-  await chrome.storage.local.remove(['token', 'user']);
+  await chrome.storage.local.remove(['token', 'user', 'cvInfo']);
   token = null;
   userProfile = null;
   showLoginView();
@@ -628,14 +650,18 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
 // Listen for token updates from background (synced from website)
 chrome.storage.onChanged.addListener((changes, areaName) => {
+  console.log('[EXT AUTH] Storage changed, area:', areaName);
+  
   if (areaName === 'local' && changes.token) {
-    console.log('Token updated in storage:', changes.token.newValue);
+    console.log('[EXT AUTH] Token updated in storage, has new value:', !!changes.token.newValue);
     if (changes.token.newValue && !token) {
       // Token was added (user logged in on website)
+      console.log('[EXT AUTH] Token added, checking auth...');
       token = changes.token.newValue;
       checkAuth();
     } else if (!changes.token.newValue && token) {
       // Token was removed (user logged out on website)
+      console.log('[EXT AUTH] Token removed, showing login view');
       token = null;
       userProfile = null;
       showLoginView();
@@ -643,8 +669,13 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   
   if (areaName === 'local' && changes.user) {
-    console.log('User updated in storage:', changes.user.newValue);
+    console.log('[EXT AUTH] User updated in storage, new email:', changes.user.newValue?.email || 'none');
+    console.log('[EXT AUTH] Current user email:', userProfile?.email || 'none');
     if (changes.user.newValue) {
+      // Check if user changed
+      if (userProfile?.email && changes.user.newValue.email !== userProfile.email) {
+        console.log('[EXT AUTH] User changed in storage, refreshing...');
+      }
       userProfile = changes.user.newValue;
       if (token) {
         showProfileView();

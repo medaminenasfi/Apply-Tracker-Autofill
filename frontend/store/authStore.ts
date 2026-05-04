@@ -275,7 +275,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.removeItem('isAuthenticated');
       set({ user: null, isAuthenticated: false });
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = '/';
       }
     }
   },

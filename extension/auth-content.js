@@ -4,7 +4,7 @@
 // PRODUCTION: Change to your production domain (e.g., https://your-domain.com/*)
 const FRONTEND_URL = 'http://localhost:3001';
 
-console.log('Apply Tracker auth content script loaded on:', window.location.href);
+console.log('[EXT AUTH] Auth content script loaded on:', window.location.href);
 
 // Function to get token and user data from localStorage
 function getTokenAndUserData() {
@@ -13,13 +13,13 @@ function getTokenAndUserData() {
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
     
-    console.log('Token found:', !!token);
-    console.log('User found:', !!user);
-    console.log('Token length:', token ? token.length : 0);
+    console.log('[EXT AUTH] Token found:', !!token);
+    console.log('[EXT AUTH] User found:', user?.email || 'none');
+    console.log('[EXT AUTH] Token length:', token ? token.length : 0);
     
     return { token, user };
   } catch (error) {
-    console.error('Error reading from localStorage:', error);
+    console.error('[EXT AUTH] Error reading from localStorage:', error);
     return { token: null, user: null };
   }
 }
@@ -28,7 +28,7 @@ function getTokenAndUserData() {
 function syncTokenWithExtension() {
   const { token, user } = getTokenAndUserData();
   
-  console.log('Attempting to sync token...');
+  console.log('[EXT AUTH] Attempting to sync token...');
   
   if (token) {
     chrome.runtime.sendMessage({
@@ -37,18 +37,28 @@ function syncTokenWithExtension() {
       user: user
     }, (response) => {
       if (chrome.runtime.lastError) {
-        console.error('Error sending token to background:', chrome.runtime.lastError);
+        console.error('[EXT AUTH] Error sending token to background:', chrome.runtime.lastError);
       } else {
-        console.log('Token synced with extension:', response);
+        console.log('[EXT AUTH] Token synced with extension:', response);
       }
     });
   } else {
-    console.log('No token to sync');
+    console.log('[EXT AUTH] No token to sync (user logged out)');
+    // Send logout signal to extension
+    chrome.runtime.sendMessage({
+      action: 'logout'
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('[EXT AUTH] Error sending logout to background:', chrome.runtime.lastError);
+      } else {
+        console.log('[EXT AUTH] Logout synced with extension');
+      }
+    });
   }
 }
 
 // Sync token when page loads
-console.log('Page loaded, syncing token...');
+console.log('[EXT AUTH] Page loaded, syncing token...');
 syncTokenWithExtension();
 
 // Listen for localStorage changes (login/logout events)
@@ -58,17 +68,37 @@ localStorage.setItem = function(key, value) {
   
   // Sync token when it changes
   if (key === 'token' || key === 'user') {
-    console.log('localStorage changed:', key);
+    console.log('[EXT AUTH] localStorage changed:', key, 'value:', !!value);
     syncTokenWithExtension();
+  }
+};
+
+// Also listen for localStorage.removeItem to detect logout
+const originalRemoveItem = localStorage.removeItem;
+localStorage.removeItem = function(key) {
+  originalRemoveItem.call(this, key);
+  
+  // Send logout signal when token or user is removed
+  if (key === 'token' || key === 'user') {
+    console.log('[EXT AUTH] localStorage removed:', key, '- user logged out');
+    chrome.runtime.sendMessage({
+      action: 'logout'
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('[EXT AUTH] Error sending logout to background:', chrome.runtime.lastError);
+      } else {
+        console.log('[EXT AUTH] Logout synced with extension');
+      }
+    });
   }
 };
 
 // Listen for messages from extension (e.g., request to sync token)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Received message in content script:', request);
+  console.log('[EXT AUTH] Received message in content script:', request.action);
   if (request.action === 'getToken') {
     const { token, user } = getTokenAndUserData();
-    console.log('Sending token to extension:', !!token);
+    console.log('[EXT AUTH] Sending token to extension:', !!token);
     sendResponse({ token, user });
   }
   return true;
@@ -76,6 +106,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Also sync periodically (every 30 seconds) to catch any missed changes
 setInterval(() => {
-  console.log('Periodic sync check...');
+  console.log('[EXT AUTH] Periodic sync check...');
   syncTokenWithExtension();
 }, 30000);

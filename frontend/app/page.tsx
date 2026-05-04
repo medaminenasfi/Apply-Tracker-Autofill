@@ -107,7 +107,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2.5 cursor-pointer shrink-0" onClick={() => scrollTo('hero')}>
-              <img src="/logo.png" alt="ApplyFlow" className="h-9 w-auto" />
+              <img src="/logo 2.png" alt="ApplyFlow" className="h-9 w-auto" />
               <span className="text-xl font-bold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent">
                 ApplyFlow
               </span>
@@ -574,6 +574,7 @@ export default function Home() {
               { q: 'Which job sites are supported?', a: 'ApplyFlowo works with 50+ job sites including LinkedIn, Indeed, Glassdoor, AngelList, and many more. We add new sites every week.' },
               { q: 'Is my data safe?', a: 'Absolutely. Your data is encrypted end-to-end. We never sell your data or share it with third parties. Your privacy is our top priority.' },
               { q: 'Can I use it on multiple devices?', a: 'Yes! Your account syncs across all devices. Install the extension on any Chrome browser and your data will be there.' },
+              { q: 'Is ApplyFlow fully functional yet?', a: 'ApplyFlow is currently in active development. Core features are working, and your feedback helps us improve faster.' },
             ].map((item) => (
               <FaqItem key={item.q} {...item} />
             ))}
@@ -609,7 +610,7 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <img src="/logo.png" alt="ApplyFlow" className="h-8 w-auto" />
+                <img src="/logo 2.png" alt="ApplyFlow" className="h-8 w-auto" />
                 <span className="text-lg font-bold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent">ApplyFlow</span>
               </div>
               <p className="text-sm text-[#111827]/40 dark:text-[#E5E7EB]/40">Apply smarter. Get hired faster.</p>
@@ -631,13 +632,8 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <div className="mt-12 pt-8 border-t border-[#E5E7EB]/50 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="mt-12 pt-8 border-t border-[#E5E7EB]/50 dark:border-white/5">
             <p className="text-xs text-[#111827]/35 dark:text-[#E5E7EB]/35">&copy; {new Date().getFullYear()} ApplyFlow. All rights reserved.</p>
-            <div className="flex items-center gap-5">
-              {['Twitter', 'GitHub', 'LinkedIn'].map((s) => (
-                <a key={s} href="#" className="text-xs text-[#111827]/35 dark:text-[#E5E7EB]/35 hover:text-[#2563EB] transition-colors">{s}</a>
-              ))}
-            </div>
           </div>
         </div>
       </footer>
