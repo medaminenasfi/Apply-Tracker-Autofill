@@ -10,6 +10,9 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { EmailService } from '../common/services/email.service';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { GoogleAuthGuard } from './guards/google-auth.guard';
 
 @Module({
   imports: [
@@ -33,6 +36,9 @@ import { EmailService } from '../common/services/email.service';
     JwtStrategy,
     GoogleStrategy,
     EmailService,
+    LocalAuthGuard,
+    JwtAuthGuard,
+    GoogleAuthGuard,
   ],
   controllers: [AuthController],
 })
