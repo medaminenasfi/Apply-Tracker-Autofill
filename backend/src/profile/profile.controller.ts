@@ -1,6 +1,6 @@
 import { Controller, Get, Put, Post, Delete, UseGuards, Body, UseInterceptors, UploadedFile, BadRequestException, Logger, Param, Res, NotFoundException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ProfileService } from './profile.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -14,7 +14,7 @@ import { existsSync, createReadStream } from 'fs';
 import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('profile')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class ProfileController {
   private readonly logger = new Logger(ProfileController.name);
   

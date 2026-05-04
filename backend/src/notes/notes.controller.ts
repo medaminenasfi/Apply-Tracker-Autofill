@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Query } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { NotesService } from './notes.service';
 import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('notes')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class NotesController {
   constructor(private notesService: NotesService) {}
 

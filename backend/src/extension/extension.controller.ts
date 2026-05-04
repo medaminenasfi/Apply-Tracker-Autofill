@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ExtensionService } from './extension.service';
 import { SaveApplicationDto } from './dto/save-application.dto';
 import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('extension')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class ExtensionController {
   constructor(private extensionService: ExtensionService) {}
 

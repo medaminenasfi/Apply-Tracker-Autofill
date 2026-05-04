@@ -12,21 +12,21 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
+  Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FeedbackService } from './feedback.service';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
-import { AdminGuard } from '../auth/guards/admin.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('feedback')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class FeedbackController {
   private readonly logger = new Logger(FeedbackController.name);
 
@@ -105,23 +105,31 @@ export class FeedbackController {
 }
 
 @Controller('admin/feedback')
-@UseGuards(JwtAuthGuard, AdminGuard)
-@Roles('admin')
+@UseGuards(AuthGuard('jwt'))
 export class AdminFeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
   @Get()
-  findAll(@Query('status') status?: string, @Query('type') type?: string) {
+  findAll(@Request() req: any, @Query('status') status?: string, @Query('type') type?: string) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.feedbackService.findAll(status as any, type);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Request() req: any, @Param('id') id: string) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.feedbackService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFeedbackDto: UpdateFeedbackDto) {
+  update(@Request() req: any, @Param('id') id: string, @Body() updateFeedbackDto: UpdateFeedbackDto) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.feedbackService.update(id, updateFeedbackDto);
   }
 }

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Patch, Delete, Param, Body, UseGuards, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
@@ -8,7 +8,7 @@ import { UpdateApplicationDto } from './dto/update-application.dto';
 import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('applications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'))
 export class ApplicationsController {
   constructor(private applicationsService: ApplicationsService) {}
 
