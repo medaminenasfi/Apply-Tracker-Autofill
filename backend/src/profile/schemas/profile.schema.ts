@@ -51,10 +51,9 @@ export class Profile {
 export const ProfileSchema = SchemaFactory.createForClass(Profile);
 
 // Pre-save hook to auto-normalize userId to string
-ProfileSchema.pre('save', function (this: any, next: any) {
+ProfileSchema.pre('save', async function (this: any) {
   if (this.userId && typeof this.userId !== 'string') {
     console.log('[PROFILE_SCHEMA] Auto-normalizing userId to string:', this.userId);
     this.userId = String(this.userId);
   }
-  next();
 });

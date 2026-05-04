@@ -34,19 +34,31 @@ export function middleware(request: NextRequest) {
   const userToken = request.cookies.get('user_token')?.value;
   const adminToken = request.cookies.get('admin_token')?.value;
 
+  // Check localStorage via cookie header (set by frontend)
+  const userLocalStorage = request.cookies.get('user')?.value;
+  const isAuthenticated = request.cookies.get('isAuthenticated')?.value === 'true';
+
+  console.log('[MIDDLEWARE] pathname:', pathname);
+  console.log('[MIDDLEWARE] userToken exists:', !!userToken);
+  console.log('[MIDDLEWARE] adminToken exists:', !!adminToken);
+  console.log('[MIDDLEWARE] localStorage auth:', isAuthenticated);
+
   const isUserRoute = userRoutes.some((route) => pathname.startsWith(route) && !pathname.startsWith('/admin'));
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
 
   // Protect user routes
   if (isUserRoute) {
-    if (!userToken) {
+    // Allow access if either user_token cookie OR isAuthenticated cookie exists
+    if (!userToken && !isAuthenticated) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
-    const payload = decodeJwt(userToken);
-    if (!payload || payload.role === 'admin') {
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.delete('user_token');
-      return response;
+    if (userToken) {
+      const payload = decodeJwt(userToken);
+      if (!payload || payload.role === 'admin') {
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('user_token');
+        return response;
+      }
     }
   }
 

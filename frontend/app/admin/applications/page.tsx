@@ -8,6 +8,7 @@ import { adminApi } from '@/services/api';
 import { toast } from 'sonner';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
+import { useTranslation } from 'react-i18next';
 
 const statusStyles: Record<string, string> = {
   applied: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
@@ -18,6 +19,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function AdminApplicationsPage() {
+  const { t } = useTranslation();
   const [applications, setApplications] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [search, setSearch] = useState('');
@@ -35,21 +37,21 @@ export default function AdminApplicationsPage() {
       setIsFetching(false);
     } catch (error) {
       console.error('Failed to load applications:', error);
-      toast.error('Failed to load applications');
+      toast.error(t('admin.applications.loadError'));
       setIsFetching(false);
     }
   };
 
   const handleDelete = async (applicationId: string, companyName: string) => {
-    if (!confirm(`Are you sure you want to delete application for ${companyName}?`)) return;
+    if (!confirm(t('admin.applications.deleteConfirm', { company: companyName }))) return;
 
     try {
       await withLoader(() => adminApi.delete(`/admin/applications/${applicationId}`), setLoading);
       setApplications(applications.filter((app) => app._id !== applicationId));
-      toast.success('Application deleted successfully');
+      toast.success(t('admin.applications.deleteSuccess'));
     } catch (error) {
       console.error('Failed to delete application:', error);
-      toast.error('Failed to delete application');
+      toast.error(t('admin.applications.deleteError'));
     }
   };
 
@@ -68,9 +70,17 @@ export default function AdminApplicationsPage() {
     return (
       <AdminProtectedRoute>
         <AdminLayout title="Manage Applications">
-          <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-white/[0.08]">
+              <div className="h-4 w-48 rounded-lg bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+            </div>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
+              <div key={i} className="flex items-center gap-4 p-4 border-b border-slate-100 dark:border-white/[0.06]">
+                <div className="h-3 w-40 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-3 w-24 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-5 w-16 rounded-full bg-slate-100 dark:bg-white/[0.06] animate-pulse ml-auto" />
+                <div className="h-3 w-20 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+              </div>
             ))}
           </div>
         </AdminLayout>

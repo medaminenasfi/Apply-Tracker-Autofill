@@ -6,6 +6,8 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { Toaster } from '@/components/ui/sonner'
 import { GlobalLoader } from '@/components/ui/GlobalLoader'
 import { AuthLoader } from '@/components/ui/AuthLoader'
+import { RouteProgress } from '@/components/ui/RouteProgress'
+import { LanguageProvider } from '@/components/providers/LanguageProvider'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -28,14 +30,17 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased bg-background">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <AuthLoader />
-            <GlobalLoader />
-            <div className="opacity-100 transition-opacity duration-200">
-              {children}
-            </div>
-            <Toaster />
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <RouteProgress />
+              <AuthLoader />
+              <GlobalLoader />
+              <div className="opacity-100 transition-opacity duration-200">
+                {children}
+              </div>
+              <Toaster />
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

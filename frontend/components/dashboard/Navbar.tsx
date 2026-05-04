@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Menu, Sun, Moon, LogOut, User, Settings, ChevronDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface NavbarProps {
   title?: string;
@@ -20,6 +22,7 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { t } = useTranslation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
@@ -97,6 +100,9 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
             <Search className="h-5 w-5 text-[#111827]/60 dark:text-[#E5E7EB]/60" />
           </button>
 
+          {/* Language switcher */}
+          <LanguageSwitcher compact />
+
           {/* Theme toggle */}
           {mounted && (
             <button
@@ -159,7 +165,7 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#111827]/70 dark:text-[#E5E7EB]/60 hover:bg-[#F3F4F6] dark:hover:bg-white/[0.04] transition-colors"
                   >
                     <User className="w-4 h-4" />
-                    Profile
+                    {t('nav.profile')}
                   </Link>
                   <Link
                     href="/settings"
@@ -167,7 +173,7 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-[#111827]/70 dark:text-[#E5E7EB]/60 hover:bg-[#F3F4F6] dark:hover:bg-white/[0.04] transition-colors"
                   >
                     <Settings className="w-4 h-4" />
-                    Settings
+                    {t('nav.settings')}
                   </Link>
                   <div className="my-1.5 border-t border-[#E5E7EB] dark:border-white/[0.06]" />
                   <button
@@ -175,7 +181,7 @@ export function Navbar({ title = 'Dashboard' }: NavbarProps) {
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    Logout
+                    {t('nav.logout')}
                   </button>
                 </div>
               </div>

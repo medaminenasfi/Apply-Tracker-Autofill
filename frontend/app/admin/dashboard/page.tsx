@@ -11,9 +11,11 @@ import { useLoadingStore } from '@/store/loadingStore';
 import { toast } from 'sonner';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line } from 'recharts';
 import { format, subDays } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalApplications: 0,
@@ -39,7 +41,7 @@ export default function AdminDashboardPage() {
       setStats(response.data);
     } catch (error: any) {
       console.error('ADMIN STATS ERROR:', error.response?.data || error);
-      toast.error('Failed to load admin stats');
+      toast.error(t('admin.dashboard.loadStatsError'));
     } finally {
       setIsFetching(false);
     }
@@ -113,13 +115,17 @@ export default function AdminDashboardPage() {
         <AdminLayout title="Admin Dashboard">
           <div className="space-y-6">
             <div>
-              <div className="h-8 w-48 rounded-lg bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
-              <div className="h-4 w-72 rounded-lg bg-[#111827]/5 dark:bg-white/5 animate-pulse mt-2" />
+              <div className="h-8 w-48 rounded-lg bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+              <div className="h-4 w-72 rounded-lg bg-slate-100 dark:bg-white/[0.06] animate-pulse mt-2" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-28 rounded-2xl bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
+                <div key={i} className="p-5 h-28 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] animate-pulse" />
               ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="h-64 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] animate-pulse" />
+              <div className="h-64 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] animate-pulse" />
             </div>
           </div>
         </AdminLayout>

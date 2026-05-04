@@ -18,8 +18,10 @@ import {
 import Link from 'next/link';
 import { ArrowLeft, Mail, Send, CheckCircle2 } from 'lucide-react';
 import api from '@/services/api';
-import { Spinner } from '@/components/ui/spinner';
+import { ButtonSpinner } from '@/components/ui/AppLoader';
 import { AuthLayout } from '@/components/auth/AuthLayout';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -31,6 +33,7 @@ export default function ForgotPasswordPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const { t } = useTranslation();
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -71,20 +74,20 @@ export default function ForgotPasswordPage() {
             <CheckCircle2 className="w-8 h-8 text-green-500" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-            Check your email
+            {t('auth.checkEmailTitle')}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-            We&apos;ve sent a password reset link to your email address.
+            {t('auth.checkEmailSubtitle')}
           </p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mb-8">
-            If you don&apos;t receive the email within a few minutes, check your spam folder.
+            {t('auth.checkEmailNote')}
           </p>
           <Link
             href="/login"
             className="inline-flex items-center gap-2 text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] dark:text-[#3B82F6] dark:hover:text-[#60A5FA] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to login
+            {t('auth.backToLogin')}
           </Link>
         </div>
       </AuthLayout>
@@ -97,10 +100,10 @@ export default function ForgotPasswordPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-            Forgot password?
+            {t('auth.forgotPasswordTitle')}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Enter your email and we&apos;ll send you a reset link.
+            {t('auth.forgotPasswordSubtitle')}
           </p>
         </div>
 
@@ -111,7 +114,7 @@ export default function ForgotPasswordPage() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Email</FormLabel>
+                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('auth.email')}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="you@example.com"
@@ -132,13 +135,13 @@ export default function ForgotPasswordPage() {
             >
               {isLoading ? (
                 <>
-                  <Spinner className="h-4 w-4" />
-                  Sending...
+                  <ButtonSpinner />
+                  {t('auth.sending')}
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  Send reset link
+                  {t('auth.sendResetLink')}
                 </>
               )}
             </button>
@@ -152,7 +155,7 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to login
+            {t('auth.backToLogin')}
           </Link>
         </div>
       </div>

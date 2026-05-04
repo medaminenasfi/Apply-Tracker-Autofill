@@ -57,9 +57,20 @@ function syncTokenWithExtension() {
   }
 }
 
+// Sync language preference
+function syncLanguageWithExtension() {
+  const lang = localStorage.getItem('i18nextLng') || 'en';
+  chrome.runtime.sendMessage({ action: 'syncLanguage', language: lang }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error('[EXT AUTH] Error syncing language:', chrome.runtime.lastError);
+    }
+  });
+}
+
 // Sync token when page loads
 console.log('[EXT AUTH] Page loaded, syncing token...');
 syncTokenWithExtension();
+syncLanguageWithExtension();
 
 // Listen for localStorage changes (login/logout events)
 const originalSetItem = localStorage.setItem;
@@ -70,6 +81,9 @@ localStorage.setItem = function(key, value) {
   if (key === 'token' || key === 'user') {
     console.log('[EXT AUTH] localStorage changed:', key, 'value:', !!value);
     syncTokenWithExtension();
+  }
+  if (key === 'i18nextLng') {
+    syncLanguageWithExtension();
   }
 };
 

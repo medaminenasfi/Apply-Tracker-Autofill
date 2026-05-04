@@ -3,8 +3,10 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, Users, FileText, LogOut, Menu, X, Shield, MessageCircle, Sun, Moon, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, LogOut, Menu, X, Shield, MessageCircle, Sun, Moon, ChevronDown, LayoutGrid, Briefcase, MessageSquare } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTheme } from 'next-themes';
 
 interface AdminLayoutProps {
@@ -12,11 +14,11 @@ interface AdminLayoutProps {
   title?: string;
 }
 
-const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/applications', label: 'Applications', icon: FileText },
-  { href: '/admin/feedback', label: 'Feedback', icon: MessageCircle },
+const navItemKeys = [
+  { href: '/admin/dashboard', key: 'admin.nav.dashboard', icon: LayoutDashboard },
+  { href: '/admin/users', key: 'admin.nav.users', icon: Users },
+  { href: '/admin/applications', key: 'admin.nav.applications', icon: FileText },
+  { href: '/admin/feedback', key: 'admin.nav.feedback', icon: MessageCircle },
 ];
 
 export function AdminLayout({ children, title }: AdminLayoutProps) {
@@ -26,6 +28,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
   const [mounted, setMounted] = useState(false);
 
   const adminLogout = useAuthStore((state) => state.adminLogout);
@@ -49,6 +52,8 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     router.push('/admin/login');
   };
 
+  const navItems = navItemKeys.map(item => ({ ...item, label: t(item.key) }));
+
   const getInitials = () => {
     if (!admin) return 'A';
     const first = (admin as any).firstName?.[0] || '';
@@ -67,7 +72,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
               <Shield className="h-4 w-4 text-white" />
             </div>
             <span className="text-lg font-bold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent whitespace-nowrap">
-              Admin Panel
+              {t('admin.nav.adminPanel')}
             </span>
           </Link>
         </div>
@@ -104,7 +109,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
           >
             <LogOut className="h-5 w-5" />
-            <span>Logout</span>
+            <span>{t('admin.nav.logout')}</span>
           </button>
         </div>
       </aside>
@@ -135,7 +140,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#2563EB] to-[#7C3AED] flex items-center justify-center">
             <Shield className="h-4 w-4 text-white" />
           </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent">Admin Panel</span>
+          <span className="text-lg font-bold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent">{t('admin.nav.adminPanel')}</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -167,7 +172,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
           >
             <LogOut className="h-5 w-5" />
-            <span>Logout</span>
+            <span>{t('admin.nav.logout')}</span>
           </button>
         </div>
       </aside>
@@ -186,11 +191,14 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
               >
                 <Menu className="h-5 w-5 text-[#111827]/60 dark:text-[#E5E7EB]/60" />
               </button>
-              <h1 className="text-lg font-semibold truncate">{title || 'Admin Dashboard'}</h1>
+              <h1 className="text-lg font-semibold truncate">{title || t('admin.dashboard.title')}</h1>
             </div>
 
             {/* Right */}
             <div className="flex items-center gap-2 shrink-0">
+              {/* Language switcher */}
+              <LanguageSwitcher compact />
+
               {/* Theme toggle */}
               {mounted && (
                 <button
@@ -226,7 +234,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        Logout
+                        {t('admin.nav.logout')}
                       </button>
                     </div>
                   </div>

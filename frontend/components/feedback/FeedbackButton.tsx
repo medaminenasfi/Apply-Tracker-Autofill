@@ -414,7 +414,7 @@ export default function FeedbackButton({ adminOnly = false }: FeedbackButtonProp
                   >
                     {isSubmitting || isUploading ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="animate-spin rounded-full border-2 border-white/30 border-t-white w-4 h-4" />
                         {isUploading ? 'Uploading...' : 'Sending...'}
                       </>
                     ) : (

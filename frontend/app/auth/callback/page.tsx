@@ -3,11 +3,14 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from 'react-i18next';
+import { AppLoader } from '@/components/ui/AppLoader';
 
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setUser } = useAuthStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const token = searchParams.get('token');
@@ -39,26 +42,17 @@ function AuthCallbackContent() {
     }
   }, [searchParams, router, setUser]);
 
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-muted-foreground">Completing sign in...</p>
-      </div>
-    </div>
-  );
+  return <AppLoader variant="fullscreen" text={t('auth.completingSignIn')} />;
 }
 
-export default function AuthCallbackPage() {
+export default function LoadingFallback() {
+  const { t } = useTranslation();
+  return <AppLoader variant="fullscreen" text={t('common.loading')} />;
+}
+
+function AuthCallbackPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <AuthCallbackContent />
     </Suspense>
   );

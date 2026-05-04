@@ -254,7 +254,9 @@ export default function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               disabled={isSubmitting || isUploading}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Submitting...' : isUploading ? 'Uploading...' : 'Submit'}
+              {isSubmitting || isUploading ? (
+                <><span className="animate-spin rounded-full border-2 border-white/30 border-t-white w-4 h-4 inline-block" /> {isUploading ? 'Uploading...' : 'Submitting...'}</>
+              ) : 'Submit'}
             </button>
           </div>
         </form>

@@ -24,13 +24,13 @@ export class ProfileController {
   async getProfile(@GetUser() user: any) {
     const userIdString = normalizeUserId(user._id);
     console.log('[PROFILE_CONTROLLER] GET /profile called for userId:', userIdString);
-    const profile = await this.profileService.findByUserId(userIdString) as any;
+    let profile = await this.profileService.findByUserId(userIdString) as any;
     console.log('Profile found:', profile);
+    
     if (!profile) {
-      // Return user data if profile doesn't exist
-      console.log('No profile found, returning user data');
-      return {
-        _id: null,
+      // Auto-create profile if it doesn't exist
+      console.log('No profile found, creating new profile');
+      profile = await this.profileService.create({
         userId: userIdString,
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -42,9 +42,8 @@ export class ProfileController {
         portfolio: user.portfolio || '',
         cvUrl: null,
         profilePictureUrl: null,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      };
+      });
+      console.log('Profile created:', profile);
     }
     
     // Return profile with new field names, fallback to old ones if needed

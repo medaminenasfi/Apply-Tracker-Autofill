@@ -8,8 +8,9 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
-import { ListSkeleton } from '@/components/ui/skeleton';
+import { CardSkeleton } from '@/components/ui/skeleton';
 import FeedbackButton from '@/components/feedback/FeedbackButton';
+import { useTranslation } from 'react-i18next';
 
 const statusConfig: Record<FeedbackStatus, { bg: string; text: string; border: string; label: string }> = {
   [FeedbackStatus.NEW]: {
@@ -46,6 +47,7 @@ export default function FeedbackPage() {
   const [isFetching, setIsFetching] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const { setLoading } = useLoadingStore();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     if (user) {
@@ -60,23 +62,23 @@ export default function FeedbackPage() {
       setIsFetching(false);
     } catch (error) {
       console.error('Failed to load feedback:', error);
-      toast.error('Failed to load feedback history');
+      toast.error(t('feedback.loadError'));
       setIsFetching(false);
     }
   };
 
   const handleDelete = async (feedbackId: string) => {
-    if (!confirm('Are you sure you want to delete this feedback?')) {
+    if (!confirm(t('feedback.deleteConfirm'))) {
       return;
     }
 
     try {
       await withLoader(() => feedbackApi.deleteFeedback(feedbackId), setLoading);
       setFeedback(feedback.filter((item) => item._id !== feedbackId));
-      toast.success('Feedback deleted successfully');
+      toast.success(t('feedback.deleteSuccess'));
     } catch (error) {
       console.error('Failed to delete feedback:', error);
-      toast.error('Failed to delete feedback');
+      toast.error(t('feedback.deleteError'));
     }
   };
 
@@ -100,9 +102,16 @@ export default function FeedbackPage() {
   // Show skeleton while fetching
   if (isFetching) {
     return (
-      <DashboardLayout title="My Feedback">
-        <div className="space-y-6 transition-opacity duration-200">
-          <ListSkeleton count={3} />
+      <DashboardLayout title={t('feedback.title')}>
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-8 w-20 rounded-lg bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+            ))}
+          </div>
+          {[...Array(3)].map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       </DashboardLayout>
     );
@@ -113,7 +122,7 @@ export default function FeedbackPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -123,30 +132,30 @@ export default function FeedbackPage() {
   };
 
   return (
-    <DashboardLayout title="My Feedback">
+    <DashboardLayout title={t('feedback.title')}>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">My Feedback</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Track your feedback and admin responses</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('feedback.title')}</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">{t('feedback.subtitle')}</p>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1220] shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Feedback</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t('feedback.totalFeedback')}</p>
             <p className="text-2xl font-bold text-slate-900 dark:text-white">{summary.total}</p>
           </div>
           <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-500/20 bg-slate-50 dark:bg-slate-500/5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">New</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t('feedback.new')}</p>
             <p className="text-2xl font-bold text-slate-700 dark:text-slate-300">{summary.new}</p>
           </div>
           <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-            <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">In Progress</p>
+            <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">{t('feedback.inProgress')}</p>
             <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{summary.inProgress}</p>
           </div>
           <div className="p-4 rounded-xl border border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-            <p className="text-sm text-green-600 dark:text-green-400 mb-1">Resolved</p>
+            <p className="text-sm text-green-600 dark:text-green-400 mb-1">{t('feedback.resolved')}</p>
             <p className="text-2xl font-bold text-green-700 dark:text-green-300">{summary.resolved}</p>
           </div>
         </div>
@@ -155,12 +164,12 @@ export default function FeedbackPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Filter className="w-4 h-4 text-slate-400" />
           {[
-            { id: 'all' as FilterType, label: 'All' },
-            { id: 'new' as FilterType, label: 'New' },
-            { id: 'resolved' as FilterType, label: 'Resolved' },
-            { id: 'bug' as FilterType, label: 'Bug' },
-            { id: 'feature' as FilterType, label: 'Feature' },
-            { id: 'general' as FilterType, label: 'General' },
+            { id: 'all' as FilterType, label: t('common.all') },
+            { id: 'new' as FilterType, label: t('feedback.new') },
+            { id: 'resolved' as FilterType, label: t('feedback.resolved') },
+            { id: 'bug' as FilterType, label: t('feedback.bugReport') },
+            { id: 'feature' as FilterType, label: t('feedback.feature') },
+            { id: 'general' as FilterType, label: t('feedback.general') },
           ].map((filter) => (
             <button
               key={filter.id}
@@ -182,9 +191,9 @@ export default function FeedbackPage() {
             <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/10 dark:bg-[#2563EB]/15 flex items-center justify-center mb-4">
               <Inbox className="w-7 h-7 text-[#2563EB]" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">No feedback found</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{t('feedback.noFeedback')}</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-sm">
-              {activeFilter !== 'all' ? 'Try a different filter.' : 'No feedback submitted yet.'}
+              {activeFilter !== 'all' ? t('feedback.tryDifferentFilter') : t('feedback.noFeedbackDesc')}
             </p>
             <FeedbackButton />
           </div>
@@ -214,7 +223,7 @@ export default function FeedbackPage() {
                     <button
                       onClick={() => handleDelete(item._id)}
                       className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                      aria-label="Delete feedback"
+                      aria-label={t('feedback.deleteConfirm')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -230,7 +239,7 @@ export default function FeedbackPage() {
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
                       <FileText className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Your Message</span>
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('feedback.yourMessage')}</span>
                     </div>
                     <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed line-clamp-3">{item.message}</p>
                   </div>
@@ -239,7 +248,7 @@ export default function FeedbackPage() {
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Star className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rating</span>
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('feedback.rating')}</span>
                     </div>
                     <div className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((star) => (
@@ -259,11 +268,11 @@ export default function FeedbackPage() {
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
                         <FileImage className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Attachment</span>
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('feedback.attachment')}</span>
                       </div>
                       <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08]">
                         <FileImage className="w-4 h-4 text-slate-400" />
-                        <span className="text-xs text-slate-600 dark:text-slate-400 truncate">Image attached</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400 truncate">{t('feedback.imageAttached')}</span>
                       </div>
                     </div>
                   )}
@@ -273,7 +282,7 @@ export default function FeedbackPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <MessageSquare className="w-3.5 h-3.5 text-[#7C3AED]" />
-                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Admin Reply</span>
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('feedback.adminReply')}</span>
                       </div>
                       <div className="p-3 rounded-xl bg-[#7C3AED]/5 dark:bg-[#7C3AED]/10 border border-[#7C3AED]/10 dark:border-[#7C3AED]/20">
                         <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed line-clamp-3">{item.adminReply}</p>

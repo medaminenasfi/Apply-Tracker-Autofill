@@ -12,6 +12,8 @@ import {
   Plus, Calendar, LogOut, User
 } from 'lucide-react';
 import FeedbackButton from '@/components/feedback/FeedbackButton';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 /* ── animation helpers ── */
 const fadeUp: Variants = {
@@ -91,12 +93,14 @@ export default function Home() {
     setMobileMenuOpen(false);
   };
 
+  const { t } = useTranslation();
+
   const navLinks = [
-    { id: 'features', label: 'Features' },
-    { id: 'how-it-works', label: 'How it Works' },
-    { id: 'demo', label: 'Demo' },
-    { id: 'reviews', label: 'Reviews' },
-    { id: 'faq', label: 'FAQ' },
+    { id: 'features', label: t('home.navFeatures') },
+    { id: 'how-it-works', label: t('home.navHowItWorks') },
+    { id: 'demo', label: t('home.navDemo') },
+    { id: 'reviews', label: t('home.navReviews') },
+    { id: 'faq', label: t('home.navFaq') },
   ];
 
   return (
@@ -122,6 +126,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-2">
+              <LanguageSwitcher compact />
               {mounted && (
                 <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-lg border border-[#E5E7EB] dark:border-white/10 hover:bg-[#E5E7EB]/50 dark:hover:bg-white/5 transition-colors" aria-label="Toggle theme">
                   {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -167,14 +172,14 @@ export default function Home() {
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-[#111827]/70 dark:text-[#E5E7EB]/70 hover:bg-[#F3F4F6] dark:hover:bg-white/5 transition-colors text-left"
                           >
                             <User className="w-4 h-4" />
-                            Dashboard
+                            {t('nav.dashboard')}
                           </button>
                           <button
                             onClick={() => { logout(); setUserMenuOpen(false); }}
                             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left"
                           >
                             <LogOut className="w-4 h-4" />
-                            Logout
+                            {t('nav.logout')}
                           </button>
                         </div>
                       </motion.div>
@@ -184,10 +189,10 @@ export default function Home() {
               ) : (
                 <>
                   <button onClick={() => router.push('/login')} className="hidden sm:inline-flex px-3 py-2 text-sm font-medium text-[#111827]/60 dark:text-[#E5E7EB]/60 hover:text-[#2563EB] transition-colors">
-                    Login
+                    {t('nav.login')}
                   </button>
                   <button onClick={() => router.push('/signup')} className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-white rounded-lg bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25 transition-all duration-300">
-                    Add to Chrome
+                    {t('home.ctaPrimary')}
                   </button>
                 </>
               )}
@@ -215,11 +220,11 @@ export default function Home() {
                 <div className="pt-2 flex flex-col gap-2">
                   {!isAuthenticated && (
                     <button onClick={() => { router.push('/login'); setMobileMenuOpen(false); }} className="text-sm font-medium text-center py-2.5 rounded-lg border border-[#E5E7EB] dark:border-white/10">
-                      Login
+                      {t('nav.login')}
                     </button>
                   )}
                   <button onClick={() => { router.push(isAuthenticated ? '/dashboard' : '/signup'); setMobileMenuOpen(false); }} className="text-sm font-semibold text-center text-white py-2.5 rounded-lg bg-gradient-to-r from-[#2563EB] to-[#7C3AED]">
-                    {isAuthenticated ? 'Dashboard' : 'Add to Chrome'}
+                    {isAuthenticated ? t('nav.dashboard') : t('home.ctaPrimary')}
                   </button>
                 </div>
               </div>
@@ -243,18 +248,18 @@ export default function Home() {
             <motion.div initial="hidden" animate="visible" variants={fadeUp} className="max-w-xl lg:max-w-none">
               <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#2563EB]/20 bg-[#2563EB]/5 dark:bg-[#2563EB]/10 mb-6">
                 <Sparkles className="w-3.5 h-3.5 text-[#2563EB]" />
-                <span className="text-xs font-semibold text-[#2563EB]">AI-Powered Job Application Assistant</span>
+                <span className="text-xs font-semibold text-[#2563EB]">{t('home.badge')}</span>
               </motion.div>
 
               <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-bold leading-[1.1] tracking-tight">
-                Apply Smarter.{' '}
+                {t('home.title1')}{' '}
                 <span className="bg-[linear-gradient(90deg,#2563EB,#7C3AED)] bg-clip-text text-transparent">
-                  Get Hired Faster.
+                  {t('home.title2')}
                 </span>
               </motion.h1>
 
               <motion.p variants={fadeUp} className="mt-6 text-base sm:text-lg text-[#111827]/60 dark:text-[#E5E7EB]/50 leading-relaxed max-w-lg">
-                ApplyFlowo automates job applications, autofills forms, and tracks your progress — so you focus on landing your dream job.
+                {t('home.subtitle')}
               </motion.p>
 
               <motion.div variants={fadeUp} className="mt-8 flex flex-col sm:flex-row gap-3">
@@ -263,22 +268,22 @@ export default function Home() {
                   className="group relative px-6 py-3.5 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-[0_8px_30px_rgba(37,99,235,0.35)] hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  {isAuthenticated ? 'Go to Dashboard' : "Add to Chrome — It's Free"}
+                  {isAuthenticated ? t('home.ctaDashboard') : t('home.ctaPrimary')}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
                   onClick={() => scrollTo('features')}
                   className="px-6 py-3.5 text-sm font-semibold rounded-xl border border-[#E5E7EB] dark:border-white/10 hover:bg-[#111827]/5 dark:hover:bg-white/5 transition-all duration-300 text-center"
                 >
-                  Learn More
+                  {t('home.ctaLearnMore')}
                 </button>
               </motion.div>
 
               <motion.div variants={fadeUp} className="mt-10 space-y-3">
                 {[
-                  { icon: Zap, text: 'Autofill 50+ job websites instantly' },
-                  { icon: Upload, text: 'Upload CV once, apply everywhere' },
-                  { icon: BarChart3, text: 'Track interviews & offers visually' },
+                  { icon: Zap, text: t('home.feature1') },
+                  { icon: Upload, text: t('home.feature2') },
+                  { icon: BarChart3, text: t('home.feature3') },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-3 text-sm text-[#111827]/60 dark:text-[#E5E7EB]/50">
                     <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#2563EB]/10 dark:bg-[#2563EB]/15 flex items-center justify-center">
@@ -390,18 +395,18 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={fadeUp} className="text-center mb-14">
             <span className="text-sm font-semibold text-[#2563EB] uppercase tracking-wider">Features</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Everything you need to land your dream job</h2>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">{t('home.featuresTitle')}</h2>
             <p className="mt-4 text-base text-[#111827]/50 dark:text-[#E5E7EB]/50 max-w-2xl mx-auto">
-              From autofilling forms to tracking interviews, ApplyFlowo handles it all.
+              {t('home.featuresSubtitle')}
             </p>
           </motion.div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { icon: Zap, title: 'Auto Apply', desc: 'Save hours of manual work. Apply to jobs with a single click.', bg: 'bg-[#2563EB]/10', iconColor: 'text-[#2563EB]' },
-              { icon: Brain, title: 'Smart Autofill', desc: 'Fill job forms instantly with your saved profile data.', bg: 'bg-[#7C3AED]/10', iconColor: 'text-[#7C3AED]' },
-              { icon: BarChart3, title: 'Track Progress', desc: 'Kanban board: Applied, Interview, Accepted — all visual.', bg: 'bg-cyan-500/10', iconColor: 'text-cyan-500' },
-              { icon: FileText, title: 'CV Assistant', desc: 'Upload once, reuse everywhere. Your CV always ready.', bg: 'bg-pink-500/10', iconColor: 'text-pink-500' },
+              { icon: Zap, title: t('home.featureAutoApply'), desc: t('home.featureAutoApplyDesc'), bg: 'bg-[#2563EB]/10', iconColor: 'text-[#2563EB]' },
+              { icon: Brain, title: t('home.featureSmartAutofill'), desc: t('home.featureSmartAutofillDesc'), bg: 'bg-[#7C3AED]/10', iconColor: 'text-[#7C3AED]' },
+              { icon: BarChart3, title: t('home.featureTrackProgress'), desc: t('home.featureTrackProgressDesc'), bg: 'bg-cyan-500/10', iconColor: 'text-cyan-500' },
+              { icon: FileText, title: t('home.featureCvAssistant'), desc: t('home.featureCvAssistantDesc'), bg: 'bg-pink-500/10', iconColor: 'text-pink-500' },
             ].map(({ icon: Icon, title, desc, bg, iconColor }) => (
               <motion.div
                 key={title}
@@ -424,7 +429,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={fadeUp} className="text-center mb-14">
             <span className="text-sm font-semibold text-[#7C3AED] uppercase tracking-wider">How it Works</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Get started in 3 simple steps</h2>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">{t('home.howItWorksTitle')}</h2>
           </motion.div>
 
           <div className="relative max-w-4xl mx-auto">
@@ -433,9 +438,9 @@ export default function Home() {
 
             <div className="grid md:grid-cols-3 gap-10 md:gap-8">
               {[
-                { step: '01', title: 'Install Extension', desc: 'Add ApplyFlowo to Chrome in one click. Setup takes 30 seconds.', icon: Download },
-                { step: '02', title: 'Autofill Job Forms', desc: 'Visit any job site and click Auto Fill. We handle the rest.', icon: MousePointerClick },
-                { step: '03', title: 'Track Applications', desc: 'View all applications on your Kanban dashboard. Stay organized.', icon: BarChart3 },
+                { step: '01', title: t('home.step01'), desc: t('home.step01Desc'), icon: Download },
+                { step: '02', title: t('home.step02'), desc: t('home.step02Desc'), icon: MousePointerClick },
+                { step: '03', title: t('home.step03'), desc: t('home.step03Desc'), icon: BarChart3 },
               ].map(({ step, title, desc, icon: Icon }) => (
                 <motion.div key={step} variants={fadeUp} className="relative text-center">
                   <div className="relative z-10 inline-flex w-[72px] h-[72px] rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#7C3AED] items-center justify-center mb-5 shadow-[0_8px_30px_rgba(37,99,235,0.25)]">
@@ -456,7 +461,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={fadeUp} className="text-center mb-14">
             <span className="text-sm font-semibold text-[#2563EB] uppercase tracking-wider">Live Preview</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Your job search, beautifully organized</h2>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">{t('home.demoTitle')}</h2>
           </motion.div>
 
           <motion.div variants={fadeUp} className="max-w-5xl mx-auto relative">
@@ -466,13 +471,13 @@ export default function Home() {
             <div className="relative bg-white dark:bg-white/[0.03] border border-[#E5E7EB] dark:border-white/[0.08] rounded-2xl p-4 sm:p-6 shadow-[0_0_50px_rgba(0,0,0,0.04)] dark:shadow-none backdrop-blur-xl">
               {/* Top bar */}
               <div className="flex items-center justify-between mb-5 pb-4 border-b border-[#E5E7EB]/50 dark:border-white/5">
-                <h3 className="text-sm font-semibold">My Applications</h3>
+                <h3 className="text-sm font-semibold">{t('home.demoMyApps')}</h3>
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[10px] font-bold">
-                    <Plus className="w-3 h-3" /> New application added
+                    <Plus className="w-3 h-3" /> {t('home.demoNewApp')}
                   </div>
                   <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-500 text-[10px] font-bold">
-                    <Calendar className="w-3 h-3" /> Interview scheduled
+                    <Calendar className="w-3 h-3" /> {t('home.demoInterview')}
                   </div>
                 </div>
               </div>
@@ -522,14 +527,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={fadeUp} className="text-center mb-14">
             <span className="text-sm font-semibold text-[#7C3AED] uppercase tracking-wider">Testimonials</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Loved by job seekers worldwide</h2>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">{t('home.reviewsTitle')}</h2>
           </motion.div>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {[
-              { name: 'Sarah Chen', role: 'Software Developer', text: 'Saved me 10+ hours per week on applications. The autofill is incredible — I just click and everything is filled perfectly.', avatar: 'SC' },
-              { name: 'Marcus Johnson', role: 'Product Designer', text: "Best job automation tool I've ever used. The Kanban board keeps me so organized. Got 3 offers in one month!", avatar: 'MJ' },
-              { name: 'Emma Williams', role: 'Data Analyst', text: 'The CV assistant is a game changer. Upload once and it works everywhere. Landed my dream job in 2 weeks.', avatar: 'EW' },
+              { name: t('home.review1Name'), role: t('home.review1Role'), text: t('home.review1Text'), avatar: 'SC' },
+              { name: t('home.review2Name'), role: t('home.review2Role'), text: t('home.review2Text'), avatar: 'MJ' },
+              { name: t('home.review3Name'), role: t('home.review3Role'), text: t('home.review3Text'), avatar: 'EW' },
             ].map(({ name, role, text, avatar }) => (
               <motion.div
                 key={name}
@@ -565,16 +570,16 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div variants={fadeUp} className="text-center mb-14">
             <span className="text-sm font-semibold text-[#2563EB] uppercase tracking-wider">FAQ</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Frequently asked questions</h2>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">{t('home.faqTitle')}</h2>
           </motion.div>
 
           <div className="space-y-3">
             {[
-              { q: 'Is ApplyFlowo free?', a: 'Yes! The Chrome extension and basic features are completely free. We offer premium plans for power users who need advanced tracking and analytics.' },
-              { q: 'Which job sites are supported?', a: 'ApplyFlowo works with 50+ job sites including LinkedIn, Indeed, Glassdoor, AngelList, and many more. We add new sites every week.' },
-              { q: 'Is my data safe?', a: 'Absolutely. Your data is encrypted end-to-end. We never sell your data or share it with third parties. Your privacy is our top priority.' },
-              { q: 'Can I use it on multiple devices?', a: 'Yes! Your account syncs across all devices. Install the extension on any Chrome browser and your data will be there.' },
-              { q: 'Is ApplyFlow fully functional yet?', a: 'ApplyFlow is currently in active development. Core features are working, and your feedback helps us improve faster.' },
+              { q: t('home.faq1Q'), a: t('home.faq1A') },
+              { q: t('home.faq2Q'), a: t('home.faq2A') },
+              { q: t('home.faq3Q'), a: t('home.faq3A') },
+              { q: t('home.faq4Q'), a: t('home.faq4A') },
+              { q: t('home.faq5Q'), a: t('home.faq5A') },
             ].map((item) => (
               <FaqItem key={item.q} {...item} />
             ))}
@@ -588,19 +593,19 @@ export default function Home() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(124,58,237,0.06),transparent_60%)] dark:bg-[radial-gradient(circle_at_center,rgba(124,58,237,0.12),transparent_60%)]" />
         </div>
         <motion.div variants={fadeUp} className="relative max-w-2xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Start applying smarter today.</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">{t('home.ctaFinalTitle')}</h2>
           <p className="text-base text-[#111827]/50 dark:text-[#E5E7EB]/50 mb-8 max-w-lg mx-auto">
-            Join thousands of job seekers who save hours every week with ApplyFlowo.
+            {t('home.ctaFinalSubtitle')}
           </p>
           <button
             onClick={() => isAuthenticated ? router.push('/dashboard') : router.push('/signup')}
             className="group relative px-8 py-4 text-base font-semibold text-white rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-[0_8px_40px_rgba(37,99,235,0.35)] hover:-translate-y-0.5 transition-all duration-300 inline-flex items-center gap-2"
           >
             <Download className="w-5 h-5" />
-            {isAuthenticated ? 'Go to Dashboard' : "Add to Chrome — It's Free"}
+            {isAuthenticated ? t('home.ctaDashboard') : t('home.ctaPrimary')}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
-          <p className="mt-5 text-xs text-[#111827]/35 dark:text-[#E5E7EB]/35">No credit card required. Free forever for basic use.</p>
+          <p className="mt-5 text-xs text-[#111827]/35 dark:text-[#E5E7EB]/35">{t('home.ctaFinalNote')}</p>
         </motion.div>
       </Section>
 
@@ -613,12 +618,12 @@ export default function Home() {
                 <img src="/logo 2.png" alt="ApplyFlow" className="h-8 w-auto" />
                 <span className="text-lg font-bold bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent">ApplyFlow</span>
               </div>
-              <p className="text-sm text-[#111827]/40 dark:text-[#E5E7EB]/40">Apply smarter. Get hired faster.</p>
+              <p className="text-sm text-[#111827]/40 dark:text-[#E5E7EB]/40">{t('home.footerTagline')}</p>
             </div>
             {[
-              { title: 'Product', links: ['Features', 'Pricing', 'Chrome Extension', 'Changelog'] },
-              { title: 'Company', links: ['About', 'Blog', 'Careers', 'Contact'] },
-              { title: 'Legal', links: ['Privacy Policy', 'Terms of Service', 'Cookie Policy'] },
+              { title: t('home.footerProduct'), links: [t('home.footerFeatures'), t('home.footerPricing'), t('home.footerChromeExtension'), t('home.footerChangelog')] },
+              { title: t('home.footerCompany'), links: [t('home.footerAbout'), t('home.footerBlog'), t('home.footerCareers'), t('home.footerContact')] },
+              { title: t('home.footerLegal'), links: [t('home.footerPrivacy'), t('home.footerTerms'), t('home.footerCookies')] },
             ].map(({ title, links }) => (
               <div key={title}>
                 <h4 className="text-sm font-semibold mb-4">{title}</h4>
@@ -633,7 +638,7 @@ export default function Home() {
             ))}
           </div>
           <div className="mt-12 pt-8 border-t border-[#E5E7EB]/50 dark:border-white/5">
-            <p className="text-xs text-[#111827]/35 dark:text-[#E5E7EB]/35">&copy; {new Date().getFullYear()} ApplyFlow. All rights reserved.</p>
+            <p className="text-xs text-[#111827]/35 dark:text-[#E5E7EB]/35">{t('home.footerRights', { year: new Date().getFullYear() })}</p>
           </div>
         </div>
       </footer>

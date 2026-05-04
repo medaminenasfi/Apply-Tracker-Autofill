@@ -5,22 +5,25 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare, X } from 'lucide-react';
 import { useSidebarStore } from '@/store/sidebarStore';
+import { useTranslation } from 'react-i18next';
 
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/applicant', label: 'Applications', icon: Briefcase },
-  { href: '/profile', label: 'Profile', icon: User },
-  { href: '/feedback', label: 'Feedback', icon: MessageSquare },
-  { href: '/extension', label: 'Extension', icon: Chrome },
-  { href: '/settings', label: 'Settings', icon: Settings },
+const navKeys = [
+  { href: '/dashboard', key: 'nav.dashboard', icon: LayoutGrid },
+  { href: '/applicant', key: 'nav.applications', icon: Briefcase },
+  { href: '/profile', key: 'nav.profile', icon: User },
+  { href: '/feedback', key: 'nav.feedback', icon: MessageSquare },
+  { href: '/extension', key: 'nav.extension', icon: Chrome },
+  { href: '/settings', key: 'nav.settings', icon: Settings },
 ];
 
 function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const { t } = useTranslation();
 
+  const navItems = navKeys.map(item => ({ ...item, label: t(item.key) }));
   const adminItems = user?.role === 'admin' ? [
-    { href: '/admin', label: 'Admin Panel', icon: Shield },
+    { href: '/admin', label: t('nav.adminPanel'), icon: Shield, key: 'nav.adminPanel' },
   ] : [];
 
   const allNavItems = [...navItems, ...adminItems];

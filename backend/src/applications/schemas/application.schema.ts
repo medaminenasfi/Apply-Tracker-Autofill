@@ -35,10 +35,9 @@ export class Application {
 export const ApplicationSchema = SchemaFactory.createForClass(Application);
 
 // Pre-save hook to auto-normalize userId to string
-ApplicationSchema.pre('save', function (this: any, next: any) {
+ApplicationSchema.pre('save', async function (this: any) {
   if (this.userId && typeof this.userId !== 'string') {
     console.log('[APPLICATION_SCHEMA] Auto-normalizing userId to string:', this.userId);
     this.userId = String(this.userId);
   }
-  next();
 });

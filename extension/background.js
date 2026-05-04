@@ -35,6 +35,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
+  if (request.action === 'syncLanguage') {
+    const lang = request.language || 'en';
+    chrome.storage.local.set({ language: lang }, () => {
+      console.log('[EXT AUTH] Language synced:', lang);
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+  
   if (request.action === 'logout') {
     console.log('[EXT AUTH] Received logout request, clearing extension storage');
     // Clear all extension auth data

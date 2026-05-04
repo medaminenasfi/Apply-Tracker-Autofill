@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { AdminLayout } from '@/components/AdminLayout';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
+import { useTranslation } from 'react-i18next';
 
 const statusStyles: Record<FeedbackStatus, string> = {
   [FeedbackStatus.NEW]: 'bg-slate-500/10 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300',
@@ -15,11 +16,6 @@ const statusStyles: Record<FeedbackStatus, string> = {
   [FeedbackStatus.RESOLVED]: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
 };
 
-const typeLabels: Record<FeedbackType, string> = {
-  [FeedbackType.BUG]: 'Bug Report',
-  [FeedbackType.IMPROVEMENT]: 'Improvement',
-  [FeedbackType.GENERAL]: 'General',
-};
 
 const typeIcons: Record<FeedbackType, typeof Bug> = {
   [FeedbackType.BUG]: Bug,
@@ -28,6 +24,14 @@ const typeIcons: Record<FeedbackType, typeof Bug> = {
 };
 
 export default function AdminFeedbackPage() {
+  const { t } = useTranslation();
+  
+  const typeLabels: Record<FeedbackType, string> = {
+    [FeedbackType.BUG]: t('feedback.bugReport'),
+    [FeedbackType.IMPROVEMENT]: t('feedback.feature'),
+    [FeedbackType.GENERAL]: t('feedback.general'),
+  };
+  
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [filter, setFilter] = useState<FeedbackStatus | 'all'>('all');
   const [search, setSearch] = useState('');
@@ -44,7 +48,7 @@ export default function AdminFeedbackPage() {
       setFeedback(data);
       setIsFetching(false);
     } catch (error) {
-      toast.error('Failed to load feedback');
+      toast.error(t('admin.feedback.loadError'));
       setIsFetching(false);
     }
   };
@@ -83,12 +87,18 @@ export default function AdminFeedbackPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 rounded-2xl bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
+              <div key={i} className="h-20 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] animate-pulse" />
             ))}
           </div>
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 rounded-xl bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
-          ))}
+          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] overflow-hidden">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-4 border-b border-slate-100 dark:border-white/[0.06]">
+                <div className="h-3 w-32 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-5 w-16 rounded-full bg-slate-100 dark:bg-white/[0.06] animate-pulse ml-auto" />
+                <div className="h-3 w-20 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+              </div>
+            ))}
+          </div>
         </div>
       </AdminLayout>
     );

@@ -17,15 +17,18 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import Link from 'next/link';
-import { Spinner } from '@/components/ui/spinner';
+import { ButtonSpinner } from '@/components/ui/AppLoader';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { AuthLayout } from './AuthLayout';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export function LoginForm() {
   const router = useRouter();
   const { login, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const { t } = useTranslation();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -39,10 +42,10 @@ export function LoginForm() {
     setError(null);
     try {
       await login(data.email, data.password);
-      toast.success('Successfully logged in');
+      toast.success(t('auth.successLogin'));
       router.push('/dashboard');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Invalid email or password';
+      const message = err instanceof Error ? err.message : t('auth.invalidCredentials');
       setError(message);
       toast.error(message);
     }
@@ -56,13 +59,17 @@ export function LoginForm() {
   return (
     <AuthLayout variant="login">
       <div className="flex flex-col justify-center h-full max-w-sm mx-auto w-full">
+        {/* Language Switcher */}
+        <div className="flex justify-end mb-4">
+          <LanguageSwitcher />
+        </div>
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-            Sign in to ApplyFlow
+            {t('auth.signInTitle')}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Welcome back — continue tracking your applications.
+            {t('auth.signInSubtitle')}
           </p>
         </div>
 
@@ -80,7 +87,7 @@ export function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Email</FormLabel>
+                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('auth.email')}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="you@example.com"
@@ -100,9 +107,9 @@ export function LoginForm() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center justify-between">
-                    <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</FormLabel>
+                    <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('auth.password')}</FormLabel>
                     <Link href="/forgot-password" className="text-xs font-medium text-[#2563EB] hover:text-[#1d4ed8] dark:text-[#3B82F6] dark:hover:text-[#60A5FA] transition-colors">
-                      Forgot password?
+                      {t('auth.forgotPassword')}
                     </Link>
                   </div>
                   <FormControl>
@@ -134,13 +141,13 @@ export function LoginForm() {
             >
               {isLoading ? (
                 <>
-                  <Spinner className="h-4 w-4" />
-                  Signing in...
+                  <ButtonSpinner />
+                  {t('auth.signingIn')}
                 </>
               ) : (
                 <>
                   <LogIn className="h-4 w-4" />
-                  Sign In
+                  {t('auth.signIn')}
                 </>
               )}
             </button>
@@ -154,7 +161,7 @@ export function LoginForm() {
           </div>
           <div className="relative flex justify-center text-xs">
             <span className="px-3 bg-white dark:bg-[#0B1220] text-slate-400 dark:text-slate-500">
-              Or continue with
+              {t('auth.orContinueWith')}
             </span>
           </div>
         </div>
@@ -171,19 +178,19 @@ export function LoginForm() {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-          Sign in with Google
+          {t('auth.signInWithGoogle')}
         </button>
 
         {/* Links */}
         <div className="mt-6 text-center space-y-2">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Don&apos;t have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link href="/signup" className="font-semibold text-[#2563EB] hover:text-[#1d4ed8] dark:text-[#3B82F6] dark:hover:text-[#60A5FA] transition-colors">
-              Sign up
+              {t('auth.signUp')}
             </Link>
           </p>
           <Link href="/" className="inline-block text-xs text-slate-400 dark:text-slate-500 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors">
-            ← Return to Home
+            {t('auth.returnHome')}
           </Link>
         </div>
       </div>

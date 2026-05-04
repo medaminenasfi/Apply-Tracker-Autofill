@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { ProfileService } from '../profile/profile.service';
 import { EmailService } from '../common/services/email.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -14,6 +15,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private profileService: ProfileService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -24,6 +26,25 @@ export class AuthService {
 
     const user = await this.usersService.create(registerDto);
     const token = this.generateToken(user);
+
+    // Create empty profile for the new user
+    try {
+      await this.profileService.create({
+        userId: user._id.toString(),
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: '',
+        university: '',
+        linkedin: '',
+        portfolio: '',
+        profilePictureUrl: '',
+        cvUrl: '',
+      });
+    } catch (error) {
+      console.error('[AUTH] Failed to create profile during registration:', error);
+      // Don't fail registration if profile creation fails
+    }
 
     return {
       access_token: token,

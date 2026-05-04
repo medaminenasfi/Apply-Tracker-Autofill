@@ -47,7 +47,8 @@ function setLoading(btn, loading) {
 }
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await EXT_I18N.init();
   checkAuth();
   setupEventListeners();
 });

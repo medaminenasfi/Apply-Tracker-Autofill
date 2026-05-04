@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { AppLoader } from '@/components/ui/AppLoader';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -27,8 +28,8 @@ export function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
 
   if (!isReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen">
+        <AppLoader variant="section" className="min-h-screen" />
       </div>
     );
   }

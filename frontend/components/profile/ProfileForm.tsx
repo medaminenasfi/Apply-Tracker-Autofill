@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { Upload, FileText, Eye, Trash2, User, FileText as FileIcon, Camera, Shield, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '@/services/api';
+import { ButtonSpinner } from '@/components/ui/AppLoader';
 
 export function ProfileForm() {
   const { user, updateProfile, uploadCV, deleteCV, getCV, uploadProfilePicture, deleteProfilePicture, isLoading } = useAuthStore();
@@ -420,7 +421,7 @@ export function ProfileForm() {
                 size="sm"
                 className="bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25"
               >
-                {isUploadingCV ? 'Uploading...' : 'Upload'}
+                {isUploadingCV ? <><ButtonSpinner /> Uploading...</> : 'Upload'}
               </Button>
               <Button
                 variant="outline"
@@ -578,7 +579,7 @@ export function ProfileForm() {
                   disabled={isSaving || isLoading}
                   className="w-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25 hover:-translate-y-0.5 transition-all duration-300"
                 >
-                  {isSaving || isLoading ? 'Saving...' : 'Save Changes'}
+                  {isSaving || isLoading ? <><ButtonSpinner /> Saving...</> : 'Save Changes'}
                 </Button>
               </div>
             </form>

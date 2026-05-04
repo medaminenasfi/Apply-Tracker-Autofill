@@ -18,8 +18,9 @@ import {
 import Link from 'next/link';
 import { ArrowLeft, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import api from '@/services/api';
-import { Spinner } from '@/components/ui/spinner';
+import { ButtonSpinner, AppLoader } from '@/components/ui/AppLoader';
 import { AuthLayout } from '@/components/auth/AuthLayout';
+import { useTranslation } from 'react-i18next';
 
 const resetPasswordSchema = z
   .object({
@@ -37,6 +38,7 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -47,7 +49,7 @@ function ResetPasswordContent() {
   useEffect(() => {
     if (!token) {
       setIsValidToken(false);
-      toast.error('Invalid reset link. Please request a new password reset.');
+      toast.error(t('auth.invalidResetLink'));
     }
   }, [token]);
 
@@ -62,7 +64,7 @@ function ResetPasswordContent() {
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!isValidToken) {
-      toast.error('Invalid reset link');
+      toast.error(t('auth.invalidResetLink'));
       return;
     }
 
@@ -80,7 +82,7 @@ function ResetPasswordContent() {
         }, 2000);
       }
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to reset password';
+      const message = err.response?.data?.message || t('auth.resetFailed');
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -97,24 +99,24 @@ function ResetPasswordContent() {
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-            Invalid Reset Link
+            {t('auth.invalidResetTitle')}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
-            This password reset link is invalid or has expired.
+            {t('auth.invalidResetDesc')}
           </p>
           <div className="space-y-3 flex flex-col items-center">
             <Link
               href="/forgot-password"
               className="text-sm font-semibold text-[#2563EB] hover:text-[#1d4ed8] dark:text-[#3B82F6] dark:hover:text-[#60A5FA] transition-colors"
             >
-              Request a new reset link
+              {t('auth.requestNewReset')}
             </Link>
             <Link
               href="/login"
               className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to login
+              {t('auth.backToLogin')}
             </Link>
           </div>
         </div>
@@ -128,10 +130,10 @@ function ResetPasswordContent() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-            Reset password
+            {t('auth.resetPasswordTitle')}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Enter your new password below.
+            {t('auth.resetPasswordDesc')}
           </p>
         </div>
 
@@ -142,11 +144,11 @@ function ResetPasswordContent() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">New Password</FormLabel>
+                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('auth.newPassword')}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
-                        placeholder="Enter new password"
+                        placeholder={t('auth.enterNewPassword')}
                         type={showPassword ? 'text' : 'password'}
                         className={inputClass}
                         {...field}
@@ -170,11 +172,11 @@ function ResetPasswordContent() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Confirm Password</FormLabel>
+                  <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('auth.confirmPassword')}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
-                        placeholder="Confirm new password"
+                        placeholder={t('auth.confirmNewPassword')}
                         type={showConfirmPassword ? 'text' : 'password'}
                         className={inputClass}
                         {...field}
@@ -200,13 +202,13 @@ function ResetPasswordContent() {
             >
               {isLoading ? (
                 <>
-                  <Spinner className="h-4 w-4" />
-                  Resetting...
+                  <ButtonSpinner />
+                  {t('auth.resetting')}
                 </>
               ) : (
                 <>
                   <Lock className="h-4 w-4" />
-                  Reset password
+                  {t('auth.resetPasswordButton')}
                 </>
               )}
             </button>
@@ -220,7 +222,7 @@ function ResetPasswordContent() {
             className="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to login
+            {t('auth.backToLogin')}
           </Link>
         </div>
       </div>
@@ -228,16 +230,14 @@ function ResetPasswordContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useTranslation();
+  return <AppLoader variant="fullscreen" text={t('common.loading')} />;
+}
+
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#EEF2FF,#F8FAFC)] dark:bg-[radial-gradient(circle_at_top,#0f172a,#020617)]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2563EB] mx-auto"></div>
-          <p className="mt-4 text-slate-500 dark:text-slate-400">Loading...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <ResetPasswordContent />
     </Suspense>
   );

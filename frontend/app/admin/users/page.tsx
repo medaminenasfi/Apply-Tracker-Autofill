@@ -9,8 +9,10 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<any[]>([]);
   const [applicationCounts, setApplicationCounts] = useState<Record<string, number>>({});
   const [isFetching, setIsFetching] = useState(true);
@@ -43,7 +45,7 @@ export default function AdminUsersPage() {
       setIsFetching(false);
     } catch (error) {
       console.error('Failed to fetch data:', error);
-      toast.error('Failed to load data');
+      toast.error(t('admin.users.loadError'));
       setIsFetching(false);
     }
   };
@@ -84,9 +86,17 @@ export default function AdminUsersPage() {
     return (
       <AdminProtectedRoute>
         <AdminLayout title="Manage Users">
-          <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-white/[0.08]">
+              <div className="h-4 w-48 rounded-lg bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+            </div>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-[#111827]/5 dark:bg-white/5 animate-pulse" />
+              <div key={i} className="flex items-center gap-4 p-4 border-b border-slate-100 dark:border-white/[0.06]">
+                <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-3 w-32 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+                <div className="h-3 w-24 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse ml-auto" />
+                <div className="h-3 w-16 rounded bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
+              </div>
             ))}
           </div>
         </AdminLayout>

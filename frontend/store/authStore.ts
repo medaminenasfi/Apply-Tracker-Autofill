@@ -213,6 +213,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         localStorage.setItem('user', JSON.stringify(fullUser));
         localStorage.setItem('isAuthenticated', 'true');
 
+        // Set cookie for middleware to detect auth immediately
+        document.cookie = 'isAuthenticated=true; path=/; max-age=604800; SameSite=lax';
+
         // Set state
         set({
           user: fullUser,
@@ -273,6 +276,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
+      // Clear the isAuthenticated cookie
+      document.cookie = 'isAuthenticated=; path=/; max-age=0; SameSite=lax';
       set({ user: null, isAuthenticated: false });
       if (typeof window !== 'undefined') {
         window.location.href = '/';

@@ -5,14 +5,16 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Download, Chrome, ExternalLink, CheckCircle, FileText, Zap, Shield, Globe, Copy, Check, AlertCircle, RefreshCw, HelpCircle, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function ExtensionPage() {
   const [copied, setCopied] = useState(false);
+  const { t } = useTranslation();
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText('chrome://extensions');
     setCopied(true);
-    toast.success('Copied to clipboard!');
+    toast.success(t('extension.copied'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -98,17 +100,17 @@ export default function ExtensionPage() {
   ];
 
   return (
-    <DashboardLayout title="Chrome Extension">
+    <DashboardLayout title={t('extension.title')}>
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Hero Card */}
         <div className="p-8 md:p-10 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-gradient-to-br from-[#2563EB]/5 to-[#7C3AED]/10 dark:from-[#2563EB]/10 dark:to-[#7C3AED]/15 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
           <div className="flex flex-col lg:flex-row items-center gap-8">
             <div className="flex-1 text-center lg:text-left">
               <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-                Download ApplyFlow Chrome Extension
+                {t('extension.heroTitle')}
               </h1>
               <p className="text-lg text-slate-600 dark:text-slate-300 mb-6 max-w-2xl">
-                Autofill job forms, upload your CV, and save applications directly from any job website.
+                {t('extension.heroSubtitle')}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <Button
@@ -118,7 +120,7 @@ export default function ExtensionPage() {
                 >
                   <a href="/downloads/extension.zip" download>
                     <Download className="mr-2 h-5 w-5" />
-                    Download Extension
+                    {t('extension.downloadBtn')}
                   </a>
                 </Button>
                 <Button
@@ -128,7 +130,7 @@ export default function ExtensionPage() {
                   onClick={() => document.getElementById('installation')?.scrollIntoView({ behavior: 'smooth' })}
                 >
                   <HelpCircle className="mr-2 h-5 w-5" />
-                  How to Install
+                  {t('extension.howToInstall')}
                 </Button>
               </div>
             </div>
@@ -142,7 +144,7 @@ export default function ExtensionPage() {
 
         {/* Feature Cards */}
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Powerful Features</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{t('extension.featuresTitle')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {features.map((feature, index) => {
               const FeatureIcon = feature.icon;
@@ -164,7 +166,7 @@ export default function ExtensionPage() {
 
         {/* Installation Steps - Vertical Timeline */}
         <div id="installation">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Installation Steps</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{t('extension.installationTitle')}</h2>
           <div className="p-6 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1220] shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
             <div className="space-y-6">
               {steps.map((step, index) => {
@@ -201,7 +203,7 @@ export default function ExtensionPage() {
 
         {/* Troubleshooting Section */}
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Troubleshooting</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{t('extension.troubleshootingTitle')}</h2>
           <div className="space-y-4">
             {troubleshooting.map((item, index) => {
               const TroubleshootIcon = item.icon;
@@ -227,9 +229,9 @@ export default function ExtensionPage() {
 
         {/* CTA Section */}
         <div className="p-8 md:p-10 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-gradient-to-br from-[#2563EB] to-[#7C3AED] shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)] text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Ready to apply faster?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">{t('extension.ctaTitle')}</h2>
           <p className="text-white/80 mb-6 max-w-xl mx-auto">
-            Download the ApplyFlow Chrome extension and start saving hours on your job applications today.
+            {t('extension.ctaSubtitle')}
           </p>
           <Button
             size="lg"

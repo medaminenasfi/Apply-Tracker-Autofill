@@ -11,7 +11,8 @@ import { Plus, Search, Inbox } from 'lucide-react';
 import { toast } from 'sonner';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
-import { ListSkeleton } from '@/components/ui/skeleton';
+import { KanbanSkeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 export default function ApplicantPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,6 +21,7 @@ export default function ApplicantPage() {
   const { user } = useAuth();
   const { setLoading } = useLoadingStore();
   const { collapseSidebar } = useSidebarStore();
+  const { t } = useTranslation();
   const hasCollapsed = useRef(false);
 
   // Collapse sidebar on mount for more board space (deferred to avoid router initialization issues)
@@ -37,10 +39,10 @@ export default function ApplicantPage() {
     if (user) {
       withLoader(() => fetchApplications(), setLoading)
         .then(() => {
-          toast.success('Applications loaded successfully');
+          toast.success(t('applications.loadSuccess'));
         })
         .catch(() => {
-          toast.error('Failed to load applications');
+          toast.error(t('applications.loadError'));
         });
     }
   }, [user, fetchApplications, setLoading]);
@@ -58,22 +60,22 @@ export default function ApplicantPage() {
   // Show skeleton if not fetched yet
   if (!hasFetched) {
     return (
-      <DashboardLayout title="Applications">
+      <DashboardLayout title={t('applications.title')}>
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Applications</h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Track and manage your job applications</p>
+              <h1 className="text-2xl font-bold tracking-tight">{t('applications.title')}</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('applications.trackDesc')}</p>
             </div>
             <button
               onClick={() => setIsModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25 transition-all duration-300"
             >
               <Plus className="w-4 h-4" />
-              Add Application
+              {t('applications.addNew')}
             </button>
           </div>
-          <ListSkeleton count={6} />
+          <KanbanSkeleton />
         </div>
       </DashboardLayout>
     );
@@ -84,12 +86,12 @@ export default function ApplicantPage() {
   }
 
   return (
-    <DashboardLayout title="Applications">
+    <DashboardLayout title={t('applications.title')}>
       <div className="space-y-6">
         {/* Header row: Title + Count | Add Button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Applications</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{t('applications.title')}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               {filteredApplications.length} application{filteredApplications.length !== 1 ? 's' : ''} tracked
             </p>
@@ -99,7 +101,7 @@ export default function ApplicantPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search applications..."
+            placeholder={t('applications.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-4 py-3 text-sm rounded-2xl border border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40 transition-all"
@@ -111,7 +113,7 @@ export default function ApplicantPage() {
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] hover:shadow-lg hover:shadow-[#2563EB]/25 hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
-            Add Application
+            {t('applications.addNew')}
           </button>
         </div>
 
@@ -123,9 +125,9 @@ export default function ApplicantPage() {
               <div className="w-16 h-16 rounded-2xl bg-[#2563EB]/10 dark:bg-[#2563EB]/15 flex items-center justify-center mb-4">
                 <Inbox className="w-7 h-7 text-[#2563EB]" />
               </div>
-              <h3 className="text-lg font-semibold mb-1">No applications found</h3>
+              <h3 className="text-lg font-semibold mb-1">{t('applications.noApps')}</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 max-w-sm">
-                {searchQuery ? 'Try adjusting your search.' : 'Start tracking your job applications by adding your first one.'}
+                {searchQuery ? t('applications.trySearch') : t('applications.noAppsDesc')}
               </p>
               {!searchQuery && (
                 <button
@@ -133,7 +135,7 @@ export default function ApplicantPage() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl border border-slate-200 dark:border-white/[0.08] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  Add your first application
+                  {t('applications.addFirst')}
                 </button>
               )}
             </div>

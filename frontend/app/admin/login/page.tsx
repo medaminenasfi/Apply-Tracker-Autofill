@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminApi } from '@/services/api';
+import { ButtonSpinner } from '@/components/ui/AppLoader';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Shield, AlertCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
+import { adminApi } from '@/services/api';
 import Link from 'next/link';
 
 export default function AdminLoginPage() {
@@ -15,6 +18,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const { t } = useTranslation();
 
   const setAdmin = useAuthStore((state) => state.setAdmin);
 
@@ -27,18 +31,17 @@ export default function AdminLoginPage() {
       const response = await adminApi.post('/auth/login', { email, password });
 
       if (response.data.user.role !== 'admin') {
-        setError('Access denied. Admin role required.');
-        toast.error('Unauthorized access');
+        toast.error(t('admin.login.accessDenied'));
         return;
       }
 
       setAdmin(response.data.user);
-      toast.success('Admin login successful');
+      toast.success(t('admin.login.loginSuccess'));
       router.push('/admin/dashboard');
     } catch (err: any) {
       const message = err.response?.data?.message || 'Login failed. Please check your credentials.';
       setError(message);
-      toast.error(message);
+      toast.error(t('admin.login.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -53,7 +56,7 @@ export default function AdminLoginPage() {
           className="inline-flex items-center gap-2 text-sm text-[#111827]/60 dark:text-[#E5E7EB]/50 hover:text-[#2563EB] dark:hover:text-[#3B82F6] transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Home
+          {t('admin.login.backToHome')}
         </Link>
 
         {/* Login Card */}
@@ -63,9 +66,11 @@ export default function AdminLoginPage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2563EB] to-[#7C3AED] shadow-lg">
               <Shield className="h-7 w-7 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">Admin Login</h1>
-            <p className="text-sm text-[#111827]/50 dark:text-[#E5E7EB]/40 mt-2">
-              Enter your admin credentials to access the panel
+            <h1 className="text-2xl font-bold tracking-tight">
+              {t('admin.login.title')}
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {t('admin.login.subtitle')}
             </p>
           </div>
 
@@ -79,8 +84,8 @@ export default function AdminLoginPage() {
             )}
             
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-[#111827] dark:text-[#E5E7EB]">
-                Email
+              <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t('auth.email')}
               </label>
               <input
                 id="email"
@@ -94,8 +99,8 @@ export default function AdminLoginPage() {
             </div>
             
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-[#111827] dark:text-[#E5E7EB]">
-                Password
+              <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <input
@@ -122,14 +127,21 @@ export default function AdminLoginPage() {
               disabled={loading}
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl bg-gradient-to-r from-[#2563EB] to-[#7C3AED] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? (
+                <>
+                  <ButtonSpinner />
+                  {t('admin.login.loggingIn')}
+                </>
+              ) : (
+                t('admin.login.loginButton')
+              )}
             </button>
           </form>
         </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-[#111827]/30 dark:text-[#E5E7EB]/30 mt-6">
-          Protected by ApplyFlow Security
+          {t('admin.login.securityNote')}
         </p>
       </div>
     </div>
