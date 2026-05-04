@@ -1,7 +1,5 @@
-import { Controller, Get, Delete, Param, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Delete, Param, Post, Body, UseGuards, ForbiddenException, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
 import { AdminService } from './admin.service';
 import { UsersService } from '../users/users.service';
 
@@ -27,37 +25,47 @@ export class AdminController {
   }
 
   @Get('users')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
-  async getAllUsers() {
+  @UseGuards(AuthGuard('jwt'))
+  async getAllUsers(@Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.adminService.getAllUsers();
   }
 
   @Get('applications')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
-  async getAllApplications() {
+  @UseGuards(AuthGuard('jwt'))
+  async getAllApplications(@Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.adminService.getAllApplications();
   }
 
   @Get('stats')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
-  async getStats() {
+  @UseGuards(AuthGuard('jwt'))
+  async getStats(@Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.adminService.getStats();
   }
 
   @Delete('users/:id')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
-  async deleteUser(@Param('id') id: string) {
+  @UseGuards(AuthGuard('jwt'))
+  async deleteUser(@Param('id') id: string, @Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.adminService.deleteUser(id);
   }
 
   @Delete('applications/:id')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('admin')
-  async deleteApplication(@Param('id') id: string) {
+  @UseGuards(AuthGuard('jwt'))
+  async deleteApplication(@Param('id') id: string, @Request() req: any) {
+    if (req.user?.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
     return this.adminService.deleteApplication(id);
   }
 }
