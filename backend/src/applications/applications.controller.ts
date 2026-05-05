@@ -4,7 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
-import { UpdateApplicationDto } from './dto/update-application.dto';
+import { UpdateApplicationDto } from './dto/update-application-input.dto';
 import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('applications')
