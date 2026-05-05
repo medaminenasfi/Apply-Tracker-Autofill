@@ -21,6 +21,10 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Debug: Check dist content
+RUN ls -la /app/dist/applications/dto || echo "DTO directory not found"
+RUN find /app/dist/applications -maxdepth 3 -type f -name "*.js" | head -20
+
 # Stage 3: Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
