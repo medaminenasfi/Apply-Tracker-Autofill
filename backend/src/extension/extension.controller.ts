@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ExtensionService } from './extension.service';
-import { SaveApplicationDto } from './dto/save-application.dto';
+import { SaveApplicationDto } from './dto';
 import { normalizeUserId } from '../common/utils/userId.util';
 
 @Controller('extension')

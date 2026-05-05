@@ -2,8 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Feedback, FeedbackDocument, FeedbackStatus } from './schemas/feedback.schema';
-import { CreateFeedbackDto } from './dto/create-feedback.dto';
-import { UpdateFeedbackDto } from './dto/update-feedback.dto';
+import { CreateFeedbackDto, UpdateFeedbackDto } from './dto';
 import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()

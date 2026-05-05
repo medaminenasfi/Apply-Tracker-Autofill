@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Application, ApplicationDocument } from './schemas/application.schema';
-import { CreateApplicationDto } from './dto/create-application.dto';
+import { CreateApplicationDto } from './dto';
 import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()
