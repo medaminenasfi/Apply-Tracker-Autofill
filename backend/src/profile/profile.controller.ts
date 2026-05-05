@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ProfileService } from './profile.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateProfileDto } from './dto';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';

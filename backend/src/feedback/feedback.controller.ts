@@ -16,9 +16,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { FeedbackService } from './feedback.service';
-import { CreateFeedbackDto } from './dto/create-feedback.dto';
-import { UpdateFeedbackDto } from './dto/update-feedback.dto';
-
+import { CreateFeedbackDto, UpdateFeedbackDto } from './dto';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
