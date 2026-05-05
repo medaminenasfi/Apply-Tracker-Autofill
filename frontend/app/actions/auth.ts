@@ -5,11 +5,12 @@ import { cookies } from 'next/headers';
 export async function setAuthCookie(token: string, role: 'user' | 'admin') {
   const cookieStore = await cookies();
   const cookieName = role === 'admin' ? 'admin_token' : 'user_token';
+  const isProduction = process.env.NODE_ENV === 'production';
   
   cookieStore.set(cookieName, token, {
     httpOnly: true,
-    secure: false, // Set to false for development (http)
-    sameSite: 'none', // Required for cross-origin requests
+    secure: isProduction, // true for production (HTTPS), false for development
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
     path: '/',
     maxAge: 7 * 24 * 60 * 60 // 7 days
   });
