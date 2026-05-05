@@ -12,8 +12,22 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.register(registerDto);
+    
+    // Set cookie based on user role
+    const cookieName = result.user.role === 'admin' ? 'admin_token' : 'user_token';
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    res.cookie(cookieName, result.access_token, {
+      httpOnly: true,
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    
+    return result;
   }
 
   @UseGuards(AuthGuard('local'))
@@ -23,11 +37,12 @@ export class AuthController {
     
     // Set cookie based on user role
     const cookieName = result.user.role === 'admin' ? 'admin_token' : 'user_token';
+    const isProduction = process.env.NODE_ENV === 'production';
     
     res.cookie(cookieName, result.access_token, {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: false, // dev only
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction, // true for production (HTTPS), false for development
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
