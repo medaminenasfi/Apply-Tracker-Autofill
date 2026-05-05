@@ -1,1 +1,1 @@
-export { SaveApplicationDto } from './save-application.dto';
+export { SaveApplicationDto } from './save-application.dto.js';
