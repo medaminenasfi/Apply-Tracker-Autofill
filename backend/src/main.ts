@@ -100,7 +100,8 @@ async function bootstrap() {
 
       if (
         allowedOrigins.includes(origin) ||
-        origin.endsWith('.vercel.app')
+        origin.endsWith('.vercel.app') ||
+        origin.startsWith('chrome-extension://')
       ) {
         return callback(null, true);
       }

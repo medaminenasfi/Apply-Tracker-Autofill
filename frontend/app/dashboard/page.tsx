@@ -61,6 +61,24 @@ function countThisWeek(applications: Application[]) {
   return applications.filter((a) => new Date(a.createdAt).getTime() >= weekAgo).length;
 }
 
+// ── Helper: calculate profile completion ──
+function calculateProfileCompletion(user: any) {
+  if (!user) return 0;
+  let completed = 0;
+  let total = 8;
+  
+  if (user.firstName) completed++;
+  if (user.lastName) completed++;
+  if (user.phone || user.countryCode) completed++;
+  if (user.cvUrl) completed++;
+  if (user.linkedin) completed++;
+  if (user.portfolio) completed++;
+  if (user.university) completed++;
+  if (user.email) completed++;
+  
+  return Math.round((completed / total) * 100);
+}
+
 // ── Recent activity helper ──
 function getRecentActivity(applications: Application[]) {
   const sorted = [...applications].sort(
@@ -140,6 +158,7 @@ export default function DashboardPage() {
   const recentActivity = useMemo(() => getRecentActivity(applications), [applications]);
   const successRate = stats.total > 0 ? Math.round((stats.accepted / stats.total) * 100) : 0;
   const interviewRate = stats.total > 0 ? Math.round((stats.interview / stats.total) * 100) : 0;
+  const profileCompletion = useMemo(() => calculateProfileCompletion(user), [user]);
 
   if (!user) return null;
 
@@ -223,6 +242,18 @@ export default function DashboardPage() {
     },
   ];
 
+  // ── Profile completion card config ──
+  const profileCompletionCard = {
+    label: 'Profile Completion',
+    value: `${profileCompletion}%`,
+    icon: UserCheck,
+    bg: 'bg-[#EC4899]/10 dark:bg-[#EC4899]/15',
+    iconBg: 'bg-gradient-to-br from-[#EC4899] to-[#8B5CF6]',
+    textColor: 'text-[#EC4899] dark:text-[#F472B6]',
+    sub: profileCompletion < 100 ? 'Complete your profile' : 'Fully completed',
+    onClick: () => router.push('/profile'),
+  };
+
   return (
     <>
       <DashboardLayout>
@@ -238,7 +269,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Row 1: Stats ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {statCards.map((stat) => {
               const Icon = stat.icon;
               return (
@@ -259,6 +290,28 @@ export default function DashboardPage() {
                 </div>
               );
             })}
+            {/* Profile Completion Card */}
+            <div
+              onClick={profileCompletionCard.onClick}
+              className={`p-5 rounded-2xl border border-transparent ${profileCompletionCard.bg} hover:-translate-y-0.5 hover:shadow-lg cursor-pointer transition-all duration-300`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{profileCompletionCard.label}</p>
+                  <p className={`text-3xl font-bold mt-1.5 ${profileCompletionCard.textColor}`}>{profileCompletionCard.value}</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{profileCompletionCard.sub}</p>
+                </div>
+                <div className={`p-2.5 rounded-xl shadow-lg ${profileCompletionCard.iconBg}`}>
+                  <UserCheck className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <div className="mt-3 h-1.5 rounded-full bg-slate-200 dark:bg-white/[0.10] overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-[#EC4899] to-[#8B5CF6] transition-all duration-500"
+                  style={{ width: `${profileCompletion}%` }}
+                />
+              </div>
+            </div>
           </div>
 
           {/* ── Row 2: Insights ── */}
