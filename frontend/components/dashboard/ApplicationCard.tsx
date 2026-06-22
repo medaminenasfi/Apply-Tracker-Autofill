@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { Info, Edit, Check, Trash2, MessageSquare, Plus, MoreHorizontal, Send, CalendarClock, CheckCircle2, XCircle, Clock, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApplicationStore } from '@/store/applicationStore';
+import { EditApplicationModal } from '@/components/dashboard/EditApplicationModal';
 import { toast } from 'sonner';
 
 interface ApplicationCardProps {
@@ -30,6 +31,7 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
   });
 
   const [showDetails, setShowDetails] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [editingNoteIndex, setEditingNoteIndex] = useState<number | null>(null);
@@ -37,7 +39,7 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
   const [noteText, setNoteText] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
 
-  const { updateApplication, fetchNotes, addNote, updateNoteById, deleteNoteById, getNotesByApplication } = useApplicationStore();
+  const { updateApplication, deleteApplication, fetchNotes, addNote, updateNoteById, deleteNoteById, getNotesByApplication } = useApplicationStore();
 
   const [localApplication, setLocalApplication] = useState(application);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -153,6 +155,21 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
     }
   };
 
+  const handleDeleteApplication = async () => {
+    if (!confirm(`Delete application for ${application.companyName}?`)) return;
+    try {
+      await deleteApplication(application._id);
+      setShowDetails(false);
+      toast.success('Application deleted');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete application');
+    }
+  };
+
+  const deadlineLabel = application.deadline
+    ? format(new Date(application.deadline), 'MMM d, yyyy')
+    : null;
+
   return (
     <>
       <motion.div
@@ -195,9 +212,17 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
 
             {/* Status badge + time + source */}
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <Clock className="w-3 h-3" />
-                {timeAgo}
+              <div className="flex flex-col gap-0.5 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
+                  {timeAgo}
+                </div>
+                {deadlineLabel && (
+                  <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                    <CalendarClock className="w-3 h-3" />
+                    Due {deadlineLabel}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1.5">
                 <SourceBadge source={application.source as 'manual' | 'extension'} />
@@ -297,7 +322,15 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
                       : 'Not set'}
                   </span>
                 </div>
-                {application.jobUrl && application.jobUrl.trim() !== '' && (
+                {application.deadline && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Deadline</span>
+                    <span className="text-sm text-slate-900 dark:text-slate-200">
+                      {format(new Date(application.deadline), 'PP')}
+                    </span>
+                  </div>
+                )}
+                {application.jobUrl && (
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03]">
                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Job URL</span>
                     <a href={application.jobUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-[#2563EB] hover:underline break-all truncate">
@@ -322,13 +355,19 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
+                  onClick={() => { setShowDetails(false); setShowEditModal(true); }}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+                >
+                  Edit
+                </button>
+                <button
                   onClick={() => { setShowDetails(false); setShowNotesDialog(true); }}
                   className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
                 >
-                  Add Note
+                  Notes
                 </button>
                 <button
-                  onClick={() => { setShowDetails(false); }}
+                  onClick={handleDeleteApplication}
                   className="flex-1 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-500/20 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                   Delete
@@ -338,6 +377,12 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
           </div>
         </div>
       )}
+
+      <EditApplicationModal
+        application={application}
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+      />
 
       {/* ── Notes Modal ── */}
       {showNotesDialog && (

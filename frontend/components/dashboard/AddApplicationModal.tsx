@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApplicationSchema, ApplicationFormData } from '@/lib/validators';
+import { ApplicationCreateSchema, ApplicationCreateFormData } from '@/lib/validators';
 import { useApplicationStore } from '@/store/applicationStore';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -43,51 +43,59 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
   const { addApplication, fetchApplications } = useApplicationStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<ApplicationFormData>({
-    resolver: zodResolver(ApplicationSchema),
+  const form = useForm<ApplicationCreateFormData>({
+    resolver: zodResolver(ApplicationCreateSchema),
     defaultValues: {
       company: '',
       position: '',
       url: '',
       dateApplied: new Date().toISOString().split('T')[0],
+      deadline: '',
       note: '',
       status: 'applied',
+      source: 'manual',
     },
   });
 
-  const onSubmit = async (data: ApplicationFormData) => {
+  const onSubmit = async (data: ApplicationCreateFormData) => {
     if (!user) return;
 
-    console.log('[ADD_APPLICATION_MODAL] Submitting application...');
     setIsSubmitting(true);
     try {
-      const applicationData: any = {
+      await addApplication({
         companyName: data.company,
         position: data.position,
+        jobUrl: data.url,
         dateApplied: data.dateApplied,
+        deadline: data.deadline || undefined,
         status: data.status,
-      };
+        source: data.source,
+        note: data.note,
+      });
 
-      if (data.url) {
-        applicationData.jobUrl = data.url;
-      }
-
-      if (data.note) {
-        applicationData.note = data.note;
-      }
-
-      console.log('[ADD_APPLICATION_MODAL] Calling addApplication with data=', applicationData);
-      await addApplication(applicationData);
-
-      console.log('[ADD_APPLICATION_MODAL] Refetching applications to sync state...');
       await fetchApplications();
-
       toast.success('Application added successfully!');
-      form.reset();
+      form.reset({
+        company: '',
+        position: '',
+        url: '',
+        dateApplied: new Date().toISOString().split('T')[0],
+        deadline: '',
+        note: '',
+        status: 'applied',
+        source: 'manual',
+      });
       onOpenChange(false);
     } catch (error: any) {
-      console.error('[ADD_APPLICATION_MODAL] Error:', error);
-      toast.error(error.response?.data?.message || error.message || 'Failed to add application');
+      const apiMessage = error.response?.data?.message;
+      const detail = Array.isArray(apiMessage)
+        ? apiMessage.map((e: { field?: string; constraints?: Record<string, string> }) =>
+            `${e.field}: ${Object.values(e.constraints || {}).join(', ')}`
+          ).join('; ')
+        : typeof apiMessage === 'string'
+          ? apiMessage
+          : error.message;
+      toast.error(detail || 'Failed to add application');
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +118,7 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="company"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-slate-900 dark:text-white">Company Name</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Company Name *</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., Google"
@@ -128,7 +136,7 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="position"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-slate-900 dark:text-white">Position</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Job Title *</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="e.g., Senior Software Engineer"
@@ -146,7 +154,7 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               name="url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-slate-900 dark:text-white">Job URL (Optional)</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Job Link *</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="https://careers.google.com/..."
@@ -160,57 +168,101 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="dateApplied"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-slate-900 dark:text-white">Date Applied</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-slate-900 dark:text-white">Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="dateApplied"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-900 dark:text-white">Date Applied *</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40">
-                        <SelectValue />
-                      </SelectTrigger>
+                      <Input
+                        type="date"
+                        className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
+                        {...field}
+                      />
                     </FormControl>
-                    <SelectContent className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-slate-900">
-                      <SelectItem value="applied">Applied</SelectItem>
-                      <SelectItem value="interview">Interview</SelectItem>
-                      <SelectItem value="accepted">Accepted</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="deadline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-900 dark:text-white">Deadline</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-900 dark:text-white">Status *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-slate-900">
+                        <SelectItem value="applied">Applied</SelectItem>
+                        <SelectItem value="interview">Interview</SelectItem>
+                        <SelectItem value="accepted">Accepted</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-slate-900 dark:text-white">Source</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-slate-900">
+                        <SelectItem value="manual">Manual</SelectItem>
+                        <SelectItem value="extension">Extension</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
               name="note"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-slate-900 dark:text-white">Note (Optional)</FormLabel>
+                  <FormLabel className="text-slate-900 dark:text-white">Notes *</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Add any notes about this application..."
+                      placeholder="Add notes about this application..."
                       className="min-h-20 border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-[#2563EB]/40 focus:border-[#2563EB]/40"
                       {...field}
                     />

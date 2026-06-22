@@ -1,9 +1,9 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare, X } from 'lucide-react';
+import { LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare, X, BookOpen } from 'lucide-react';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +11,7 @@ const navKeys = [
   { href: '/dashboard', key: 'nav.dashboard', icon: LayoutGrid },
   { href: '/applicant', key: 'nav.applications', icon: Briefcase },
   { href: '/profile', key: 'nav.profile', icon: User },
+  { href: '/profile?tab=vault', key: 'nav.answerVault', icon: BookOpen },
   { href: '/feedback', key: 'nav.feedback', icon: MessageSquare },
   { href: '/extension', key: 'nav.extension', icon: Chrome },
   { href: '/settings', key: 'nav.settings', icon: Settings },
@@ -19,6 +20,7 @@ const navKeys = [
 function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
 
   const navItems = navKeys.map(item => ({ ...item, label: t(item.key) }));
@@ -50,7 +52,13 @@ function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavig
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {allNavItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+          const isVaultTab = searchParams.get('tab') === 'vault';
+          const isActive =
+            item.href === '/profile?tab=vault'
+              ? pathname === '/profile' && isVaultTab
+              : item.href === '/profile'
+                ? pathname === '/profile' && !isVaultTab
+                : pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
               key={item.href}

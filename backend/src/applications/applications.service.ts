@@ -1,13 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Application, ApplicationDocument } from './schemas/application.schema';
 import { CreateApplicationDto } from './dto/create-application.dto';
-import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
+import { NotesService } from '../notes/notes.service';
+import { normalizeUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()
 export class ApplicationsService {
-  constructor(@InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>) {}
+  constructor(
+    @InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>,
+    private notesService: NotesService,
+  ) {}
 
   async findAll(): Promise<Application[]> {
     const applications = await this.applicationModel.find().exec();
@@ -56,36 +60,33 @@ export class ApplicationsService {
 
   async create(applicationData: CreateApplicationDto, userId: UserId): Promise<Application> {
     const userIdString = normalizeUserId(userId);
-    console.log('[APPLICATION_CREATE] userId:', userIdString, 'type:', typeof userIdString);
-    console.log('Applications create called with:', applicationData);
-    let dateApplied = applicationData.dateApplied;
+    const { note, ...fields } = applicationData;
 
-    if (dateApplied) {
-      console.log('Original dateApplied:', dateApplied);
-      // If date is in YYYY-MM-DD format, use current local time with that date
-      if (dateApplied.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const now = new Date();
-        const [year, month, day] = dateApplied.split('-').map(Number);
-        // Create date with the provided date and current local time
-        const localDate = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
-        console.log('Local date created:', localDate);
-        dateApplied = localDate.toISOString();
-        console.log('ISO date:', dateApplied);
-      }
-    } else {
-      // Use current UTC time if no date provided
-      dateApplied = new Date().toISOString();
-      console.log('No date provided, using current UTC time:', dateApplied);
+    let dateApplied = fields.dateApplied;
+    if (dateApplied?.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const now = new Date();
+      const [year, month, day] = dateApplied.split('-').map(Number);
+      dateApplied = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+    }
+
+    let deadline: string | Date | undefined = fields.deadline;
+    if (deadline?.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      deadline = new Date(`${deadline}T23:59:59.000Z`);
     }
 
     const application = new this.applicationModel({
-      ...applicationData,
+      ...fields,
       dateApplied,
+      deadline,
+      source: fields.source || 'manual',
       userId: userIdString,
     });
     const result = await application.save();
-    console.log('[APPLICATION_CREATE_SUCCESS] id:', (result as any)._id, 'userId:', result.userId);
-    console.log('Application created with dateApplied:', result.dateApplied);
+
+    if (note?.trim()) {
+      await this.notesService.create(String((result as any)._id), userIdString, note.trim());
+    }
+
     return result;
   }
 
@@ -96,8 +97,21 @@ export class ApplicationsService {
       throw new NotFoundException('Application not found');
     }
 
+    const payload = { ...updateData };
+    if (payload.dateApplied?.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const now = new Date();
+      const [year, month, day] = payload.dateApplied.split('-').map(Number);
+      payload.dateApplied = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+    }
+    if (payload.deadline?.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      payload.deadline = new Date(`${payload.deadline}T23:59:59.000Z`);
+    }
+    if (payload.deadline === '') {
+      payload.deadline = null;
+    }
+
     return this.applicationModel
-      .findOneAndUpdate({ _id: id, userId: userIdString }, { $set: updateData }, { returnDocument: 'after' })
+      .findOneAndUpdate({ _id: id, userId: userIdString }, { $set: payload }, { returnDocument: 'after' })
       .exec();
   }
 

@@ -16,6 +16,7 @@ export class ExtensionService {
     if (!profile) {
       return { message: 'Profile not found' };
     }
+    const cvList = await this.profileService.getCvList(userIdString);
     return {
       firstName: profile.firstName,
       lastName: profile.lastName,
@@ -25,7 +26,9 @@ export class ExtensionService {
       university: profile.university,
       linkedin: profile.linkedin,
       portfolio: profile.portfolio,
-      cvUrl: profile.cvUrl,
+      cvUrl: cvList.cvUrl,
+      primaryCvId: cvList.primaryCvId,
+      cvs: cvList.cvs,
     };
   }
 
@@ -34,16 +37,13 @@ export class ExtensionService {
     console.log('[EXTENSION_SAVE_APP] userId:', userIdString, 'type:', typeof userIdString);
     console.log('Extension saveApplication called with:', applicationData);
     
-    // Filter out empty values for optional fields
     const filteredData: any = {
       companyName: applicationData.companyName,
       position: applicationData.position,
+      jobUrl: (applicationData.jobUrl && applicationData.jobUrl.trim()) || 'https://unknown',
       source: applicationData.source || 'extension',
+      status: 'applied',
     };
-    
-    if (applicationData.jobUrl && applicationData.jobUrl.trim()) {
-      filteredData.jobUrl = applicationData.jobUrl.trim();
-    }
     
     if (applicationData.note && applicationData.note.trim()) {
       filteredData.note = applicationData.note.trim();
@@ -52,29 +52,17 @@ export class ExtensionService {
     let dateApplied = applicationData.dateApplied;
     
     if (dateApplied) {
-      console.log('Original dateApplied:', dateApplied);
-      // If date is in YYYY-MM-DD format, use current local time with that date
       if (dateApplied.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const now = new Date();
         const [year, month, day] = dateApplied.split('-').map(Number);
-        // Create date with the provided date and current local time
-        const localDate = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
-        console.log('Local date created:', localDate);
-        dateApplied = localDate.toISOString();
-        console.log('ISO date:', dateApplied);
+        dateApplied = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
       }
       filteredData.dateApplied = dateApplied;
     } else {
-      // Use current UTC time if no date provided
       filteredData.dateApplied = new Date().toISOString();
-      console.log('No date provided, using current UTC time:', filteredData.dateApplied);
     }
 
-    const result = await this.applicationsService.create({
-      ...filteredData,
-      status: 'applied',
-    }, userIdString);
-    console.log('Application created with dateApplied:', result.dateApplied);
+    const result = await this.applicationsService.create(filteredData, userIdString);
     return result;
   }
 }

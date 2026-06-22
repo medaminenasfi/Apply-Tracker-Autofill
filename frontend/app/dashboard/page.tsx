@@ -70,7 +70,7 @@ function calculateProfileCompletion(user: any) {
   if (user.firstName) completed++;
   if (user.lastName) completed++;
   if (user.phone || user.countryCode) completed++;
-  if (user.cvUrl) completed++;
+  if (user.cvUrl || user.cvs?.length) completed++;
   if (user.linkedin) completed++;
   if (user.portfolio) completed++;
   if (user.university) completed++;

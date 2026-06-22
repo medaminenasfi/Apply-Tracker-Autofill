@@ -255,7 +255,7 @@ async function fetchProfile() {
     await chrome.storage.local.set({ user: data });
     
     // Update CV status from profile
-    updateCvStatus(data.cvUrl);
+    updateCvStatus(data.cvUrl, data.cvs || []);
     
     // Set default date
     dateAppliedInput.value = new Date().toISOString().split('T')[0];
@@ -286,12 +286,12 @@ function extractFilename(url) {
   return filename || "CV file";
 }
 
-function updateCvStatus(cvUrl) {
+function updateCvStatus(cvUrl, cvs = []) {
   const indicator = cvInfo.querySelector('.status-indicator');
   
   if (cvUrl) {
     indicator.classList.add('uploaded');
-    cvText.textContent = 'CV uploaded';
+    cvText.textContent = cvs.length > 1 ? 'Main CV selected' : 'CV uploaded';
     const filename = extractFilename(cvUrl);
     cvFileName.textContent = filename;
     cvActions.classList.remove('hidden');

@@ -22,16 +22,34 @@ export const SignupSchema = z
 
 export type SignupFormData = z.infer<typeof SignupSchema>;
 
-export const ApplicationSchema = z.object({
+export const ApplicationCreateSchema = z.object({
   company: z.string().min(1, 'Company name is required'),
-  position: z.string().min(1, 'Position is required'),
-  url: z.string().url('Invalid URL').optional().or(z.literal('')),
+  position: z.string().min(1, 'Job title is required'),
+  url: z.string().url('Invalid job link URL'),
   dateApplied: z.string().min(1, 'Date applied is required'),
-  note: z.string().optional(),
+  deadline: z.string().optional(),
+  note: z.string().min(1, 'Notes are required'),
   status: z.enum(['applied', 'interview', 'accepted', 'rejected']).default('applied'),
+  source: z.enum(['manual', 'extension']).default('manual'),
 });
 
-export type ApplicationFormData = z.infer<typeof ApplicationSchema>;
+export type ApplicationCreateFormData = z.infer<typeof ApplicationCreateSchema>;
+
+export const ApplicationEditSchema = z.object({
+  company: z.string().min(1, 'Company name is required'),
+  position: z.string().min(1, 'Job title is required'),
+  url: z.string().url('Invalid job link URL'),
+  dateApplied: z.string().min(1, 'Date applied is required'),
+  deadline: z.string().optional(),
+  status: z.enum(['applied', 'interview', 'accepted', 'rejected']),
+});
+
+export type ApplicationEditFormData = z.infer<typeof ApplicationEditSchema>;
+
+/** @deprecated Use ApplicationCreateSchema */
+export const ApplicationSchema = ApplicationCreateSchema;
+/** @deprecated Use ApplicationCreateFormData */
+export type ApplicationFormData = ApplicationCreateFormData;
 
 export const ProfileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),

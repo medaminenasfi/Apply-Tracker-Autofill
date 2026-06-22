@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 import { Sidebar, MobileSidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { useAuthStore } from '@/store/authStore';
@@ -30,10 +30,14 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   return (
     <div className="flex h-screen overflow-x-hidden bg-[#F9FAFB] dark:bg-[#020617] text-[#111827] dark:text-[#E5E7EB]">
       {/* Desktop sidebar */}
-      <Sidebar />
+      <Suspense fallback={<aside className="hidden lg:flex w-[260px] shrink-0 border-r border-[#E5E7EB] dark:border-white/[0.08] bg-white dark:bg-[#020617]" />}>
+        <Sidebar />
+      </Suspense>
 
       {/* Mobile drawer sidebar */}
-      <MobileSidebar />
+      <Suspense fallback={null}>
+        <MobileSidebar />
+      </Suspense>
 
       {/* Main area */}
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">

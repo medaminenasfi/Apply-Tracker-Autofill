@@ -6,10 +6,12 @@ export interface Application {
   userId: string;
   companyName: string;
   position: string;
-  jobUrl?: string;
+  jobUrl: string;
   status: ApplicationStatus;
-  dateApplied?: string;
+  dateApplied: string;
+  deadline?: string;
   source?: ApplicationSource;
+  cvUsed?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +23,23 @@ export interface Note {
   userId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CvDocument {
+  _id: string;
+  label: string;
+  filename: string;
+  url: string;
+  uploadedAt: string;
+  isPrimary: boolean;
+}
+
+export interface CvListResponse {
+  cvs: CvDocument[];
+  primaryCvId: string | null;
+  hasCV: boolean;
+  cvUrl: string | null;
+  filename: string | null;
 }
 
 export interface User {
@@ -36,6 +55,9 @@ export interface User {
   portfolio?: string;
   profilePictureUrl?: string;
   profilePictureUpdatedAt?: number;
+  cvUrl?: string | null;
+  cvs?: CvDocument[];
+  primaryCvId?: string | null;
   role: 'user' | 'admin';
   createdAt: string;
 }

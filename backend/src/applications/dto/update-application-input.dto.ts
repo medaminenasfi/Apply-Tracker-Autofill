@@ -13,7 +13,7 @@ export class UpdateApplicationDto {
   @IsOptional()
   jobUrl?: string;
 
-  @IsEnum(['applied', 'pending', 'interview', 'accepted', 'rejected'])
+  @IsEnum(['applied', 'interview', 'accepted', 'rejected'])
   @IsOptional()
   status?: string;
 
@@ -21,7 +21,15 @@ export class UpdateApplicationDto {
   @IsOptional()
   dateApplied?: string;
 
+  @IsDateString()
+  @IsOptional()
+  deadline?: string;
+
+  @IsEnum(['manual', 'extension'])
+  @IsOptional()
+  source?: string;
+
   @IsString()
   @IsOptional()
-  note?: string;
+  cvUsed?: string;
 }

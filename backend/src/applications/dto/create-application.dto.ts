@@ -1,4 +1,4 @@
-import { IsString, IsUrl, IsOptional, IsEnum, IsDateString, IsArray } from 'class-validator';
+import { IsString, IsUrl, IsOptional, IsEnum, IsDateString } from 'class-validator';
 
 export class CreateApplicationDto {
   @IsString()
@@ -8,16 +8,25 @@ export class CreateApplicationDto {
   position!: string;
 
   @IsUrl({}, { message: 'Invalid URL format' })
-  @IsOptional()
-  jobUrl?: string;
+  jobUrl!: string;
 
   @IsEnum(['applied', 'interview', 'accepted', 'rejected'])
-  @IsOptional()
-  status?: string;
+  status!: string;
+
+  @IsDateString()
+  dateApplied!: string;
 
   @IsDateString()
   @IsOptional()
-  dateApplied?: string;
+  deadline?: string;
+
+  @IsEnum(['manual', 'extension'])
+  @IsOptional()
+  source?: string;
+
+  @IsString()
+  @IsOptional()
+  cvUsed?: string;
 
   @IsString()
   @IsOptional()

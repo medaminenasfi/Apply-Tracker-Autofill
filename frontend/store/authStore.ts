@@ -1,6 +1,46 @@
 import { create } from 'zustand';
-import { User } from '@/types';
+import { User, CvListResponse, CvDocument } from '@/types';
 import api, { adminApi, isTokenExpired } from '@/services/api';
+
+const normalizeCvListResponse = (data: Partial<CvListResponse> & { hasCV?: boolean; cvUrl?: string | null; filename?: string | null }): CvListResponse => {
+  if (Array.isArray(data.cvs)) {
+    return {
+      cvs: data.cvs,
+      primaryCvId: data.primaryCvId ?? null,
+      hasCV: data.hasCV ?? data.cvs.length > 0,
+      cvUrl: data.cvUrl ?? null,
+      filename: data.filename ?? null,
+    };
+  }
+
+  if (data.hasCV && data.cvUrl) {
+    const filename = data.filename || data.cvUrl.split('/').pop() || 'CV.pdf';
+    const legacyCv: CvDocument = {
+      _id: 'primary',
+      label: filename,
+      filename,
+      url: data.cvUrl,
+      uploadedAt: new Date().toISOString(),
+      isPrimary: true,
+    };
+
+    return {
+      cvs: [legacyCv],
+      primaryCvId: 'primary',
+      hasCV: true,
+      cvUrl: data.cvUrl,
+      filename,
+    };
+  }
+
+  return {
+    cvs: [],
+    primaryCvId: null,
+    hasCV: false,
+    cvUrl: null,
+    filename: null,
+  };
+};
 
 let authCheckInterval: NodeJS.Timeout | null = null;
 
@@ -62,10 +102,13 @@ interface AuthState {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   fetchProfile: () => Promise<User>;
-  uploadCV: (file: File) => Promise<string>;
+  uploadCV: (file: File) => Promise<CvListResponse>;
   createAdmin: (email: string, password: string) => Promise<any>;
-  getCV: () => Promise<{ hasCV: boolean; cvUrl: string | null; filename: string | null }>;
-  deleteCV: () => Promise<void>;
+  getCV: () => Promise<CvListResponse>;
+  getCVs: () => Promise<CvListResponse>;
+  deleteCV: (cvId: string) => Promise<CvListResponse>;
+  setPrimaryCv: (cvId: string) => Promise<CvListResponse>;
+  previewCVBlob: (cvId: string) => Promise<string>;
   uploadProfilePicture: (file: File) => Promise<string>;
   deleteProfilePicture: () => Promise<void>;
 }
@@ -418,10 +461,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         lastName: profile.lastName,
         email: profile.email,
         phone: profile.phone,
+        countryCode: profile.countryCode,
         university: profile.university,
         linkedin: profile.linkedin,
         portfolio: profile.portfolio,
         profilePictureUrl: profile.profilePictureUrl,
+        cvUrl: profile.cvUrl,
+        cvs: profile.cvs,
+        primaryCvId: profile.primaryCvId,
         role: currentUser?.role || 'user',
         createdAt: currentUser?.createdAt || '',
       };
@@ -448,16 +495,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const formData = new FormData();
       formData.append('cv', file);
       
-      const response = await api.post('/profile/cv', formData, {
+      const response = await api.post<CvListResponse>('/profile/cv', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      // Refresh profile to get updated CV URL
       await useAuthStore.getState().fetchProfile();
-      
-      return response.data.cvUrl;
+      return normalizeCvListResponse(response.data);
     } catch (error: any) {
       console.error('Failed to upload CV:', error);
       throw new Error(error.response?.data?.message || 'Failed to upload CV');
@@ -481,23 +526,70 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   getCV: async () => {
     try {
       const response = await api.get('/profile/cv');
-      return response.data;
+      return normalizeCvListResponse(response.data);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch CV info');
     }
   },
 
-  deleteCV: async () => {
+  getCVs: async () => {
+    try {
+      const response = await api.get('/profile/cvs');
+      return normalizeCvListResponse(response.data);
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return useAuthStore.getState().getCV();
+      }
+      throw new Error(error.response?.data?.message || 'Failed to fetch CVs');
+    }
+  },
+
+  deleteCV: async (cvId: string) => {
     set({ isLoading: true });
     try {
-      const response = await api.delete('/profile/cv');
-      
-      // Refresh profile to get updated data
+      const endpoint = cvId === 'primary' ? '/profile/cv' : `/profile/cvs/${cvId}`;
+      const response = await api.delete(endpoint);
       await useAuthStore.getState().fetchProfile();
+      return normalizeCvListResponse(response.data);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to delete CV');
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  setPrimaryCv: async (cvId: string) => {
+    if (cvId === 'primary') {
+      return useAuthStore.getState().getCV();
+    }
+
+    set({ isLoading: true });
+    try {
+      const response = await api.patch(`/profile/cvs/${cvId}/primary`);
+      await useAuthStore.getState().fetchProfile();
+      return normalizeCvListResponse(response.data);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to set primary CV');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  previewCVBlob: async (cvId: string) => {
+    try {
+      const endpoint = cvId === 'primary' ? '/profile/cv/preview' : `/profile/cvs/${cvId}/preview`;
+      const response = await api.get(endpoint, {
+        responseType: 'blob',
+      });
+
+      const contentType = response.headers['content-type'] || 'application/pdf';
+      const pdfBlob = new Blob([response.data], {
+        type: contentType.includes('pdf') ? 'application/pdf' : contentType,
+      });
+
+      return URL.createObjectURL(pdfBlob);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to preview CV');
     }
   },
 }));

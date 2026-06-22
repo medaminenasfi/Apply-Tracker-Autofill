@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Delete, UseGuards, Body, UseInterceptors, UploadedFile, BadRequestException, Logger, Param, Res, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Patch, UseGuards, Body, UseInterceptors, UploadedFile, BadRequestException, Logger, Param, Res, NotFoundException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../common/decorators/get-user.decorator';
@@ -9,7 +9,6 @@ import { extname } from 'path';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
-import { join } from 'path';
 import { existsSync, createReadStream } from 'fs';
 import { normalizeUserId } from '../common/utils/userId.util';
 
@@ -47,6 +46,7 @@ export class ProfileController {
     }
     
     // Return profile with new field names, fallback to old ones if needed
+    const cvList = await this.profileService.getCvList(userIdString);
     const response = {
       _id: profile._id,
       userId: profile.userId,
@@ -58,7 +58,9 @@ export class ProfileController {
       university: profile.university,
       linkedin: profile.linkedin || profile.linkedinUrl,
       portfolio: profile.portfolio || profile.portfolioUrl,
-      cvUrl: profile.cvUrl,
+      cvUrl: cvList.cvUrl,
+      cvs: cvList.cvs,
+      primaryCvId: cvList.primaryCvId,
       profilePictureUrl: profile.profilePictureUrl,
       createdAt: profile.createdAt,
       updatedAt: profile.updatedAt,
@@ -81,57 +83,44 @@ export class ProfileController {
     }
   }
 
+  @Get('cvs')
+  async getCvs(@GetUser() user: any) {
+    const userIdString = normalizeUserId(user._id);
+    return this.profileService.getCvList(userIdString);
+  }
+
   @Get('cv')
   async getCv(@GetUser() user: any) {
     const userIdString = normalizeUserId(user._id);
-    const profile = await this.profileService.findByUserId(userIdString);
-    
-    if (!profile || !profile.cvUrl) {
-      return { hasCV: false, cvUrl: null, filename: null };
+    return this.profileService.getCvList(userIdString);
+  }
+
+  @Get('cvs/:id/preview')
+  async previewCvById(@GetUser() user: any, @Param('id') cvId: string, @Res() res: Response) {
+    const userIdString = normalizeUserId(user._id);
+    const cv = await this.profileService.getCvById(userIdString, cvId);
+
+    if (!cv) {
+      throw new NotFoundException('CV not found');
     }
-    
-    // Extract filename from cvUrl
-    const filename = path.basename(profile.cvUrl);
-    return {
-      hasCV: true,
-      cvUrl: profile.cvUrl,
-      filename: filename,
-    };
+
+    return this.streamCvFile(cv.url, cv.filename, res);
   }
 
   @Get('cv/preview')
   async previewCV(@GetUser() user: any, @Res() res: Response) {
     const userIdString = normalizeUserId(user._id);
-    const profile = await this.profileService.findByUserId(userIdString);
-    
-    if (!profile || !profile.cvUrl) {
+    const cvList = await this.profileService.getCvList(userIdString);
+
+    if (!cvList.cvUrl || !cvList.filename) {
       throw new NotFoundException('CV not found');
     }
-    
-    const filePath = path.join(process.cwd(), profile.cvUrl);
-    
-    if (!existsSync(filePath)) {
-      throw new NotFoundException('CV file not found');
-    }
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline');
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Type, Content-Disposition');
-    
-    const fileStream = createReadStream(filePath);
-    fileStream.on('error', (error) => {
-      this.logger.error('Error streaming CV file:', error);
-      if (!res.headersSent) {
-        res.status(500).send('Error streaming file');
-      }
-    });
-    
-    return fileStream.pipe(res);
+
+    return this.streamCvFile(cvList.cvUrl, cvList.filename, res);
   }
 
-  @Get('cv/public-preview/:filename')
-  async previewCVPublic(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = join(process.cwd(), 'uploads', 'cv', filename);
+  private streamCvFile(cvUrl: string, filename: string, res: Response) {
+    const filePath = path.join(process.cwd(), cvUrl);
 
     if (!existsSync(filePath)) {
       throw new NotFoundException('CV file not found');
@@ -139,9 +128,17 @@ export class ProfileController {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Type, Content-Disposition');
 
-    return createReadStream(filePath).pipe(res);
+    const fileStream = createReadStream(filePath);
+    fileStream.on('error', (error) => {
+      this.logger.error('Error streaming CV file:', error);
+      if (!res.headersSent) {
+        res.status(500).send('Error streaming file');
+      }
+    });
+
+    return fileStream.pipe(res);
   }
 
   @Post('cv')
@@ -195,42 +192,55 @@ export class ProfileController {
     }
 
     const userIdString = normalizeUserId(user._id);
+    const cvUrl = `/uploads/cv/${file.filename}`;
+    await this.profileService.addCv(
+      userIdString,
+      {
+        label: file.originalname || file.filename,
+        filename: file.filename,
+        url: cvUrl,
+      },
+      user,
+    );
 
-    // Delete old CV if exists
-    const profile = await this.profileService.findByUserId(userIdString);
-    if (profile && profile.cvUrl) {
-      const oldCvPath = path.join(process.cwd(), profile.cvUrl);
-      if (fs.existsSync(oldCvPath)) {
-        fs.unlinkSync(oldCvPath);
-      }
+    return this.profileService.getCvList(userIdString);
+  }
+
+  @Patch('cvs/:id/primary')
+  async setPrimaryCv(@GetUser() user: any, @Param('id') cvId: string) {
+    const userIdString = normalizeUserId(user._id);
+    await this.profileService.setPrimaryCv(userIdString, cvId);
+    return this.profileService.getCvList(userIdString);
+  }
+
+  @Delete('cvs/:id')
+  async deleteCvById(@GetUser() user: any, @Param('id') cvId: string) {
+    const userIdString = normalizeUserId(user._id);
+    const cv = await this.profileService.getCvById(userIdString, cvId);
+
+    if (!cv) {
+      throw new NotFoundException('CV not found');
     }
 
-    const cvUrl = `/uploads/cv/${file.filename}`;
-    const updatedProfile = await this.profileService.updateCvUrl(userIdString, cvUrl, user);
-    return updatedProfile;
+    const cvPath = path.join(process.cwd(), cv.url);
+    if (fs.existsSync(cvPath)) {
+      fs.unlinkSync(cvPath);
+    }
+
+    await this.profileService.deleteCvById(userIdString, cvId);
+    return this.profileService.getCvList(userIdString);
   }
 
   @Delete('cv')
   async deleteCv(@GetUser() user: any) {
     const userIdString = normalizeUserId(user._id);
-    const profile = await this.profileService.findByUserId(userIdString);
-    if (!profile) {
-      throw new BadRequestException('Profile not found');
-    }
+    const cvList = await this.profileService.getCvList(userIdString);
 
-    if (!profile.cvUrl) {
+    if (!cvList.primaryCvId) {
       throw new BadRequestException('No CV to delete');
     }
 
-    // Delete CV file from uploads/cv
-    const cvPath = path.join(process.cwd(), profile.cvUrl);
-    if (fs.existsSync(cvPath)) {
-      fs.unlinkSync(cvPath);
-    }
-
-    // Remove cvUrl from profile
-    const updatedProfile = await this.profileService.updateCvUrl(userIdString, null);
-    return updatedProfile;
+    return this.deleteCvById(user, cvList.primaryCvId);
   }
 
   @Post('migrate')

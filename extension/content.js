@@ -140,6 +140,8 @@ function setNativeValue(element, value) {
   element.dispatchEvent(new Event("blur", { bubbles: true }));
 }
 
+window.setNativeValue = setNativeValue;
+
 function autofillForm(profile) {
   console.log('Autofill profile:', profile);
   

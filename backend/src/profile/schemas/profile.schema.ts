@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { UserId } from '../../common/utils/userId.util';
+import { CvDocument, CvDocumentSchema } from './cv-document.schema';
 
 export type ProfileDocument = Profile & Document;
 
@@ -43,6 +44,12 @@ export class Profile {
 
   @Prop({ required: false })
   profilePictureUrl?: string;
+
+  @Prop({ type: [CvDocumentSchema], default: [] })
+  cvs?: CvDocument[];
+
+  @Prop({ required: false })
+  primaryCvId?: string;
 
   @Prop({ required: false })
   cvUrl?: string;

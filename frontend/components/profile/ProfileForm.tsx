@@ -25,37 +25,42 @@ import {
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Upload, FileText, Eye, Trash2, User, FileText as FileIcon, Camera, Shield, CheckCircle, AlertCircle } from 'lucide-react';
-import api from '@/services/api';
+import { Upload, FileText, Eye, Trash2, User, FileText as FileIcon, Camera, Shield, Star } from 'lucide-react';
 import { ButtonSpinner } from '@/components/ui/AppLoader';
+import { Badge } from '@/components/ui/badge';
+import { CvDocument, CvListResponse } from '@/types';
+import { FavoriteAnswersPreview } from '@/components/profile/FavoriteAnswersPreview';
 
 export function ProfileForm() {
-  const { user, updateProfile, uploadCV, deleteCV, getCV, uploadProfilePicture, deleteProfilePicture, isLoading } = useAuthStore();
+  const { user, updateProfile, uploadCV, deleteCV, getCV, setPrimaryCv, uploadProfilePicture, deleteProfilePicture, isLoading } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [isUploadingCV, setIsUploadingCV] = useState(false);
   const [isDeletingCV, setIsDeletingCV] = useState(false);
+  const [deletingCvId, setDeletingCvId] = useState<string | null>(null);
+  const [settingPrimaryCvId, setSettingPrimaryCvId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [cvInfo, setCvInfo] = useState<{ hasCV: boolean; cvUrl: string | null; filename: string | null; fileSize?: string; uploadedAt?: string } | null>(null);
+  const [cvToDelete, setCvToDelete] = useState<CvDocument | null>(null);
+  const [cvList, setCvList] = useState<CvListResponse | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLabel, setPreviewLabel] = useState<string>('');
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const [isUploadingProfilePicture, setIsUploadingProfilePicture] = useState(false);
   const [isDeletingProfilePicture, setIsDeletingProfilePicture] = useState(false);
   const [showProfilePictureDeleteDialog, setShowProfilePictureDeleteDialog] = useState(false);
   const [isHoveringAvatar, setIsHoveringAvatar] = useState(false);
 
-  // Fetch CV info on component mount and when user changes
   useEffect(() => {
-    const fetchCVInfo = async () => {
+    const fetchCVList = async () => {
       try {
         const info = await getCV();
-        setCvInfo(info);
+        setCvList(info);
       } catch (error) {
-        console.error('Failed to fetch CV info:', error);
+        console.error('Failed to fetch CV list:', error);
       }
     };
-    fetchCVInfo();
+    fetchCVList();
   }, [getCV, user]);
 
   const form = useForm<ProfileFormData>({
@@ -110,13 +115,10 @@ export function ProfileForm() {
 
     setIsUploadingCV(true);
     try {
-      await uploadCV(cvFile);
+      const info = await uploadCV(cvFile);
       toast.success('CV uploaded successfully!');
       setCvFile(null);
-      
-      // Refresh CV info
-      const info = await getCV();
-      setCvInfo(info);
+      setCvList(info);
     } catch (error: any) {
       console.error('Failed to upload CV:', error);
       const errorMessage = error.message || 'Failed to upload CV';
@@ -127,48 +129,62 @@ export function ProfileForm() {
   };
 
   const handleDeleteCV = async () => {
+    if (!cvToDelete) return;
+
     setIsDeletingCV(true);
+    setDeletingCvId(cvToDelete._id);
     try {
-      await deleteCV();
+      const info = await deleteCV(cvToDelete._id);
       toast.success('CV deleted successfully!');
       setShowDeleteDialog(false);
-      
-      // Refresh CV info
-      const info = await getCV();
-      setCvInfo(info);
+      setCvToDelete(null);
+      setCvList(info);
     } catch (error: any) {
       console.error('Failed to delete CV:', error);
       const errorMessage = error.message || 'Failed to delete CV';
       toast.error(errorMessage);
     } finally {
       setIsDeletingCV(false);
+      setDeletingCvId(null);
     }
   };
 
-  const handlePreviewCV = async () => {
-    if (!cvInfo?.cvUrl) {
-      toast.error('No CV to preview');
-      return;
-    }
-
+  const handleSetPrimaryCv = async (cvId: string) => {
+    setSettingPrimaryCvId(cvId);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      const filename = cvInfo.filename;
-      const previewUrl = `${apiUrl}/profile/cv/public-preview/${filename}`;
-      
-      window.open(previewUrl, '_blank');
-    } catch (error) {
-      console.error('Failed to preview CV:', error);
-      toast.error(`Failed to preview CV: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const info = await setPrimaryCv(cvId);
+      setCvList(info);
+      toast.success('Main CV updated for autofill');
+    } catch (error: any) {
+      console.error('Failed to set primary CV:', error);
+      toast.error(error.message || 'Failed to set main CV');
+    } finally {
+      setSettingPrimaryCvId(null);
     }
+  };
+
+  const handlePreviewCV = (cv: CvDocument) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    setPreviewLabel(cv.label);
+    setPreviewUrl(`${apiUrl}/profile/cv/public-preview/${encodeURIComponent(cv.filename)}`);
+    setPreviewOpen(true);
   };
 
   const handleClosePreview = () => {
-    if (previewUrl) {
+    if (previewUrl?.startsWith('blob:')) {
       URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
     }
+    setPreviewUrl(null);
+    setPreviewLabel('');
     setPreviewOpen(false);
+  };
+
+  const formatUploadedAt = (date: string) => {
+    return new Date(date).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   const getInitials = () => {
@@ -223,7 +239,7 @@ export function ProfileForm() {
     if (user.firstName) completed++;
     if (user.lastName) completed++;
     if (user.phone || user.countryCode) completed++;
-    if (cvInfo?.hasCV) completed++;
+    if (cvList?.hasCV) completed++;
     if (user.linkedin) completed++;
     if (user.portfolio) completed++;
     if (user.university) completed++;
@@ -335,71 +351,103 @@ export function ProfileForm() {
 
         {/* Resume/CV Card */}
         <div className="p-6 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1220] shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
-          <div className="flex items-center gap-3 mb-4">
-            <FileIcon className="w-5 h-5 text-slate-400" />
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Resume/CV</h2>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <FileIcon className="w-5 h-5 text-slate-400" />
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Resume/CV</h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById('cv-input')?.click()}
+              className="border-slate-200 dark:border-white/[0.10] hover:bg-slate-50 dark:hover:bg-white/[0.05]"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Add CV
+            </Button>
           </div>
 
-          {cvInfo?.hasCV ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.03]">
-                <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-[#2563EB]/10 dark:bg-[#2563EB]/15 flex items-center justify-center shrink-0">
-                    <FileText className="h-6 w-6 text-[#2563EB]" />
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+            Upload multiple CVs and choose one as your main CV for autofill.
+          </p>
+
+          {cvList?.cvs?.length ? (
+            <div className="space-y-3">
+              {cvList.cvs.map((cv) => (
+                <div
+                  key={cv._id}
+                  className={`p-4 rounded-xl border bg-slate-50 dark:bg-white/[0.03] ${
+                    cv.isPrimary
+                      ? 'border-[#2563EB]/40 dark:border-[#2563EB]/30'
+                      : 'border-slate-200 dark:border-white/[0.08]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-[#2563EB]/10 dark:bg-[#2563EB]/15 flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-[#2563EB]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-slate-900 dark:text-white truncate">{cv.label}</p>
+                        {cv.isPrimary && (
+                          <Badge className="bg-[#2563EB]/10 text-[#2563EB] border-[#2563EB]/20 hover:bg-[#2563EB]/10">
+                            <Star className="h-3 w-3 mr-1 fill-current" />
+                            Main CV
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        PDF • {formatUploadedAt(cv.uploadedAt)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 dark:text-white truncate">{cvInfo.filename}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">PDF Document</p>
-                    {cvInfo.fileSize && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500">{cvInfo.fileSize}</p>
+
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePreviewCV(cv)}
+                      className="border-slate-200 dark:border-white/[0.10] hover:bg-slate-50 dark:hover:bg-white/[0.05]"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview
+                    </Button>
+                    {!cv.isPrimary && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSetPrimaryCv(cv._id)}
+                        disabled={settingPrimaryCvId === cv._id}
+                        className="border-slate-200 dark:border-white/[0.10] hover:bg-slate-50 dark:hover:bg-white/[0.05]"
+                      >
+                        {settingPrimaryCvId === cv._id ? <><ButtonSpinner /> Setting...</> : 'Set as Main'}
+                      </Button>
                     )}
-                    {cvInfo.uploadedAt && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500">{cvInfo.uploadedAt}</p>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCvToDelete(cv);
+                        setShowDeleteDialog(true);
+                      }}
+                      disabled={deletingCvId === cv._id}
+                      className="border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviewCV}
-                  className="flex-1 border-slate-200 dark:border-white/[0.10] hover:bg-slate-50 dark:hover:bg-white/[0.05]"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('cv-input')?.click()}
-                  className="flex-1 border-slate-200 dark:border-white/[0.10] hover:bg-slate-50 dark:hover:bg-white/[0.05]"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Replace
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDeleteDialog(true)}
-                  disabled={isDeletingCV}
-                  className="border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div 
-                className="border-2 border-dashed border-slate-300 dark:border-white/[0.12] rounded-xl p-6 text-center cursor-pointer hover:border-[#2563EB] dark:hover:border-[#2563EB]/50 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all"
-                onClick={() => document.getElementById('cv-input')?.click()}
-              >
-                <FileText className="h-10 w-10 mx-auto text-slate-400 dark:text-slate-500 mb-3" />
-                <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">Upload your CV</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">PDF only, max 5MB</p>
-              </div>
+            <div
+              className="border-2 border-dashed border-slate-300 dark:border-white/[0.12] rounded-xl p-6 text-center cursor-pointer hover:border-[#2563EB] dark:hover:border-[#2563EB]/50 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all"
+              onClick={() => document.getElementById('cv-input')?.click()}
+            >
+              <FileText className="h-10 w-10 mx-auto text-slate-400 dark:text-slate-500 mb-3" />
+              <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">Upload your first CV</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">PDF only, max 5MB</p>
             </div>
           )}
           
@@ -585,15 +633,20 @@ export function ProfileForm() {
             </form>
           </Form>
         </div>
+
+        <FavoriteAnswersPreview />
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => {
+        setShowDeleteDialog(open);
+        if (!open) setCvToDelete(null);
+      }}>
         <DialogContent className="rounded-2xl border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1220]">
           <DialogHeader>
             <DialogTitle className="text-slate-900 dark:text-white">Delete CV</DialogTitle>
             <DialogDescription className="text-slate-500 dark:text-slate-400">
-              Are you sure you want to delete your CV? This action cannot be undone.
+              Are you sure you want to delete &quot;{cvToDelete?.label}&quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -640,23 +693,36 @@ export function ProfileForm() {
       </Dialog>
 
       {/* CV Preview Modal */}
-      <Dialog open={previewOpen} onOpenChange={handleClosePreview}>
-        <DialogContent className="max-w-4xl h-[80vh] rounded-2xl border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1220]">
+      <Dialog
+        open={previewOpen}
+        onOpenChange={(open) => {
+          if (!open) handleClosePreview();
+        }}
+      >
+        <DialogContent className="max-w-5xl w-[95vw] h-[85vh] rounded-2xl border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1220] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-slate-900 dark:text-white">CV Preview</DialogTitle>
             <DialogDescription className="text-slate-500 dark:text-slate-400">
-              Preview your uploaded CV
+              {previewLabel || 'Preview your CV'}
             </DialogDescription>
           </DialogHeader>
-          {previewUrl && (
-            <iframe 
-              src={previewUrl} 
-              className="w-full h-[calc(80vh-8rem)] border border-slate-200 dark:border-white/[0.08] rounded-xl"
-              title="CV Preview"
-            />
-          )}
+          <div className="flex-1 min-h-0 rounded-xl border border-slate-200 dark:border-white/[0.08] overflow-hidden bg-slate-100 dark:bg-white/[0.03]">
+            {previewUrl ? (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full min-h-[60vh]"
+                title="CV Preview"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full min-h-[60vh] text-slate-500 dark:text-slate-400">
+                Loading preview...
+              </div>
+            )}
+          </div>
           <DialogFooter>
-            <Button onClick={handleClosePreview} className="border-slate-200 dark:border-white/[0.10] hover:bg-slate-50 dark:hover:bg-white/[0.05]">Close</Button>
+            <Button type="button" variant="outline" onClick={handleClosePreview} className="border-slate-200 dark:border-white/[0.10] hover:bg-slate-50 dark:hover:bg-white/[0.05]">
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

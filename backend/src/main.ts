@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import * as express from 'express';
@@ -76,13 +76,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       exceptionFactory: (errors) => {
-        const messages = errors.map(error => ({
+        const messages = errors.map((error) => ({
           field: error.property,
           constraints: error.constraints,
           value: error.value,
         }));
         console.log('Validation errors:', messages);
-        return new Error(JSON.stringify(messages));
+        return new BadRequestException(messages);
       },
     }),
   );
