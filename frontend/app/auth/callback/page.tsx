@@ -22,8 +22,10 @@ function AuthCallbackContent() {
       // Fetch user profile and set auth state
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
+          'x-app-role': 'user',
         },
+        credentials: 'include',
       })
         .then((res) => res.json())
         .then((user) => {
@@ -45,12 +47,12 @@ function AuthCallbackContent() {
   return <AppLoader variant="fullscreen" text={t('auth.completingSignIn')} />;
 }
 
-export default function LoadingFallback() {
+function LoadingFallback() {
   const { t } = useTranslation();
   return <AppLoader variant="fullscreen" text={t('common.loading')} />;
 }
 
-function AuthCallbackPage() {
+export default function AuthCallbackPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <AuthCallbackContent />

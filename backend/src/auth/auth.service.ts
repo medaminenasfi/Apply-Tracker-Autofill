@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ProfileService } from '../profile/profile.service';
@@ -19,6 +19,14 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
+    const betaMax = parseInt(process.env.BETA_MAX_USERS || '0', 10);
+    if (betaMax > 0) {
+      const totalUsers = await this.usersService.getTotalCount();
+      if (totalUsers >= betaMax) {
+        throw new ForbiddenException(`Beta is full (${betaMax} users). Join the waitlist or contact support.`);
+      }
+    }
+
     const existingUser = await this.usersService.findByEmail(registerDto.email);
     if (existingUser) {
       throw new UnauthorizedException('Email already exists');

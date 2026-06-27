@@ -58,6 +58,7 @@ export function EditApplicationModal({ application, open, onOpenChange }: EditAp
       dateApplied: '',
       deadline: '',
       status: 'applied',
+      cvUsed: '',
     },
   });
 
@@ -70,6 +71,7 @@ export function EditApplicationModal({ application, open, onOpenChange }: EditAp
       dateApplied: toDateInput(application.dateApplied),
       deadline: toDateInput(application.deadline),
       status: application.status,
+      cvUsed: application.cvUsed || '',
     });
   }, [application, open, form]);
 
@@ -84,6 +86,7 @@ export function EditApplicationModal({ application, open, onOpenChange }: EditAp
         jobUrl: data.url,
         dateApplied: data.dateApplied,
         deadline: data.deadline || '',
+        cvUsed: data.cvUsed || '',
       };
 
       await updateApplication(application._id, payload);
@@ -184,6 +187,20 @@ export function EditApplicationModal({ application, open, onOpenChange }: EditAp
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="cvUsed"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CV Used (optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Software-Eng-CV.pdf" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

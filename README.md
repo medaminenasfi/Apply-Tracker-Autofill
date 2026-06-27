@@ -6,6 +6,14 @@
 
 ---
 
+## Documentation
+
+Full project documentation (product, UX, technical, delivery, operations, resume) lives in **[docs/README.md](./docs/README.md)** — including the [V1–V3 master plan](./docs/planning/MASTER_PLAN_V1-V3.md), API reference, checklists, and resume-ready copy.
+
+**Living task tracker:** [TASKS.md](./TASKS.md) — phased implementation tasks with status (✅ done / ⬜ not started).
+
+---
+
 ## Table of contents
 
 1. [What it does](#what-it-does)

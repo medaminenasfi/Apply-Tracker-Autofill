@@ -30,7 +30,8 @@ export const ApplicationCreateSchema = z.object({
   deadline: z.string().optional(),
   note: z.string().min(1, 'Notes are required'),
   status: z.enum(['applied', 'interview', 'accepted', 'rejected']).default('applied'),
-  source: z.enum(['manual', 'extension']).default('manual'),
+  source: z.enum(['manual', 'extension', 'ghost']).default('manual'),
+  cvUsed: z.string().optional(),
 });
 
 export type ApplicationCreateFormData = z.infer<typeof ApplicationCreateSchema>;
@@ -42,6 +43,7 @@ export const ApplicationEditSchema = z.object({
   dateApplied: z.string().min(1, 'Date applied is required'),
   deadline: z.string().optional(),
   status: z.enum(['applied', 'interview', 'accepted', 'rejected']),
+  cvUsed: z.string().optional(),
 });
 
 export type ApplicationEditFormData = z.infer<typeof ApplicationEditSchema>;
@@ -60,6 +62,8 @@ export const ProfileSchema = z.object({
   university: z.string().optional(),
   linkedin: z.string().url('Invalid LinkedIn URL').optional().or(z.literal('')),
   portfolio: z.string().url('Invalid portfolio URL').optional().or(z.literal('')),
+  address: z.string().optional(),
+  skills: z.string().optional(),
 });
 
 export type ProfileFormData = z.infer<typeof ProfileSchema>;

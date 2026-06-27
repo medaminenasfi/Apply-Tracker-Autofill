@@ -1,16 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Application, ApplicationDocument } from './schemas/application.schema';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { NotesService } from '../notes/notes.service';
 import { normalizeUserId, UserId } from '../common/utils/userId.util';
+import { UsersService } from '../users/users.service';
+
+const FREE_PLAN_APPLICATION_LIMIT = 20;
 
 @Injectable()
 export class ApplicationsService {
   constructor(
     @InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>,
     private notesService: NotesService,
+    private usersService: UsersService,
   ) {}
 
   async findAll(): Promise<Application[]> {
@@ -58,8 +62,16 @@ export class ApplicationsService {
     return this.applicationModel.findOne({ _id: id, userId: userIdString }).exec();
   }
 
+  async findByJobUrl(userId: UserId, jobUrl: string): Promise<Application | null> {
+    const userIdString = normalizeUserId(userId);
+    const normalized = jobUrl.trim();
+    if (!normalized) return null;
+    return this.applicationModel.findOne({ userId: userIdString, jobUrl: normalized }).exec();
+  }
+
   async create(applicationData: CreateApplicationDto, userId: UserId): Promise<Application> {
     const userIdString = normalizeUserId(userId);
+    await this.assertCanCreateApplication(userIdString);
     const { note, ...fields } = applicationData;
 
     let dateApplied = fields.dateApplied;
@@ -154,5 +166,21 @@ export class ApplicationsService {
 
   async getTotalCount(): Promise<number> {
     return this.applicationModel.countDocuments().exec();
+  }
+
+  async countByUserId(userId: UserId): Promise<number> {
+    return this.applicationModel.countDocuments({ userId: normalizeUserId(userId) }).exec();
+  }
+
+  private async assertCanCreateApplication(userId: string) {
+    const plan = await this.usersService.getPlan(userId);
+    if (plan !== 'free') return;
+
+    const count = await this.countByUserId(userId);
+    if (count >= FREE_PLAN_APPLICATION_LIMIT) {
+      throw new ForbiddenException(
+        `Free plan limit reached (${FREE_PLAN_APPLICATION_LIMIT} applications). Upgrade to Pro for unlimited tracking.`,
+      );
+    }
   }
 }

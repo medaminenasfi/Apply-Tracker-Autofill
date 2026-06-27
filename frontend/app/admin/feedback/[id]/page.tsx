@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Clock, FileText, Send, Star, X, ZoomIn, CheckCircle } from 'lucide-react';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
 import { toast } from 'sonner';
+import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { AdminLayout } from '@/components/AdminLayout';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
@@ -94,7 +95,8 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
 
   if (isFetching) {
     return (
-      <AdminLayout title={t('admin.feedback.detailsTitle')}>
+      <AdminProtectedRoute>
+        <AdminLayout title={t('admin.feedback.detailsTitle')}>
         <div className="space-y-4">
           <div className="h-8 w-32 rounded-lg bg-slate-100 dark:bg-white/[0.06] animate-pulse" />
           <div className="p-6 rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] space-y-4">
@@ -105,13 +107,15 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
       </AdminLayout>
+      </AdminProtectedRoute>
     );
   }
 
   if (!feedback) return null;
 
   return (
-    <AdminLayout title="Feedback Details">
+    <AdminProtectedRoute>
+      <AdminLayout title="Feedback Details">
       <div className="space-y-4">
         {/* Back Link */}
         <Link
@@ -260,5 +264,6 @@ export default function AdminFeedbackDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
     </AdminLayout>
+    </AdminProtectedRoute>
   );
 }

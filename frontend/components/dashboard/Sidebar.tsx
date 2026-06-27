@@ -3,13 +3,14 @@
 import { useAuth } from '@/hooks/useAuth';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare, X, BookOpen } from 'lucide-react';
+import { LayoutGrid, Briefcase, User, Settings, Shield, Chrome, MessageSquare, X, BookOpen, Bell } from 'lucide-react';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from 'react-i18next';
 
 const navKeys = [
   { href: '/dashboard', key: 'nav.dashboard', icon: LayoutGrid },
   { href: '/applicant', key: 'nav.applications', icon: Briefcase },
+  { href: '/notifications', key: 'nav.notifications', icon: Bell },
   { href: '/profile', key: 'nav.profile', icon: User },
   { href: '/profile?tab=vault', key: 'nav.answerVault', icon: BookOpen },
   { href: '/feedback', key: 'nav.feedback', icon: MessageSquare },

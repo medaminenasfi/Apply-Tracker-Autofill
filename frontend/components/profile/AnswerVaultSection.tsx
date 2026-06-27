@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAnswerVaultStore } from '@/store/answerVaultStore';
 import { syncVaultToExtension } from '@/lib/answerVault/storage';
-import { PREDEFINED_CATEGORIES, CUSTOM_CATEGORY_LABEL } from '@/lib/answerVault/constants';
+import { PREDEFINED_CATEGORIES, CUSTOM_CATEGORY_LABEL, ROLE_TYPES } from '@/lib/answerVault/constants';
 import type { VaultAnswer } from '@/types/answerVault';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,7 @@ type FormState = {
   customCategory: string;
   content: string;
   favorite: boolean;
+  roleType: string;
 };
 
 const emptyForm: FormState = {
@@ -52,6 +53,7 @@ const emptyForm: FormState = {
   customCategory: '',
   content: '',
   favorite: false,
+  roleType: ROLE_TYPES[0],
 };
 
 function formatDate(date: string) {
@@ -127,6 +129,7 @@ export function AnswerVaultSection() {
       customCategory: isCustom ? answer.category : '',
       content: answer.content,
       favorite: answer.favorite,
+      roleType: answer.roleType || ROLE_TYPES[0],
     });
     setDialogOpen(true);
   };
@@ -146,6 +149,7 @@ export function AnswerVaultSection() {
       category: resolvedCategory,
       content: form.content,
       favorite: form.favorite,
+      roleType: form.roleType,
     };
 
     if (editingAnswer) {
@@ -294,6 +298,9 @@ export function AnswerVaultSection() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-slate-900 dark:text-white">{answer.title}</h3>
                     <Badge variant="outline">{answer.category}</Badge>
+                    {answer.roleType && answer.roleType !== 'General' && (
+                      <Badge variant="secondary">{answer.roleType}</Badge>
+                    )}
                     {answer.favorite && (
                       <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
                         <Star className="h-3 w-3 mr-1 fill-current" />
@@ -388,6 +395,24 @@ export function AnswerVaultSection() {
                 />
               </div>
             )}
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Job type</label>
+              <Select
+                value={form.roleType}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, roleType: value }))}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Select job type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_TYPES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Answer Content</label>
               <Textarea

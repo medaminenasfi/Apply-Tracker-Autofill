@@ -7,6 +7,7 @@ import {
   recordRecentUsage,
   saveVaultAnswers,
 } from '@/lib/answerVault/storage';
+import { answerVaultApi } from '@/services/answerVault';
 
 interface AnswerVaultState {
   answers: VaultAnswer[];
@@ -15,7 +16,9 @@ interface AnswerVaultState {
   categoryFilter: string;
   showFavoritesOnly: boolean;
   initialized: boolean;
-  initialize: () => void;
+  syncEnabled: boolean;
+  initialize: () => Promise<void>;
+  syncToBackend: () => Promise<void>;
   setSearchQuery: (query: string) => void;
   setCategoryFilter: (category: string) => void;
   setShowFavoritesOnly: (value: boolean) => void;
@@ -31,6 +34,17 @@ interface AnswerVaultState {
 
 function persist(answers: VaultAnswer[]) {
   saveVaultAnswers(answers);
+  // Fire-and-forget backend sync when logged in
+  if (typeof window !== 'undefined') {
+    const payload = answers.map(({ title, category, content, favorite, roleType }) => ({
+      title,
+      category,
+      content,
+      favorite,
+      roleType,
+    }));
+    answerVaultApi.sync(payload).catch(() => {});
+  }
 }
 
 export const useAnswerVaultStore = create<AnswerVaultState>((set, get) => ({
@@ -40,14 +54,45 @@ export const useAnswerVaultStore = create<AnswerVaultState>((set, get) => ({
   categoryFilter: 'all',
   showFavoritesOnly: false,
   initialized: false,
+  syncEnabled: true,
 
-  initialize: () => {
+  initialize: async () => {
     if (get().initialized) return;
+    let answers = loadVaultAnswers();
+    try {
+      const remote = await answerVaultApi.list();
+      if (Array.isArray(remote) && remote.length) {
+        answers = remote.map((item: any) => ({
+          id: String(item._id || item.id),
+          title: item.title,
+          category: item.category,
+          content: item.content,
+          favorite: item.favorite ?? false,
+          roleType: item.roleType,
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: item.updatedAt || new Date().toISOString(),
+        }));
+        saveVaultAnswers(answers);
+      } else if (answers.length) {
+        await answerVaultApi.sync(
+          answers.map(({ title, category, content, favorite, roleType }) => ({ title, category, content, favorite, roleType })),
+        );
+      }
+    } catch {
+      /* offline / not logged in — keep local */
+    }
     set({
-      answers: loadVaultAnswers(),
+      answers,
       recent: loadRecentAnswers(),
       initialized: true,
     });
+  },
+
+  syncToBackend: async () => {
+    const { answers } = get();
+    await answerVaultApi.sync(
+      answers.map(({ title, category, content, favorite }) => ({ title, category, content, favorite })),
+    );
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),
@@ -62,6 +107,7 @@ export const useAnswerVaultStore = create<AnswerVaultState>((set, get) => ({
       category: input.category.trim(),
       content: input.content.trim(),
       favorite: input.favorite ?? false,
+      roleType: input.roleType,
       createdAt: now,
       updatedAt: now,
     };
@@ -81,6 +127,7 @@ export const useAnswerVaultStore = create<AnswerVaultState>((set, get) => ({
         category: input.category.trim(),
         content: input.content.trim(),
         favorite: input.favorite ?? answer.favorite,
+        roleType: input.roleType ?? answer.roleType,
         updatedAt: new Date().toISOString(),
       };
       return updated;

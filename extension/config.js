@@ -1,7 +1,7 @@
-// Extension Configuration
-// Update these URLs for different environments
+// ApplyFlow extension — single source for API/frontend URLs
+// Change APPLYFLOW_ENV to 'production' and set production URLs before shipping extension.zip
 
-const config = {
+const APPLYFLOW_CONFIGS = {
   development: {
     FRONTEND_URL: 'http://localhost:3001',
     API_URL: 'http://localhost:3000',
@@ -9,10 +9,21 @@ const config = {
   production: {
     FRONTEND_URL: 'https://your-frontend-domain.com',
     API_URL: 'https://your-api-domain.com',
-  }
+  },
 };
 
-// Set current environment (change 'development' to 'production' for production)
-const ENVIRONMENT = 'development';
+/** @type {'development' | 'production'} */
+const APPLYFLOW_ENV = 'development';
 
-module.exports = config[ENVIRONMENT];
+const APPLYFLOW_CONFIG = APPLYFLOW_CONFIGS[APPLYFLOW_ENV] || APPLYFLOW_CONFIGS.development;
+
+/** Host patterns for auth-content.js (must match manifest content_scripts.matches) */
+const APPLYFLOW_FRONTEND_HOST_PATTERNS = [
+  'localhost:3001',
+  'your-frontend-domain.com',
+  'vercel.app',
+];
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = APPLYFLOW_CONFIG;
+}

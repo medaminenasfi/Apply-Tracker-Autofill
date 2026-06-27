@@ -32,6 +32,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       
       console.log('Debug info:', debugInfo);
       sendResponse({ success: true, jobInfo, debugInfo });
+    } else if (request.action === 'fillAnswers') {
+      fillVaultAnswers(request.answers || []);
+      sendResponse({ success: true });
     } else if (request.action === 'ping') {
       // Ping to check if content script is loaded
       console.log('Ping received');
@@ -97,6 +100,10 @@ const fieldKeywords = {
   ],
   portfolio: [
     'portfolio', 'website', 'site web', 'personal website'
+  ],
+  address: [
+    'address', 'street', 'location', 'city', 'zip', 'postal',
+    'adresse', 'rue', 'ville', 'code postal'
   ]
 };
 
@@ -306,6 +313,18 @@ function autofillForm(profile) {
       { selector: 'input[aria-label*="site web" i]', type: 'url' },
       { selector: 'input[aria-label*="Site web" i]', type: 'url' },
     ],
+    address: [
+      { selector: 'input[name="address"]', type: 'text' },
+      { selector: 'input[name="street"]', type: 'text' },
+      { selector: 'input[name="streetAddress"]', type: 'text' },
+      { selector: 'input[name="street_address"]', type: 'text' },
+      { selector: 'input[id="address"]', type: 'text' },
+      { selector: 'input[placeholder*="address" i]', type: 'text' },
+      { selector: 'input[placeholder*="Address" i]', type: 'text' },
+      { selector: 'input[placeholder*="adresse" i]', type: 'text' },
+      { selector: 'input[aria-label*="address" i]', type: 'text' },
+      { selector: 'input[aria-label*="adresse" i]', type: 'text' },
+    ],
   };
 
   // Get profile values
@@ -316,6 +335,7 @@ function autofillForm(profile) {
     email: profile.email,
     linkedin: profile.linkedin,
     portfolio: profile.portfolio,
+    address: profile.address,
   };
 
   // Try to fill each field using CSS selectors first
@@ -352,6 +372,8 @@ function autofillForm(profile) {
     { label: 'Email', value: profile.email },
     { label: 'LinkedIn', value: profile.linkedin },
     { label: 'Portfolio', value: profile.portfolio },
+    { label: 'Address', value: profile.address },
+    { label: 'Adresse', value: profile.address },
   ];
 
   for (const mapping of labelMappings) {
@@ -359,6 +381,8 @@ function autofillForm(profile) {
       fillByLabel(mapping.label, mapping.value, filledFields);
     }
   }
+
+  fillTextareas(profile, filledFields);
   
   // Detect CV upload fields and show message
   detectAndNotifyCvFields();
@@ -690,8 +714,35 @@ function detectJobTitle() {
   console.log('Current hostname:', window.location.hostname);
   console.log('Current URL:', window.location.href);
   
-  // Platform-specific detection
-  if (window.location.hostname.includes('ashbyhq.com')) {
+  // Platform-specific detection (major job boards)
+  const hostname = window.location.hostname;
+
+  if (hostname.includes('greenhouse.io') || hostname.includes('boards.greenhouse.io')) {
+    const gh = detectGreenhouseJob();
+    if (gh.position || gh.company) return gh;
+  }
+
+  if (hostname.includes('myworkdayjobs.com') || hostname.includes('workday.com')) {
+    const wd = detectWorkdayJob();
+    if (wd.position || wd.company) return wd;
+  }
+
+  if (hostname.includes('linkedin.com')) {
+    const li = detectLinkedInJob();
+    if (li.position || li.company) return li;
+  }
+
+  if (hostname.includes('lever.co')) {
+    const lv = detectLeverJob();
+    if (lv.position || lv.company) return lv;
+  }
+
+  if (hostname.includes('indeed.com')) {
+    const indeed = detectIndeedJob();
+    if (indeed.position || indeed.company) return indeed;
+  }
+
+  if (hostname.includes('ashbyhq.com')) {
     const ashbyResult = detectAshbyHQJob();
     if (ashbyResult.position || ashbyResult.company) {
       console.log('AshbyHQ detection succeeded:', ashbyResult);
@@ -1414,3 +1465,250 @@ function fillByLabel(labelText, value, filledFields = new Set()) {
   
   return false; // Return failure
 }
+
+function fillTextarea(element, value) {
+  if (!element || !value) return;
+  setNativeValue(element, value);
+  element.textContent = value;
+  console.log('Filled textarea:', element.name || element.id, 'with value length:', value.length);
+}
+
+function fillTextareas(profile, filledFields = new Set()) {
+  const textareas = document.querySelectorAll('textarea');
+  for (const textarea of textareas) {
+    if (filledFields.has(textarea)) continue;
+
+    const context = normalizeText([
+      textarea.name,
+      textarea.id,
+      textarea.placeholder,
+      textarea.getAttribute('aria-label'),
+      textarea.closest('label')?.textContent,
+    ].filter(Boolean).join(' '));
+
+    if (context.includes('cover') || context.includes('letter') || context.includes('motivation')) {
+      fillTextarea(textarea, profile.coverLetter || '');
+      filledFields.add(textarea);
+      continue;
+    }
+
+    if (context.includes('why') || context.includes('about') || context.includes('describe')) {
+      const vaultAnswer = profile.preferredAnswer || profile.aboutMe || '';
+      if (vaultAnswer) {
+        fillTextarea(textarea, vaultAnswer);
+        filledFields.add(textarea);
+      }
+    }
+  }
+}
+
+function fillVaultAnswers(answers) {
+  if (!answers.length) return;
+  const textareas = document.querySelectorAll('textarea');
+  const filled = new Set();
+
+  for (const textarea of textareas) {
+    if (filled.has(textarea)) continue;
+    const context = normalizeText([
+      textarea.name,
+      textarea.id,
+      textarea.placeholder,
+      textarea.getAttribute('aria-label'),
+      textarea.closest('label')?.textContent,
+    ].filter(Boolean).join(' '));
+
+    for (const answer of answers) {
+      const title = normalizeText(answer.title || '');
+      const category = normalizeText(answer.category || '');
+      if (!context) continue;
+      if (context.includes(title) || context.includes(category) || title.includes(context.slice(0, 20))) {
+        fillTextarea(textarea, answer.content || '');
+        filled.add(textarea);
+        break;
+      }
+    }
+  }
+}
+
+const GHOST_API_BASE = APPLYFLOW_CONFIG.API_URL;
+
+function detectGreenhouseJob() {
+  const titleEl =
+    document.querySelector('[data-qa="job-title"]') ||
+    document.querySelector('.app-title') ||
+    document.querySelector('h1');
+  const companyEl =
+    document.querySelector('[data-qa="company-name"]') ||
+    document.querySelector('.company-name') ||
+    document.querySelector('.logo img[alt]');
+
+  const position = titleEl?.textContent?.trim() || null;
+  let company = companyEl?.textContent?.trim() || null;
+  if (!company && companyEl?.getAttribute?.('alt')) {
+    company = companyEl.getAttribute('alt').trim();
+  }
+
+  return { position, company };
+}
+
+function detectWorkdayJob() {
+  const titleEl = document.querySelector('[data-automation-id="jobTitle"]');
+  const companyEl = document.querySelector('[data-automation-id="company"]');
+
+  return {
+    position: titleEl?.textContent?.trim() || null,
+    company: companyEl?.textContent?.trim() || null,
+  };
+}
+
+function detectLinkedInJob() {
+  const titleEl =
+    document.querySelector('.jobs-unified-top-card__job-title') ||
+    document.querySelector('.job-details-jobs-unified-top-card__job-title') ||
+    document.querySelector('h1.t-24');
+  const companyEl =
+    document.querySelector('.jobs-unified-top-card__company-name') ||
+    document.querySelector('.job-details-jobs-unified-top-card__company-name a');
+
+  return {
+    position: titleEl?.textContent?.trim() || null,
+    company: companyEl?.textContent?.trim() || null,
+  };
+}
+
+function detectLeverJob() {
+  const titleEl = document.querySelector('.posting-headline h2') || document.querySelector('h2');
+  const companyEl =
+    document.querySelector('.main-header-logo img[alt]') ||
+    document.querySelector('.posting-categories .sort-by-team');
+
+  return {
+    position: titleEl?.textContent?.trim() || null,
+    company: companyEl?.textContent?.trim() || companyEl?.getAttribute?.('alt')?.trim() || null,
+  };
+}
+
+function detectIndeedJob() {
+  const titleEl =
+    document.querySelector('[data-testid="jobsearch-JobInfoHeader-title"]') ||
+    document.querySelector('.jobsearch-JobInfoHeader-title') ||
+    document.querySelector('h1');
+  const companyEl =
+    document.querySelector('[data-testid="inlineHeader-companyName"]') ||
+    document.querySelector('[data-company-name="true"]');
+
+  return {
+    position: titleEl?.textContent?.trim() || null,
+    company: companyEl?.textContent?.trim() || null,
+  };
+}
+
+function showGhostSaveToast(payload) {
+  const { companyName, position, deduplicated } = payload;
+  const existing = document.getElementById('applyflow-ghost-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'applyflow-ghost-toast';
+  toast.setAttribute('role', 'status');
+  toast.style.cssText = [
+    'position:fixed',
+    'bottom:24px',
+    'right:24px',
+    'z-index:2147483647',
+    'max-width:320px',
+    'padding:14px 16px',
+    'border-radius:12px',
+    'background:#0f172a',
+    'color:#f8fafc',
+    'font:14px/1.4 system-ui,sans-serif',
+    'box-shadow:0 8px 32px rgba(0,0,0,.35)',
+    'border:1px solid rgba(255,255,255,.12)',
+  ].join(';');
+
+  const title = deduplicated ? 'Already in ApplyFlow' : 'Application saved!';
+  const subtitle = [position, companyName].filter(Boolean).join(' · ') || 'View in your tracker';
+
+  toast.innerHTML = `
+    <div style="font-weight:600;margin-bottom:4px">${title}</div>
+    <div style="opacity:.85;margin-bottom:10px">${subtitle}</div>
+    <button type="button" id="applyflow-ghost-open" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px">
+      Open tracker
+    </button>
+    <button type="button" id="applyflow-ghost-dismiss" style="background:transparent;color:#94a3b8;border:none;margin-left:8px;cursor:pointer;font-size:13px">
+      Dismiss
+    </button>
+  `;
+
+  document.body.appendChild(toast);
+
+  const dismiss = () => toast.remove();
+  toast.querySelector('#applyflow-ghost-dismiss')?.addEventListener('click', dismiss);
+  toast.querySelector('#applyflow-ghost-open')?.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'openApplicantPage' });
+    dismiss();
+  });
+  setTimeout(dismiss, 12000);
+}
+
+function initGhostSubmitListener() {
+  document.addEventListener('click', async (event) => {
+    const target = event.target;
+    if (!target) return;
+
+    const button = target.closest('button, input[type="submit"], a[role="button"]');
+    if (!button) return;
+
+    const text = normalizeText(button.textContent || button.value || '');
+    const isSubmit = ['submit', 'apply', 'postuler', 'envoyer', 'send application'].some((k) => text.includes(k));
+    if (!isSubmit) return;
+
+    try {
+      const storage = await chrome.storage.local.get(['token', 'plan']);
+      if (!storage.token) return;
+      const plan = storage.plan || 'free';
+      if (plan !== 'pro' && plan !== 'advanced') return;
+
+      const jobInfo = detectJobInfo();
+      const payload = {
+        companyName: jobInfo.companyName || document.title.split('|')[0].trim() || 'Unknown',
+        position: jobInfo.jobTitle || 'Unknown role',
+        jobUrl: window.location.href,
+        dateApplied: new Date().toISOString().split('T')[0],
+        note: 'Ghost save on submit click',
+      };
+
+      const response = await fetch(`${GHOST_API_BASE}/extension/ghost-save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${storage.token}`,
+          'x-app-role': 'user',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          console.warn('[GHOST SAVE] Pro plan required');
+          return;
+        }
+        console.warn('[GHOST SAVE] HTTP', response.status);
+        return;
+      }
+
+      const data = await response.json().catch(() => ({}));
+      const deduplicated = Boolean(data.deduplicated);
+      console.log('[GHOST SAVE] Application logged', deduplicated ? '(existing)' : '(new)');
+      showGhostSaveToast({
+        companyName: payload.companyName,
+        position: payload.position,
+        deduplicated,
+      });
+    } catch (err) {
+      console.warn('[GHOST SAVE] Failed:', err);
+    }
+  }, true);
+}
+
+initGhostSubmitListener();

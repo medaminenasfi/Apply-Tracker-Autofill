@@ -1,8 +1,5 @@
-// Content script for authentication token sync
-// Only runs on the Apply Tracker website
-// DEVELOPMENT: http://localhost:3001/*
-// PRODUCTION: Change to your production domain (e.g., https://your-domain.com/*)
-const FRONTEND_URL = 'http://localhost:3001';
+// Content script for authentication token sync (runs on ApplyFlow web app only)
+const FRONTEND_URL = APPLYFLOW_CONFIG.FRONTEND_URL;
 
 console.log('[EXT AUTH] Auth content script loaded on:', window.location.href);
 

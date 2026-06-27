@@ -54,6 +54,7 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
       note: '',
       status: 'applied',
       source: 'manual',
+      cvUsed: '',
     },
   });
 
@@ -71,6 +72,7 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
         status: data.status,
         source: data.source,
         note: data.note,
+        cvUsed: data.cvUsed || undefined,
       });
 
       await fetchApplications();
@@ -205,6 +207,20 @@ export function AddApplicationModal({ open, onOpenChange }: AddApplicationModalP
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="cvUsed"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-slate-900 dark:text-white">CV Used (optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Software-Eng-CV.pdf" className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.05]" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <FormField

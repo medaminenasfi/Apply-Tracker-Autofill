@@ -1,5 +1,5 @@
 export type ApplicationStatus = 'applied' | 'interview' | 'accepted' | 'rejected';
-export type ApplicationSource = 'manual' | 'extension';
+export type ApplicationSource = 'manual' | 'extension' | 'ghost';
 
 export interface Application {
   _id: string;
@@ -51,8 +51,12 @@ export interface User {
   phone?: string;
   countryCode?: string;
   university?: string;
+  address?: string;
+  skills?: string[];
   linkedin?: string;
   portfolio?: string;
+  plan?: 'free' | 'pro' | 'advanced';
+  subscriptionStatus?: string;
   profilePictureUrl?: string;
   profilePictureUpdatedAt?: number;
   cvUrl?: string | null;

@@ -25,6 +25,8 @@
   ],
   "host_permissions": [
     "http://localhost:3001/*",
+    "https://your-frontend-domain.com/*",
+    "https://*.vercel.app/*",
     "<all_urls>"
   ],
   "background": {
@@ -39,12 +41,16 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["answer-vault.js", "content.js"],
+      "js": ["config.js", "answer-vault.js", "content.js"],
       "run_at": "document_end"
     },
     {
-      "matches": ["http://localhost:3001/*"],
-      "js": ["auth-content.js"],
+      "matches": [
+        "http://localhost:3001/*",
+        "https://your-frontend-domain.com/*",
+        "https://*.vercel.app/*"
+      ],
+      "js": ["config.js", "auth-content.js"],
       "run_at": "document_end"
     }
   ]

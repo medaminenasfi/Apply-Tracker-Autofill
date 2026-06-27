@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
 import { KanbanSkeleton } from '@/components/ui/skeleton';
+import { RemindersWidget } from '@/components/dashboard/RemindersWidget';
 import { useTranslation } from 'react-i18next';
 import { ApplicationSource, ApplicationStatus } from '@/types';
 
@@ -121,6 +122,8 @@ export default function ApplicantPage() {
             {t('applications.addNew')}
           </button>
         </div>
+
+        <RemindersWidget />
 
         <div className="flex flex-col gap-3">
           <div className="relative">

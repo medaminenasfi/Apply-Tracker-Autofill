@@ -43,6 +43,12 @@ export class Profile {
   portfolio?: string;
 
   @Prop({ required: false })
+  address?: string;
+
+  @Prop({ type: [String], default: [] })
+  skills?: string[];
+
+  @Prop({ required: false })
   profilePictureUrl?: string;
 
   @Prop({ type: [CvDocumentSchema], default: [] })

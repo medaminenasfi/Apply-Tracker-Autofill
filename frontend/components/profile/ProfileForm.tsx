@@ -72,6 +72,8 @@ export function ProfileForm() {
       phone: user?.phone || '',
       countryCode: user?.countryCode || '+216',
       university: user?.university || '',
+      address: user?.address || '',
+      skills: user?.skills?.join(', ') || '',
       linkedin: user?.linkedin || '',
       portfolio: user?.portfolio || '',
     },
@@ -87,6 +89,8 @@ export function ProfileForm() {
         phone: user.phone || '',
         countryCode: user.countryCode || '+216',
         university: user.university || '',
+        address: user.address || '',
+        skills: user.skills?.join(', ') || '',
         linkedin: user.linkedin || '',
         portfolio: user.portfolio || '',
       });
@@ -96,7 +100,12 @@ export function ProfileForm() {
   const onSubmit = async (data: ProfileFormData) => {
     setIsSaving(true);
     try {
-      await updateProfile(data);
+      const { skills: skillsRaw, ...rest } = data;
+      const skills = (skillsRaw || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      await updateProfile({ ...rest, skills });
       toast.success('Profile updated successfully!');
     } catch (error: any) {
       console.error('Profile update error:', error);
@@ -578,6 +587,39 @@ export function ProfileForm() {
                     <FormControl>
                       <Input placeholder="MIT" {...field} className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.04]" />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Address (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123 Main St, City, Country" {...field} className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.04]" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="skills"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-slate-700 dark:text-slate-300">Skills (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="JavaScript, React, Node.js"
+                        {...field}
+                        className="border-slate-200 dark:border-white/[0.10] bg-white dark:bg-white/[0.04]"
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">Comma-separated list</p>
                     <FormMessage />
                   </FormItem>
                 )}

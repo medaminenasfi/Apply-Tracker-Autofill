@@ -405,6 +405,21 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+.match-panel {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+}
+.match-panel.hidden { display: none; }
+.match-score-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.match-score-row strong { color: var(--primary); font-size: 16px; }
 .action-card {
   display: flex;
   flex-direction: column;

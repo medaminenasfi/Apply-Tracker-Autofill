@@ -1,23 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { ProfileService } from '../profile/profile.service';
 import { ApplicationsService } from '../applications/applications.service';
-import { normalizeUserId, validateUserId, UserId } from '../common/utils/userId.util';
+import { AiService } from '../ai/ai.service';
+import { CvTextService } from '../common/services/cv-text.service';
+import { normalizeUserId, UserId } from '../common/utils/userId.util';
 
 @Injectable()
 export class ExtensionService {
   constructor(
     private profileService: ProfileService,
     private applicationsService: ApplicationsService,
+    private aiService: AiService,
+    private cvTextService: CvTextService,
   ) {}
 
-  async getUserProfile(userId: UserId) {
+  async getUserProfile(userId: UserId, plan = 'free') {
     const userIdString = normalizeUserId(userId);
     const profile = await this.profileService.findByUserId(userIdString);
     if (!profile) {
-      return { message: 'Profile not found' };
+      return { message: 'Profile not found', plan };
     }
     const cvList = await this.profileService.getCvList(userIdString);
     return {
+      plan,
       firstName: profile.firstName,
       lastName: profile.lastName,
       email: profile.email,
@@ -26,6 +31,8 @@ export class ExtensionService {
       university: profile.university,
       linkedin: profile.linkedin,
       portfolio: profile.portfolio,
+      address: profile.address,
+      skills: profile.skills || [],
       cvUrl: cvList.cvUrl,
       primaryCvId: cvList.primaryCvId,
       cvs: cvList.cvs,
@@ -64,5 +71,30 @@ export class ExtensionService {
 
     const result = await this.applicationsService.create(filteredData, userIdString);
     return result;
+  }
+
+  async analyzeJob(userId: UserId, jobDescription: string, cvText?: string) {
+    const userIdString = normalizeUserId(userId);
+    let resolvedCvText = cvText || '';
+    if (!resolvedCvText) {
+      const cvList = await this.profileService.getCvList(userIdString);
+      if (cvList.cvUrl) {
+        resolvedCvText = await this.cvTextService.extractFromCvUrl(cvList.cvUrl);
+      }
+    }
+    return this.aiService.analyzeJob(userIdString, jobDescription, resolvedCvText);
+  }
+
+  async ghostSave(userId: UserId, applicationData: any) {
+    const userIdString = normalizeUserId(userId);
+    const jobUrl = (applicationData.jobUrl && applicationData.jobUrl.trim()) || '';
+    if (jobUrl && jobUrl !== 'https://unknown') {
+      const existing = await this.applicationsService.findByJobUrl(userIdString, jobUrl);
+      if (existing) {
+        return { application: existing, deduplicated: true };
+      }
+    }
+    const application = await this.saveApplication(userId, { ...applicationData, source: 'ghost' });
+    return { application, deduplicated: false };
   }
 }

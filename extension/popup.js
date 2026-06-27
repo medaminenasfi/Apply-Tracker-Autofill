@@ -1,8 +1,5 @@
-// Extension Configuration
-// DEVELOPMENT: http://localhost:3000 (API), http://localhost:3001 (Frontend)
-// PRODUCTION: Change to your production domains
-const API_BASE = 'http://localhost:3000';
-const FRONTEND_URL = 'http://localhost:3001';
+const API_BASE = APPLYFLOW_CONFIG.API_URL;
+const FRONTEND_URL = APPLYFLOW_CONFIG.FRONTEND_URL;
 
 // DOM Elements
 const loginView = document.getElementById('loginView');
@@ -22,7 +19,37 @@ const openCvBtn = document.getElementById('openCvBtn');
 const copyCvLinkBtn = document.getElementById('copyCvLinkBtn');
 const copyFileNameBtn = document.getElementById('copyFileNameBtn');
 const uploadCvToPageBtn = document.getElementById('uploadCvToPageBtn');
-const saveApplicationForm = document.getElementById('saveApplicationForm');
+const fillAnswersBtn = document.getElementById('fillAnswersBtn');
+const analyzeJobBtn = document.getElementById('analyzeJobBtn');
+const matchScorePanel = document.getElementById('matchScorePanel');
+const matchScoreValue = document.getElementById('matchScoreValue');
+const matchSummary = document.getElementById('matchSummary');
+const missingKeywords = document.getElementById('missingKeywords');
+const applySuggestionsBtn = document.getElementById('applySuggestionsBtn');
+const addKeywordsBtn = document.getElementById('addKeywordsBtn');
+const planBadge = document.getElementById('planBadge');
+
+let userProfile = null;
+let token = null;
+let pendingSuggestedAnswers = [];
+let lastAnalyzeTabId = null;
+
+function isProPlan(plan) {
+  return plan === 'pro' || plan === 'advanced';
+}
+
+function showUpgradeMessage(feature) {
+  showMessage(`${feature} requires Pro. Upgrade at ${FRONTEND_URL}/pricing`, 'error');
+}
+
+function updatePlanUi(plan) {
+  const pro = isProPlan(plan);
+  if (planBadge) {
+    planBadge.textContent = pro ? 'Pro plan active' : 'Free plan — Match & Ghost save require Pro';
+    planBadge.classList.toggle('hidden', false);
+  }
+  analyzeJobBtn?.classList.toggle('action-disabled', !pro);
+}
 const companyNameInput = document.getElementById('companyName');
 const positionInput = document.getElementById('position');
 const jobUrlInput = document.getElementById('jobUrl');
@@ -32,10 +59,7 @@ const logoutBtn = document.getElementById('logoutBtn');
 const message = document.getElementById('message');
 const userEmail = document.getElementById('userEmail');
 
-let userProfile = null;
-let token = null;
-
-// Loading state helper
+const saveApplicationForm = document.getElementById('saveApplicationForm');
 function setLoading(btn, loading) {
   if (loading) {
     btn.classList.add('loading');
@@ -62,6 +86,12 @@ function setupEventListeners() {
   copyCvLinkBtn.addEventListener('click', handleCopyCvLink);
   copyFileNameBtn.addEventListener('click', handleCopyFileName);
   uploadCvToPageBtn.addEventListener('click', handleUploadCvToPage);
+  fillAnswersBtn.addEventListener('click', handleFillAnswers);
+  analyzeJobBtn.addEventListener('click', handleAnalyzeJob);
+  applySuggestionsBtn?.addEventListener('click', handleApplySuggestions);
+  addKeywordsBtn?.addEventListener('click', () => {
+    chrome.tabs.create({ url: `${FRONTEND_URL}/profile` });
+  });
   saveApplicationForm.addEventListener('submit', handleSaveApplication);
   if (logoutBtn) {
     logoutBtn.addEventListener('click', handleLogout);
@@ -206,7 +236,8 @@ async function handleLogin(e) {
     // Store in chrome.storage.local
     await chrome.storage.local.set({
       token: token,
-      user: data.user
+      user: data.user,
+      plan: data.user?.plan || 'free',
     });
     
     await fetchProfile();
@@ -247,12 +278,9 @@ async function fetchProfile() {
     // Always use backend response as the source of truth
     userProfile = data;
     userEmail.textContent = data.email;
+    updatePlanUi(data.plan || 'free');
     
-    console.log('[EXT AUTH] Extension profile updated:', data.email);
-    console.log('[EXT AUTH] Extension cvUrl:', data?.cvUrl);
-    
-    // Update chrome.storage.local with latest user data
-    await chrome.storage.local.set({ user: data });
+    await chrome.storage.local.set({ user: data, plan: data.plan || 'free' });
     
     // Update CV status from profile
     updateCvStatus(data.cvUrl, data.cvs || []);
@@ -335,6 +363,147 @@ function handleCopyFileName() {
       showMessage('Failed to copy file name', 'error');
     });
   }
+}
+
+async function handleFillAnswers() {
+  if (!token) {
+    showMessage('Please sign in first', 'error');
+    return;
+  }
+  setLoading(fillAnswersBtn, true);
+  try {
+    const vaultRes = await fetch(`${API_BASE}/answer-vault`, {
+      headers: { Authorization: `Bearer ${token}`, 'x-app-role': 'user' },
+    });
+    const answers = await vaultRes.json();
+    const favorites = (Array.isArray(answers) ? answers : []).slice(0, 8).map((a) => ({
+      title: a.title,
+      category: a.category,
+      content: a.content,
+    }));
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) throw new Error('No active tab');
+
+    await ensureContentScript(tab.id);
+    chrome.tabs.sendMessage(tab.id, { action: 'fillAnswers', answers: favorites }, (response) => {
+      if (chrome.runtime.lastError || !response?.success) {
+        showMessage('Could not fill answers on this page', 'error');
+      } else {
+        showMessage('Vault answers inserted into textareas', 'success');
+      }
+    });
+  } catch (error) {
+    showMessage(error.message || 'Failed to fill answers', 'error');
+  } finally {
+    setLoading(fillAnswersBtn, false);
+  }
+}
+
+async function handleAnalyzeJob() {
+  if (!token) {
+    showMessage('Please sign in first', 'error');
+    return;
+  }
+  if (!isProPlan(userProfile?.plan)) {
+    showUpgradeMessage('Match score');
+    return;
+  }
+  setLoading(analyzeJobBtn, true);
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) throw new Error('No active tab');
+
+    await ensureContentScript(tab.id);
+    const pageText = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => document.body?.innerText?.slice(0, 6000) || '',
+    });
+
+    const jobDescription = pageText[0]?.result || '';
+    const response = await fetch(`${API_BASE}/extension/analyze-job`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'x-app-role': 'user',
+      },
+      body: JSON.stringify({ jobDescription }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      if (response.status === 403) {
+        showUpgradeMessage('Match score');
+        return;
+      }
+      throw new Error(data.message || 'Analysis failed');
+    }
+
+    matchScorePanel.classList.remove('hidden');
+    matchScoreValue.textContent = `${data.matchScore || 0}%`;
+    matchSummary.textContent = data.summary || '';
+    missingKeywords.innerHTML = (data.missingKeywords || [])
+      .map((k) => `<li>Missing: ${k}</li>`)
+      .join('');
+
+    pendingSuggestedAnswers = data.suggestedAnswers || [];
+    lastAnalyzeTabId = tab.id;
+
+    if (pendingSuggestedAnswers.length) {
+      applySuggestionsBtn?.classList.remove('hidden');
+    } else {
+      applySuggestionsBtn?.classList.add('hidden');
+    }
+
+    if ((data.missingKeywords || []).length) {
+      addKeywordsBtn?.classList.remove('hidden');
+    } else {
+      addKeywordsBtn?.classList.add('hidden');
+    }
+
+    showMessage('Match score ready — review suggestions before applying', 'success');
+  } catch (error) {
+    showMessage(error.message || 'Failed to analyze job', 'error');
+  } finally {
+    setLoading(analyzeJobBtn, false);
+  }
+}
+
+async function handleApplySuggestions() {
+  if (!pendingSuggestedAnswers.length || !lastAnalyzeTabId) {
+    showMessage('No suggestions to apply', 'error');
+    return;
+  }
+  setLoading(applySuggestionsBtn, true);
+  try {
+    await ensureContentScript(lastAnalyzeTabId);
+    chrome.tabs.sendMessage(
+      lastAnalyzeTabId,
+      { action: 'fillAnswers', answers: pendingSuggestedAnswers },
+      (response) => {
+        if (chrome.runtime.lastError || !response?.success) {
+          showMessage('Could not apply suggestions on this page', 'error');
+        } else {
+          showMessage('Suggested answers applied — review before submitting', 'success');
+        }
+        setLoading(applySuggestionsBtn, false);
+      },
+    );
+  } catch (error) {
+    showMessage(error.message || 'Failed to apply suggestions', 'error');
+    setLoading(applySuggestionsBtn, false);
+  }
+}
+
+async function ensureContentScript(tabId) {
+  const ping = await new Promise((resolve) => {
+    chrome.tabs.sendMessage(tabId, { action: 'ping' }, (response) => {
+      resolve(!chrome.runtime.lastError && response?.success);
+    });
+  });
+  if (ping) return;
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+  await new Promise((resolve) => setTimeout(resolve, 800));
 }
 
 async function handleUploadCvToPage() {

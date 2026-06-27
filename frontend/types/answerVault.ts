@@ -4,6 +4,7 @@ export interface VaultAnswer {
   category: string;
   content: string;
   favorite: boolean;
+  roleType?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,4 +19,5 @@ export interface VaultAnswerInput {
   category: string;
   content: string;
   favorite?: boolean;
+  roleType?: string;
 }

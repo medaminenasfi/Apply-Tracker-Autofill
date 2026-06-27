@@ -10,6 +10,15 @@ export const PREDEFINED_CATEGORIES = [
 
 export const CUSTOM_CATEGORY_LABEL = 'Custom';
 
+export const ROLE_TYPES = [
+  'General',
+  'Software Engineering',
+  'Product Management',
+  'Design',
+  'Data / Analytics',
+  'Other',
+] as const;
+
 export const ALL_CATEGORY_OPTIONS = [
   ...PREDEFINED_CATEGORIES,
   CUSTOM_CATEGORY_LABEL,

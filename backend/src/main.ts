@@ -64,7 +64,7 @@ async function bootstrap() {
   console.log('[BOOTSTRAP] Starting application...');
   console.log('[BOOTSTRAP] Environment:', process.env.NODE_ENV || 'development');
   
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
   // Apply global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());

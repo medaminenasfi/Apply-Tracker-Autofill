@@ -332,7 +332,7 @@
     await loadVaultFromStorage();
 
     const host = window.location.host;
-    const isApplyFlowApp = host.includes('localhost:3001') || host.includes('vercel.app');
+    const isApplyFlowApp = APPLYFLOW_FRONTEND_HOST_PATTERNS.some((pattern) => host.includes(pattern));
     if (!isApplyFlowApp) {
       createVaultUI();
     }

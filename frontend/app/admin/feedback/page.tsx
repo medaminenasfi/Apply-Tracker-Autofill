@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, Search, MessageCircle, Bug, Lightbulb, MessageSquare, Star } from 'lucide-react';
 import { feedbackApi, Feedback, FeedbackStatus, FeedbackType } from '@/services/feedback';
 import { toast } from 'sonner';
+import { AdminProtectedRoute } from '@/components/AdminProtectedRoute';
 import { AdminLayout } from '@/components/AdminLayout';
 import { withLoader } from '@/hooks/useLoader';
 import { useLoadingStore } from '@/store/loadingStore';
@@ -83,7 +84,8 @@ export default function AdminFeedbackPage() {
 
   if (isFetching) {
     return (
-      <AdminLayout title="Manage Feedback">
+      <AdminProtectedRoute>
+        <AdminLayout title="Manage Feedback">
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
@@ -101,11 +103,13 @@ export default function AdminFeedbackPage() {
           </div>
         </div>
       </AdminLayout>
+      </AdminProtectedRoute>
     );
   }
 
   return (
-    <AdminLayout title="Manage Feedback">
+    <AdminProtectedRoute>
+      <AdminLayout title="Manage Feedback">
       <div className="space-y-4">
         {/* Header */}
         <div>
@@ -256,5 +260,6 @@ export default function AdminFeedbackPage() {
         )}
       </div>
     </AdminLayout>
+    </AdminProtectedRoute>
   );
 }

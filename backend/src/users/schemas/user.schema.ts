@@ -33,6 +33,24 @@ export class User {
 
   @Prop({ required: false })
   resetTokenExpires?: Date;
+
+  @Prop({ required: true, enum: ['free', 'pro', 'advanced'], default: 'free' })
+  plan!: string;
+
+  @Prop({ required: false })
+  stripeCustomerId?: string;
+
+  @Prop({ required: false, enum: ['none', 'active', 'cancelled', 'past_due'], default: 'none' })
+  subscriptionStatus!: string;
+
+  @Prop({ default: true })
+  emailRemindersEnabled!: boolean;
+
+  @Prop({ default: true })
+  inAppRemindersEnabled!: boolean;
+
+  @Prop({ required: false })
+  lastReminderEmailAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

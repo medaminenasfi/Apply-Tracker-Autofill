@@ -1,4 +1,6 @@
 // Background service worker for Chrome Extension
+importScripts('config.js');
+
 console.log('[EXT AUTH] Apply Tracker Extension background service worker loaded');
 
 // Listen for extension installation
@@ -51,6 +53,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       console.log('[EXT AUTH] Extension storage cleared');
       sendResponse({ success: true });
     });
+    return true;
+  }
+
+  if (request.action === 'openApplicantPage') {
+    chrome.tabs.create({ url: `${APPLYFLOW_CONFIG.FRONTEND_URL}/applicant` });
+    sendResponse({ success: true });
     return true;
   }
   

@@ -95,13 +95,19 @@ export class UsersService {
   }
 
   async updateUser(userId: string, updateData: any): Promise<User | null> {
-    console.log('UsersService.updateUser called with userId:', userId, 'and data:', updateData);
-    const user = await this.userModel.findById(userId).exec();
-    console.log('Current user before update:', user);
-    
-    const updatedUser = await this.userModel.findByIdAndUpdate(userId, { $set: updateData }, { returnDocument: 'after' }).exec();
-    console.log('Updated user:', updatedUser);
-    
-    return updatedUser;
+    return this.userModel.findByIdAndUpdate(userId, { $set: updateData }, { returnDocument: 'after' }).exec();
+  }
+
+  async updateBilling(userId: string, data: { plan?: string; stripeCustomerId?: string; subscriptionStatus?: string }) {
+    return this.userModel.findByIdAndUpdate(userId, { $set: data }, { returnDocument: 'after' }).exec();
+  }
+
+  async findByStripeCustomerId(customerId: string): Promise<User | null> {
+    return this.userModel.findOne({ stripeCustomerId: customerId }).exec();
+  }
+
+  async getPlan(userId: string): Promise<string> {
+    const user = await this.findById(userId);
+    return user?.plan || 'free';
   }
 }

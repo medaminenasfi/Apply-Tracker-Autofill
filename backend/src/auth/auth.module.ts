@@ -9,7 +9,6 @@ import { ProfileModule } from '../profile/profile.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { EmailService } from '../common/services/email.service';
 
 @Module({
   imports: [
@@ -32,7 +31,6 @@ import { EmailService } from '../common/services/email.service';
     LocalStrategy,
     JwtStrategy,
     GoogleStrategy,
-    EmailService,
   ],
   controllers: [AuthController],
 })
